@@ -1,7 +1,7 @@
 {
   "DesktopAudioDevice1": {
     "prev_ver": 536870916,
-    "name": "Desktop Audio",
+    "name": "aud_desktop_mixer_channels_11_12",
     "uuid": "91a06434-f94f-49dc-b5e9-a056fd22e7b1",
     "id": "wasapi_output_capture",
     "versioned_id": "wasapi_output_capture",
@@ -28,11 +28,13 @@
     "deinterlace_mode": 0,
     "deinterlace_field_order": 0,
     "monitoring_type": 0,
-    "private_settings": {}
+    "private_settings": {
+      "mixer_hidden": false
+    }
   },
   "AuxAudioDevice1": {
     "prev_ver": 536870916,
-    "name": "USB OUT YAMAHA",
+    "name": "aud_mixer_usb_out",
     "uuid": "ad4b20f9-8486-45a9-87d0-935f040ed5e1",
     "id": "wasapi_input_capture",
     "versioned_id": "wasapi_input_capture",
@@ -91,7 +93,7 @@
   },
   "AuxAudioDevice2": {
     "prev_ver": 536870916,
-    "name": "Mic/Aux 2",
+    "name": "aud_mic_mixer_aux_send_1",
     "uuid": "8daf6a6f-486f-42e2-958f-67ef6a9d3953",
     "id": "wasapi_input_capture",
     "versioned_id": "wasapi_input_capture",
@@ -120,33 +122,36 @@
     "monitoring_type": 0,
     "private_settings": {}
   },
-  "current_scene": "wezterm",
-  "current_program_scene": "wezterm",
+  "current_scene": "WEZTERM",
+  "current_program_scene": "WEZTERM",
   "scene_order": [
-    {
-      "name": "DSLR"
-    },
     {
       "name": "ZOOM"
     },
     {
-      "name": "game"
+      "name": "scene_aoe2"
     },
     {
-      "name": "wezterm"
+      "name": "WEZTERM"
     },
     {
       "name": "game 2"
     },
     {
+      "name": "scene_dslr"
+    },
+    {
+      "name": "scene_screencap"
+    },
+    {
       "name": "browser"
     }
   ],
-  "name": "aoe2",
+  "name": "collection_aoe2",
   "sources": [
     {
       "prev_ver": 536870916,
-      "name": "DSLR",
+      "name": "scene_dslr",
       "uuid": "0496eed9-07df-46f4-83bd-53a54a834ec5",
       "id": "scene",
       "versioned_id": "scene",
@@ -155,7 +160,7 @@
         "custom_size": false,
         "items": [
           {
-            "name": "Video Capture Device",
+            "name": "dslr_cap",
             "source_uuid": "f3a15382-06a1-4d80-931b-e72a2578c8ba",
             "visible": true,
             "locked": false,
@@ -235,7 +240,7 @@
     },
     {
       "prev_ver": 536870916,
-      "name": "Video Capture Device",
+      "name": "dslr_cap",
       "uuid": "f3a15382-06a1-4d80-931b-e72a2578c8ba",
       "id": "dshow_input",
       "versioned_id": "dshow_input",
@@ -270,7 +275,7 @@
     },
     {
       "prev_ver": 536870916,
-      "name": "game",
+      "name": "scene_aoe2",
       "uuid": "f5b3853d-12fe-43bb-a0b0-d7e38085fad6",
       "id": "scene",
       "versioned_id": "scene",
@@ -279,7 +284,7 @@
         "custom_size": false,
         "items": [
           {
-            "name": "aoe2",
+            "name": "aoe2_cap",
             "source_uuid": "63dbc18a-2772-446c-b27c-a7b14b3b33d1",
             "visible": true,
             "locked": false,
@@ -334,7 +339,7 @@
             "private_settings": {}
           },
           {
-            "name": "DSLR",
+            "name": "scene_dslr",
             "source_uuid": "0496eed9-07df-46f4-83bd-53a54a834ec5",
             "visible": true,
             "locked": false,
@@ -416,7 +421,7 @@
     },
     {
       "prev_ver": 536870916,
-      "name": "aoe2",
+      "name": "aoe2_cap",
       "uuid": "63dbc18a-2772-446c-b27c-a7b14b3b33d1",
       "id": "game_capture",
       "versioned_id": "game_capture",
@@ -514,7 +519,7 @@
             "private_settings": {}
           },
           {
-            "name": "DSLR",
+            "name": "scene_dslr",
             "source_uuid": "0496eed9-07df-46f4-83bd-53a54a834ec5",
             "visible": true,
             "locked": false,
@@ -637,7 +642,7 @@
         "custom_size": false,
         "items": [
           {
-            "name": "DSLR",
+            "name": "scene_dslr",
             "source_uuid": "0496eed9-07df-46f4-83bd-53a54a834ec5",
             "visible": true,
             "locked": false,
@@ -726,7 +731,7 @@
         "custom_size": false,
         "items": [
           {
-            "name": "aoe2",
+            "name": "aoe2_cap",
             "source_uuid": "63dbc18a-2772-446c-b27c-a7b14b3b33d1",
             "visible": true,
             "locked": false,
@@ -850,10 +855,6 @@
       "push-to-talk-delay": 0,
       "hotkeys": {
         "OBSBasic.SelectScene": [],
-        "libobs.show_scene_item.1": [],
-        "libobs.hide_scene_item.1": [],
-        "libobs.show_scene_item.3": [],
-        "libobs.hide_scene_item.3": [],
         "source_record.enable": [
           {
             "shift": true,
@@ -873,7 +874,11 @@
         "source_record.PauseRecording": [],
         "source_record.UnpauseRecording": [],
         "source_record.SplitRecording": [],
-        "source_record.AddChapterMarker": []
+        "source_record.AddChapterMarker": [],
+        "libobs.show_scene_item.1": [],
+        "libobs.hide_scene_item.1": [],
+        "libobs.show_scene_item.3": [],
+        "libobs.hide_scene_item.3": []
       },
       "deinterlace_mode": 0,
       "deinterlace_field_order": 0,
@@ -949,7 +954,7 @@
     },
     {
       "prev_ver": 536870916,
-      "name": "wezterm",
+      "name": "WEZTERM",
       "uuid": "99b79534-b3ee-4ede-be2b-408a0c573777",
       "id": "scene",
       "versioned_id": "scene",
@@ -957,6 +962,61 @@
         "id_counter": 4,
         "custom_size": false,
         "items": [
+          {
+            "name": "wezterm_cap",
+            "source_uuid": "0986abf3-2d3d-428a-aeb8-f6b2183405b3",
+            "visible": true,
+            "locked": false,
+            "rot": 0.0,
+            "scale_ref": {
+              "x": 1920.0,
+              "y": 1080.0
+            },
+            "align": 5,
+            "bounds_type": 2,
+            "bounds_align": 0,
+            "bounds_crop": false,
+            "crop_left": 0,
+            "crop_top": 0,
+            "crop_right": 0,
+            "crop_bottom": 0,
+            "id": 4,
+            "group_item_backup": false,
+            "pos": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "pos_rel": {
+              "x": -1.7777777910232544,
+              "y": -1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "scale_rel": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "bounds": {
+              "x": 1920.0,
+              "y": 1080.0
+            },
+            "bounds_rel": {
+              "x": 3.555555582046509,
+              "y": 2.0
+            },
+            "scale_filter": "disable",
+            "blend_method": "default",
+            "blend_type": "normal",
+            "show_transition": {
+              "duration": 0
+            },
+            "hide_transition": {
+              "duration": 0
+            },
+            "private_settings": {}
+          },
           {
             "name": "Source Clone",
             "source_uuid": "40fa7aee-0133-4026-b224-66b8b6d3bb93",
@@ -1011,10 +1071,109 @@
               "duration": 0
             },
             "private_settings": {}
-          },
+          }
+        ]
+      },
+      "mixers": 0,
+      "sync": 0,
+      "flags": 0,
+      "volume": 1.0,
+      "balance": 0.5,
+      "enabled": true,
+      "muted": false,
+      "push-to-mute": false,
+      "push-to-mute-delay": 0,
+      "push-to-talk": false,
+      "push-to-talk-delay": 0,
+      "hotkeys": {
+        "OBSBasic.SelectScene": [],
+        "libobs.show_scene_item.4": [],
+        "libobs.hide_scene_item.4": [],
+        "libobs.show_scene_item.2": [],
+        "libobs.hide_scene_item.2": []
+      },
+      "deinterlace_mode": 0,
+      "deinterlace_field_order": 0,
+      "monitoring_type": 0,
+      "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
+      "private_settings": {}
+    },
+    {
+      "prev_ver": 536870916,
+      "name": "Source Clone",
+      "uuid": "40fa7aee-0133-4026-b224-66b8b6d3bb93",
+      "id": "source-clone",
+      "versioned_id": "source-clone",
+      "settings": {
+        "clone": "scene_dslr",
+        "audio": false
+      },
+      "mixers": 255,
+      "sync": 0,
+      "flags": 0,
+      "volume": 1.0,
+      "balance": 0.5,
+      "enabled": true,
+      "muted": false,
+      "push-to-mute": false,
+      "push-to-mute-delay": 0,
+      "push-to-talk": false,
+      "push-to-talk-delay": 0,
+      "hotkeys": {
+        "libobs.mute": [],
+        "libobs.unmute": [],
+        "libobs.push-to-mute": [],
+        "libobs.push-to-talk": []
+      },
+      "deinterlace_mode": 0,
+      "deinterlace_field_order": 0,
+      "monitoring_type": 0,
+      "private_settings": {}
+    },
+    {
+      "prev_ver": 536870916,
+      "name": "wezterm_cap",
+      "uuid": "0986abf3-2d3d-428a-aeb8-f6b2183405b3",
+      "id": "window_capture",
+      "versioned_id": "window_capture",
+      "settings": {
+        "window": "Wezterm:org.wezfurlong.wezterm:wezterm-gui.exe"
+      },
+      "mixers": 255,
+      "sync": 0,
+      "flags": 0,
+      "volume": 1.0,
+      "balance": 0.5,
+      "enabled": true,
+      "muted": false,
+      "push-to-mute": false,
+      "push-to-mute-delay": 0,
+      "push-to-talk": false,
+      "push-to-talk-delay": 0,
+      "hotkeys": {
+        "libobs.mute": [],
+        "libobs.unmute": [],
+        "libobs.push-to-mute": [],
+        "libobs.push-to-talk": []
+      },
+      "deinterlace_mode": 0,
+      "deinterlace_field_order": 0,
+      "monitoring_type": 0,
+      "private_settings": {}
+    },
+    {
+      "prev_ver": 536870916,
+      "name": "scene_screencap",
+      "uuid": "0603cea6-833b-4ecf-a512-ccccdda1af23",
+      "id": "scene",
+      "versioned_id": "scene",
+      "settings": {
+        "id_counter": 2,
+        "custom_size": false,
+        "items": [
           {
-            "name": "Window Capture 2",
-            "source_uuid": "0986abf3-2d3d-428a-aeb8-f6b2183405b3",
+            "name": "cap_display_vg248",
+            "source_uuid": "a222ee10-9763-47af-bedc-108b742b84f4",
             "visible": true,
             "locked": false,
             "rot": 0.0,
@@ -1023,14 +1182,14 @@
               "y": 1080.0
             },
             "align": 5,
-            "bounds_type": 0,
+            "bounds_type": 2,
             "bounds_align": 0,
             "bounds_crop": false,
             "crop_left": 0,
             "crop_top": 0,
             "crop_right": 0,
             "crop_bottom": 0,
-            "id": 4,
+            "id": 2,
             "group_item_backup": false,
             "pos": {
               "x": 0.0,
@@ -1049,12 +1208,12 @@
               "y": 1.0
             },
             "bounds": {
-              "x": 0.0,
-              "y": 0.0
+              "x": 1920.0,
+              "y": 1080.0
             },
             "bounds_rel": {
-              "x": 0.0,
-              "y": 0.0
+              "x": 3.555555582046509,
+              "y": 2.0
             },
             "scale_filter": "disable",
             "blend_method": "default",
@@ -1083,9 +1242,7 @@
       "hotkeys": {
         "OBSBasic.SelectScene": [],
         "libobs.show_scene_item.2": [],
-        "libobs.hide_scene_item.2": [],
-        "libobs.show_scene_item.4": [],
-        "libobs.hide_scene_item.4": []
+        "libobs.hide_scene_item.2": []
       },
       "deinterlace_mode": 0,
       "deinterlace_field_order": 0,
@@ -1095,14 +1252,14 @@
     },
     {
       "prev_ver": 536870916,
-      "name": "Source Clone",
-      "uuid": "40fa7aee-0133-4026-b224-66b8b6d3bb93",
-      "id": "source-clone",
-      "versioned_id": "source-clone",
+      "name": "cap_display_vg248",
+      "uuid": "a222ee10-9763-47af-bedc-108b742b84f4",
+      "id": "monitor_capture",
+      "versioned_id": "monitor_capture",
       "settings": {
-        "clone": "DSLR"
+        "monitor_id": "\\\\?\\DISPLAY#ACI24A4#5&1d98d0b3&0&UID4353#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}"
       },
-      "mixers": 255,
+      "mixers": 0,
       "sync": 0,
       "flags": 0,
       "volume": 1.0,
@@ -1113,43 +1270,7 @@
       "push-to-mute-delay": 0,
       "push-to-talk": false,
       "push-to-talk-delay": 0,
-      "hotkeys": {
-        "libobs.mute": [],
-        "libobs.unmute": [],
-        "libobs.push-to-mute": [],
-        "libobs.push-to-talk": []
-      },
-      "deinterlace_mode": 0,
-      "deinterlace_field_order": 0,
-      "monitoring_type": 0,
-      "private_settings": {}
-    },
-    {
-      "prev_ver": 536870916,
-      "name": "Window Capture 2",
-      "uuid": "0986abf3-2d3d-428a-aeb8-f6b2183405b3",
-      "id": "window_capture",
-      "versioned_id": "window_capture",
-      "settings": {
-        "window": "Wezterm:org.wezfurlong.wezterm:wezterm-gui.exe"
-      },
-      "mixers": 255,
-      "sync": 0,
-      "flags": 0,
-      "volume": 1.0,
-      "balance": 0.5,
-      "enabled": true,
-      "muted": false,
-      "push-to-mute": false,
-      "push-to-mute-delay": 0,
-      "push-to-talk": false,
-      "push-to-talk-delay": 0,
-      "hotkeys": {
-        "libobs.mute": [],
-        "libobs.unmute": [],
-        "libobs.push-to-mute": [],
-        "libobs.push-to-talk": []
-      },
+      "hotkeys": {},
       "deinterlace_mode": 0,
       "deinterlace_field_order": 0,
       "monitoring_type": 0,
@@ -1186,8 +1307,8 @@
   "current_transition": "Fade",
   "transition_duration": 300,
   "preview_locked": false,
-  "scaling_enabled": false,
-  "scaling_level": -9,
+  "scaling_enabled": true,
+  "scaling_level": -10,
   "scaling_off_x": 0.0,
   "scaling_off_y": 0.0,
   "virtual-camera": {

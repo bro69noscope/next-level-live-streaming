@@ -8,6 +8,10 @@ if (-not $script:RepoPath) {
     before running this script."
 }
 
+if (-not (Test-Path -Path $script:RepoPath -PathType Container)) {
+  throw "STREAMING_REPO_PATH points to a directory that does not exist: $script:RepoPath"
+}
+
 $script:RepoPath = if ($script:RepoPath) {
   ($script:RepoPath -replace '\\', '/').TrimEnd('/')
 } else {

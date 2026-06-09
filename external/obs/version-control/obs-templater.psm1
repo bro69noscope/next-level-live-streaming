@@ -11,9 +11,17 @@ if (-not $script:RepoPath) {
     before running this script."
 }
 
+if (-not (Test-Path -Path $script:RepoPath -PathType Container)) {
+  throw "STREAMING_REPO_PATH points to a directory that does not exist: $script:RepoPath"
+}
+
 if (-not $script:DataPath) {
   throw "Warning: STREAMING_DATA_PATH environment variable is not set. Please
     set it before running this script."
+}
+
+if (-not (Test-Path -Path $script:DataPath -PathType Container)) {
+  throw "STREAMING_DATA_PATH points to a directory that does not exist: $script:DataPath"
 }
 
 # Normalize paths to use forward slashes and trim trailing slashes

@@ -1,0 +1,41 @@
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "ddac7bf4-a183-4340-8270-3aa7d834a650",
+          "LinkedTitle": true,
+          "Name": "Scene",
+          "Plugin": {
+            "Name": "OBS Studio",
+            "UUID": "com.elgato.obsstudio",
+            "Version": "3.0.3.31"
+          },
+          "Resources": null,
+          "Settings": { "scene": "scene_dslr", "target": "preview" },
+          "State": 1,
+          "States": [{ "Title": "ds" }, {}],
+          "UUID": "com.elgato.obsstudio.scene"
+        },
+        "1,0": {
+          "ActionID": "cf6b9952-aae1-43bd-a1aa-6babc9c96763",
+          "LinkedTitle": true,
+          "Name": "Scene",
+          "Plugin": {
+            "Name": "OBS Studio",
+            "UUID": "com.elgato.obsstudio",
+            "Version": "3.0.3.31"
+          },
+          "Resources": null,
+          "Settings": { "scene": "scene_zoom", "target": "preview" },
+          "State": 1,
+          "States": [{ "Title": "hi" }, {}],
+          "UUID": "com.elgato.obsstudio.scene"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

@@ -19,7 +19,7 @@ $script:RepoPath = if ($script:RepoPath) {
 }
 
 $script:DefaultVcsPath = "external/streamdeck/version-control"
-$script:StreamDeckBasePath = "$env:APPDATA\Elgato\StreamDeck\ProfilesV2"
+$script:StreamDeckBasePath = "$env:APPDATA\Elgato\StreamDeck\ProfilesV3"
 
 function Format-JsonWithPrettier {
   param([string]$FilePath)

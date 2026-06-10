@@ -70,7 +70,7 @@
         "id": "gain_filter",
         "versioned_id": "gain_filter",
         "settings": {
-          "db": 12.3
+          "db": 15.1
         },
         "mixers": 255,
         "sync": 0,
@@ -122,8 +122,8 @@
     "monitoring_type": 0,
     "private_settings": {}
   },
-  "current_scene": "scene_wezterm",
-  "current_program_scene": "scene_wezterm",
+  "current_scene": "scene_browser",
+  "current_program_scene": "scene_browser",
   "scene_order": [
     {
       "name": "scene_dslr"
@@ -144,7 +144,7 @@
       "name": "scene_browser"
     },
     {
-      "name": "scene_screencap"
+      "name": "scene_screencap_center_monitor"
     }
   ],
   "name": "collection_aoe2",
@@ -855,14 +855,8 @@
       "push-to-talk-delay": 0,
       "hotkeys": {
         "OBSBasic.SelectScene": [],
-        "libobs.show_scene_item.1": [],
-        "libobs.hide_scene_item.1": [],
-        "libobs.show_scene_item.3": [],
-        "libobs.hide_scene_item.3": [],
         "source_record.enable": [
           {
-            "shift": true,
-            "control": true,
             "alt": true,
             "key": "OBS_KEY_E"
           }
@@ -878,7 +872,11 @@
         "source_record.PauseRecording": [],
         "source_record.UnpauseRecording": [],
         "source_record.SplitRecording": [],
-        "source_record.AddChapterMarker": []
+        "source_record.AddChapterMarker": [],
+        "libobs.show_scene_item.1": [],
+        "libobs.hide_scene_item.1": [],
+        "libobs.show_scene_item.3": [],
+        "libobs.hide_scene_item.3": []
       },
       "deinterlace_mode": 0,
       "deinterlace_field_order": 0,
@@ -895,7 +893,7 @@
           "settings": {
             "scale_type": 3,
             "record_mode": 4,
-            "path": "C:/Users/ville/OneDrive/Videos/aoe2",
+            "path": "{{AOE2_EYETRACK_VIDEOS_OUTPATH}}",
             "rate_control": "CBR"
           },
           "mixers": 0,
@@ -903,7 +901,7 @@
           "flags": 0,
           "volume": 1.0,
           "balance": 0.5,
-          "enabled": true,
+          "enabled": false,
           "muted": false,
           "push-to-mute": false,
           "push-to-mute-delay": 0,
@@ -1163,7 +1161,7 @@
     },
     {
       "prev_ver": 536870916,
-      "name": "scene_screencap",
+      "name": "scene_screencap_center_monitor",
       "uuid": "0603cea6-833b-4ecf-a512-ccccdda1af23",
       "id": "scene",
       "versioned_id": "scene",
@@ -1307,8 +1305,8 @@
   "current_transition": "Fade",
   "transition_duration": 300,
   "preview_locked": false,
-  "scaling_enabled": true,
-  "scaling_level": -10,
+  "scaling_enabled": false,
+  "scaling_level": -9,
   "scaling_off_x": 0.0,
   "scaling_off_y": 0.0,
   "virtual-camera": {

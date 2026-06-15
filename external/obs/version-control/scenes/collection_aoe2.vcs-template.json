@@ -1,14 +1,14 @@
 {
   "DesktopAudioDevice1": {
     "prev_ver": 536870916,
-    "name": "aud_desktop_mixer_channels_11_12",
+    "name": "audio_desktop_mixer_channels_11_12",
     "uuid": "91a06434-f94f-49dc-b5e9-a056fd22e7b1",
     "id": "wasapi_output_capture",
     "versioned_id": "wasapi_output_capture",
     "settings": {
       "device_id": "{0.0.0.00000000}.{e56f1055-acb8-4103-865e-57fa542c9744}"
     },
-    "mixers": 194,
+    "mixers": 198,
     "sync": 0,
     "flags": 0,
     "volume": 0.5041056275367737,
@@ -34,7 +34,7 @@
   },
   "AuxAudioDevice1": {
     "prev_ver": 536870916,
-    "name": "aud_mixer_usb_out",
+    "name": "audio_mixer_usb_out",
     "uuid": "ad4b20f9-8486-45a9-87d0-935f040ed5e1",
     "id": "wasapi_input_capture",
     "versioned_id": "wasapi_input_capture",
@@ -93,7 +93,7 @@
   },
   "AuxAudioDevice2": {
     "prev_ver": 536870916,
-    "name": "aud_mic_mixer_aux_send_1",
+    "name": "audio_mic_mixer_aux_send_1",
     "uuid": "8daf6a6f-486f-42e2-958f-67ef6a9d3953",
     "id": "wasapi_input_capture",
     "versioned_id": "wasapi_input_capture",
@@ -122,8 +122,8 @@
     "monitoring_type": 0,
     "private_settings": {}
   },
-  "current_scene": "scene_browser",
-  "current_program_scene": "scene_browser",
+  "current_scene": "scene_aoe2_eyetracker",
+  "current_program_scene": "scene_aoe2_eyetracker",
   "scene_order": [
     {
       "name": "scene_dslr"
@@ -855,6 +855,10 @@
       "push-to-talk-delay": 0,
       "hotkeys": {
         "OBSBasic.SelectScene": [],
+        "libobs.show_scene_item.1": [],
+        "libobs.hide_scene_item.1": [],
+        "libobs.show_scene_item.3": [],
+        "libobs.hide_scene_item.3": [],
         "source_record.enable": [
           {
             "alt": true,
@@ -872,11 +876,7 @@
         "source_record.PauseRecording": [],
         "source_record.UnpauseRecording": [],
         "source_record.SplitRecording": [],
-        "source_record.AddChapterMarker": [],
-        "libobs.show_scene_item.1": [],
-        "libobs.hide_scene_item.1": [],
-        "libobs.show_scene_item.3": [],
-        "libobs.hide_scene_item.3": []
+        "source_record.AddChapterMarker": []
       },
       "deinterlace_mode": 0,
       "deinterlace_field_order": 0,
@@ -893,6 +893,9 @@
           "settings": {
             "scale_type": 3,
             "record_mode": 4,
+            "different_audio": true,
+            "audio_track": 3,
+            "audio_source": "capture_aoe2",
             "path": "{{AOE2_EYETRACK_VIDEOS_OUTPATH}}",
             "rate_control": "CBR"
           },
@@ -901,7 +904,7 @@
           "flags": 0,
           "volume": 1.0,
           "balance": 0.5,
-          "enabled": false,
+          "enabled": true,
           "muted": false,
           "push-to-mute": false,
           "push-to-mute-delay": 0,
@@ -1306,7 +1309,7 @@
   "transition_duration": 300,
   "preview_locked": false,
   "scaling_enabled": false,
-  "scaling_level": -9,
+  "scaling_level": -10,
   "scaling_off_x": 0.0,
   "scaling_off_y": 0.0,
   "virtual-camera": {

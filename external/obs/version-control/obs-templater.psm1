@@ -76,7 +76,7 @@ function ConvertTo-ObsTemplate {
     Write-Host "Created VCS directory: $vcsOutDirPath" -ForegroundColor Yellow
   }
 
-  $backupPath = $InputFilePath -replace "\.json$", ".backup.json"
+  $backupPath = "$InputFilePath.bak"
   Copy-Item $InputFilePath $backupPath -Force
   Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
 
@@ -141,7 +141,7 @@ function ConvertFrom-ObsTemplate {
   Write-Host "Output: $outPath"
 
   if (Test-Path $outPath) {
-    $backupPath = $outPath -replace "\.json$", ".backup.json"
+    $backupPath = "$outPath.bak"
     Copy-Item $outPath $backupPath -Force
     Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
   }

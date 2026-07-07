@@ -3,26 +3,36 @@
 
 $script:PrettierPath  = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
 $script:ObsBasePath   = Join-Path $env:APPDATA "obs-studio\basic\scenes"
-$script:MappingsPath  = Join-Path $PSScriptRoot "path-mappings.json"
+$script:MappingsPath  = Join-Path $PSScriptRoot "path-mappings.jsonc"
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "scenes"
 
-function Read-PathMappings {
+function Read-ReplacementMappings {
   if (-not (Test-Path $script:MappingsPath)) {
     throw "Mappings file not found: $($script:MappingsPath)"
   }
 
-  $raw = Get-Content $script:MappingsPath -Raw | ConvertFrom-Json
+  $content = Get-Content $script:MappingsPath -Raw
+
+  # Remove // comments while preserving URLs and strings
+  $content = $content -replace '(?m)^\s*//.*$', ''
+  $raw = $content | ConvertFrom-Json
 
   $mappings = [ordered]@{}
-  foreach ($prop in $raw.PSObject.Properties) {
-    $token     = $prop.Name
-    $localPath = ($prop.Value -replace '\\', '/').TrimEnd('/')
-    if (-not (Test-Path $localPath)) {
-      Write-Host "Warning: Mapped path does not exist on this machine:
-      $localPath (token: $token)" -ForegroundColor Yellow
-    }
 
-    $mappings[$token] = $localPath
+  foreach ($category in $raw.PSObject.Properties) {
+    foreach ($prop in $category.Value.PSObject.Properties) {
+      $token = $prop.Name
+
+      if ($prop.Value -is [string]) {
+        # Simple path style mapping
+        $value = $prop.Value
+      } else {
+        # Device/object style mapping
+        $value = $prop.Value.value
+      }
+
+      $mappings[$token] = $value
+    }
   }
 
   return $mappings
@@ -61,7 +71,7 @@ function ConvertTo-ObsTemplate {
     throw "Input file must be a .json file, got: $inputFileName"
   }
 
-  $mappings = Read-PathMappings
+  $mappings = Read-ReplacementMappings
 
   $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
   if (-not $VcsRelativePath) {
@@ -138,7 +148,7 @@ function ConvertFrom-ObsTemplate {
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
 
-  $mappings = Read-PathMappings
+  $mappings = Read-ReplacementMappings
   $outPath  = $InputFilePath -replace "\.vcs-template\.json$", ".json"
 
   Write-Host "Input:  $InputFilePath"
@@ -179,7 +189,7 @@ Write-Host "Script location:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot"
 
 Write-Host "Path Mappings:" -ForegroundColor Cyan
-(Read-PathMappings).GetEnumerator() | ForEach-Object {
+(Read-ReplacementMappings).GetEnumerator() | ForEach-Object {
   Write-Host "  $($_.Key) => $($_.Value)"
 }
 Write-Host "  All input files must be under: $script:ObsBasePath"

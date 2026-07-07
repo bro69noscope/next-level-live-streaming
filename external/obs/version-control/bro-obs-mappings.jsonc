@@ -1,0 +1,43 @@
+{
+  // json w/ comments: NEVER write an inlined comment in this file:  This file
+  // will be stripped of comments starting on their own line to be parsed as
+  // regular json.
+  "paths": {
+    // code repo.
+    "{{STREAMING_REPO_PATH}}": "C:/Users/ville/myfiles/git-repos/woertsposzibllen4me/",
+
+    // main obs media source location.
+    "{{STREAMING_DATA_PATH}}": "C:/Users/ville/myfiles/streaming-data/",
+
+    // separately recorded gameplay with eyetracker footage intended for game reviews.
+    "{{AOE2_EYETRACK_VIDEOS_OUTPATH}}": "C:/Users/ville/OneDrive/Videos/aoe2",
+  },
+
+  "devices": {
+    // main facecam
+    "{{MAIN_CAMERA_DEVICE}}": {
+      "type": "video_device_id",
+      "value": "Cam Link 4K:\\\\?\\usb#22vid_0fd9&pid_0066&mi_00#229&70bb0fb&0&0000#22{65e8773d-8f56-11d0-a3b9-00a0c9223196}\\global",
+    },
+
+    // auxiliary input of main microphone, intended for separate audio track
+    // recording, triggers based on voice levels etc.
+    "{{AUX_MIC_INPUT_DEVICE}}": {
+      "type": "wasapi",
+      "value": "{0.0.1.00000000}.{70773ae9-f396-4e1e-aefb-4222f3b2031e}",
+    },
+
+    // auxiliary input of main desktop audio, intended for separate audio track
+    // recording etc.
+    "{{DESKTOP_AUDIO_DEVICE}}": {
+      "type": "wasapi",
+      "value": "{0.0.0.00000000}.{e56f1055-acb8-4103-865e-57fa542c9744}",
+    },
+
+    // main "all included" audio mix input: what live viewers are listening to.
+    "{{USB_MIXER_INPUT_DEVICE}}": {
+      "type": "wasapi",
+      "value": "{0.0.1.00000000}.{7be7438b-735d-47e1-86aa-e56059cbe936}",
+    },
+  },
+}

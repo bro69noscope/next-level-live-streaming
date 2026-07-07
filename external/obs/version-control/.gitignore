@@ -1,1 +1,3 @@
 *\.backup\.*
+*-obs-mappings.jsonc
+!bro-obs-mappings.jsonc

@@ -1,9 +1,12 @@
 # Used to create an editable template from an OBS "scenes.json" file.
-# All path substitutions are driven by path-mappings.json
+. "$PSScriptRoot\obs-vcs-paths.bro.ps1"
 
-$script:PrettierPath  = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
-$script:ObsBasePath   = Join-Path $env:APPDATA "obs-studio\basic\scenes"
-$script:MappingsPath  = Join-Path $PSScriptRoot "path-mappings.jsonc"
+Get-ChildItem "$PSScriptRoot\obs-vcs-paths*.ps1" |
+  Where-Object { $_.Name -ne "obs-vcs-paths.bro.ps1" } |
+  ForEach-Object {
+    . $_.FullName
+  }
+
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "scenes"
 
 function Read-ReplacementMappings {

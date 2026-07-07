@@ -191,7 +191,7 @@ Write-Host "OBS Templater functions loaded!" -ForegroundColor Green
 Write-Host "Script location:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot"
 
-Write-Host "Path Mappings:" -ForegroundColor Cyan
+Write-Host "Mappings:" -ForegroundColor Cyan
 (Read-ReplacementMappings).GetEnumerator() | ForEach-Object {
   Write-Host "  $($_.Key) => $($_.Value)"
 }
@@ -199,14 +199,11 @@ Write-Host "  All input files must be under: $script:ObsBasePath"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 
 Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates
-vcs-template.json"
+Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates vcs-template.json"
 
-Write-Host "  ConvertTo-ObsTemplate 'scenes.json' 'custom/path'  # Uses custom
-out path relative to this script location"
+Write-Host "  ConvertTo-ObsTemplate 'scenes.json' 'custom/path'  # Uses custom out path relative to this script location"
 
-Write-Host "  ConvertFrom-ObsTemplate 'scenes.vcs-template.json' # Creates
-scenes.json"
+Write-Host "  ConvertFrom-ObsTemplate 'scenes.vcs-template.json' # Creates scenes.json"
 
 Export-ModuleMember -Function ConvertTo-ObsTemplate, ConvertFrom-ObsTemplate
 

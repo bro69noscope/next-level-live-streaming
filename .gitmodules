@@ -1,0 +1,6 @@
+[submodule "external/obs/version-control/scenes/collection_aoe2"]
+	path = external/obs/version-control/scenes/collection_aoe2
+	url = git@github.com:bro69noscope/obs-scene-collection_aoe2.git
+[submodule "external/obs/version-control/scenes/collection_dota2"]
+	path = external/obs/version-control/scenes/collection_dota2
+	url = git@github.com:bro69noscope/obs-scene-collection_dota2.git

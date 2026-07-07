@@ -46,7 +46,7 @@ function ConvertTo-ObsTemplate {
     [string]$InputFilePath,
 
     [Parameter(Mandatory=$false)]
-    [string]$VcsRelativePath = (Split-Path $script:DefaultVcsOutPath -Leaf)
+    [string]$VcsRelativePath
   )
 
   $InputFilePath  = (Resolve-Path $InputFilePath).Path
@@ -64,6 +64,10 @@ function ConvertTo-ObsTemplate {
   $mappings = Read-PathMappings
 
   $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
+  if (-not $VcsRelativePath) {
+    $collectionName = $inputFileName -replace "\.json$", ""
+    $VcsRelativePath = Join-Path "scenes" $collectionName
+  }
   Write-Host "Creating vcs template from real config..."
   Write-Host "Input:  $InputFilePath"
 

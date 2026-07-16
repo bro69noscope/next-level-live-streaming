@@ -4,3 +4,9 @@
 [submodule "external/obs/version-control/scenes/collection_dota2"]
 	path = external/obs/version-control/scenes/collection_dota2
 	url = git@github.com:bro69noscope/obs-scene-collection_dota2.git
+[submodule "external/streamer.bot/version-control"]
+	path = external/streamer.bot/version-control
+	url = git@github.com:bro69noscope/streamerbot-version-control.git
+[submodule "external/streamer.bot/bro-streamerbot-tools"]
+	path = external/streamer.bot/bro-streamerbot-tools
+	url = git@github.com:bro69noscope/bro-streamerbot-tools.git

@@ -9,36 +9,49 @@ Get-ChildItem "$PSScriptRoot\obs-vcs-paths*.ps1" |
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "scenes"
 
-function Read-ReplacementMappings {
-  if (-not (Test-Path $script:MappingsPath)) {
-    throw "Mappings file not found: $($script:MappingsPath)"
+function Read-MappingsFile {
+  param([Parameter(Mandatory=$true)][string]$Path)
+
+  if (-not (Test-Path $Path)) {
+    throw "Mappings file not found: $Path"
   }
 
-  $content = Get-Content $script:MappingsPath -Raw
-
-  # Remove // comments while preserving URLs and strings
+  $content = Get-Content $Path -Raw
   $content = $content -replace '(?m)^\s*//.*$', ''
   $raw = $content | ConvertFrom-Json
 
   $mappings = [ordered]@{}
-
   foreach ($category in $raw.PSObject.Properties) {
     foreach ($prop in $category.Value.PSObject.Properties) {
       $token = $prop.Name
-
-      if ($prop.Value -is [string]) {
-        # Simple path style mapping
-        $value = $prop.Value
+      $value = if ($prop.Value -is [string]) {
+        $prop.Value
       } else {
-        # Device/object style mapping
-        $value = $prop.Value.value
+        $prop.Value.value
       }
-
       $mappings[$token] = $value
     }
   }
-
   return $mappings
+}
+
+function Read-ReplacementMappings {
+  $merged = [ordered]@{}
+
+  if ($script:CommonMappingsPath -and (Test-Path $script:CommonMappingsPath)) {
+    (Read-MappingsFile $script:CommonMappingsPath).GetEnumerator() | ForEach-Object {
+      $merged[$_.Key] = $_.Value
+    }
+  }
+
+  (Read-MappingsFile $script:MappingsPath).GetEnumerator() | ForEach-Object {
+    if ($merged.Contains($_.Key)) {
+      Write-Host "  Note: '$($_.Key)' overrides common mapping" -ForegroundColor DarkYellow
+    }
+    $merged[$_.Key] = $_.Value
+  }
+
+  return $merged
 }
 
 function Format-JsonWithPrettier {
@@ -182,7 +195,7 @@ function ConvertFrom-ObsTemplate {
   }
 
   $content | Set-Content $outPath -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $outPath 
+  Format-JsonWithPrettier -FilePath $outPath
   Write-Host "Real config saved: $outPath" -ForegroundColor Green
 }
 

@@ -1,0 +1,11 @@
+{
+  // json w/ comments: NEVER write an inlined comment in this file:  This file
+  // will be stripped of comments starting on their own line to be parsed as
+  // regular json.
+  "paths": {
+    // code repo.
+    "{{STREAMING_REPO_PATH}}": "C:/Users/ville/myfiles/git-repos/woertsposzibllen4me/",
+    // main media, icons, etc. source location.
+    "{{STREAMING_DATA_PATH}}": "C:/Users/ville/myfiles/streaming-data/",
+  },
+}

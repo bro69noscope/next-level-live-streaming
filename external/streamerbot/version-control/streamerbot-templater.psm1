@@ -187,17 +187,18 @@ function ConvertFrom-StreamerbotTemplate {
 
 Write-Host ""
 Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green
-Write-Host "Script location:" -ForegroundColor Cyan
-Write-Host "  $PSScriptRoot"
 
 Write-Host "Mappings:" -ForegroundColor Cyan
 (Read-ReplacementMappings).GetEnumerator() | ForEach-Object {
   Write-Host "  $($_.Key) => $($_.Value)"
 }
-Write-Host "  All input files must be under: $script:StreamerbotBasePath"
-Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
+
+Write-Host "Script location:" -ForegroundColor Cyan
+Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
+Write-Host "  All input files must be under: $script:StreamerbotBasePath"
+Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                # Creates vcs-template.json"
 Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json' 'custom/path'  # Uses custom out path relative to this script location"
 Write-Host "  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' # Creates actions.json"

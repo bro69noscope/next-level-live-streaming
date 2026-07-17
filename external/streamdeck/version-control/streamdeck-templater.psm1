@@ -144,8 +144,12 @@ function ConvertFrom-StreamDeckTemplate {
 
 Write-Host "StreamDeck Templater functions loaded!" -ForegroundColor Green
 Write-Host "  Repo Path: $($script:RepoPath ?? 'Not set')"
-Write-Host "  Input files must be under: $script:StreamDeckBasePath"
+
+Write-Host "Script location:" -ForegroundColor Cyan
+Write-Host "  $PSScriptRoot"
+
 Write-Host "Usage:" -ForegroundColor Cyan
+Write-Host "  All input files must be under: $script:StreamDeckBasePath"
 Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json'                # Creates vcs-template.json"
 Write-Host "  ConvertTo-ObsTemplate 'manifest.json' 'custom/path'         # Uses custom VCS relative path in repo"
 Write-Host "  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json' # Creates manifest.json"

@@ -4,3 +4,6 @@
 [submodule "external/obs/version-control/scenes/collection_dota2"]
 	path = external/obs/version-control/scenes/collection_dota2
 	url = git@github.com:bro69noscope/obs-scene-collection_dota2.git
+[submodule "external/streamerbot/version-control/vcdata"]
+	path = external/streamerbot/version-control/vcdata
+	url = git@github.com:bro69noscope/streamerbot-version-control-real.git

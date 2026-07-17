@@ -7,7 +7,7 @@ Get-ChildItem "$PSScriptRoot\streamerbot-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$script:DefaultVcsOutPath = Join-Path $PSScriptRoot "actions"
+$script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
 function Read-ReplacementMappings {
   if (-not (Test-Path $script:MappingsPath)) {

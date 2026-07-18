@@ -1,157 +1,260 @@
-# Used to create an editable template from a StreamDeck "manifest.json" profile file
+# Used to create an editable template from an StreamDeck "scenes.json" file.
+. "$PSScriptRoot\StreamDeck-vcs-paths.bro.ps1"
 
-$script:RepoPath = $env:STREAMING_REPO_PATH
-$script:PrettierPath = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
+Get-ChildItem "$PSScriptRoot\streamdeck-vcs-paths*.ps1" |
+  Where-Object { $_.Name -ne "streamdeck-vcs-paths.bro.ps1" } |
+  ForEach-Object {
+    . $_.FullName
+  }
 
-if (-not $script:RepoPath) {
-  throw "STREAMING_REPO_PATH environment variable is not set. Please set it
-    before running this script."
+$script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
+
+function Read-MappingsFile {
+  param([Parameter(Mandatory=$true)][string]$Path)
+
+  if (-not (Test-Path $Path)) {
+    throw "Mappings file not found: $Path"
+  }
+
+  $content = Get-Content $Path -Raw
+  $content = $content -replace '(?m)^\s*//.*$', ''
+  $raw = $content | ConvertFrom-Json
+
+  $mappings = [ordered]@{}
+  foreach ($category in $raw.PSObject.Properties) {
+    foreach ($prop in $category.Value.PSObject.Properties) {
+      $token = $prop.Name
+      $value = if ($prop.Value -is [string]) {
+        $prop.Value
+      } else {
+        $prop.Value.value
+      }
+      $mappings[$token] = $value
+    }
+  }
+  return $mappings
 }
 
-if (-not (Test-Path -Path $script:RepoPath -PathType Container)) {
-  throw "STREAMING_REPO_PATH points to a directory that does not exist: $script:RepoPath"
-}
+function Read-ReplacementMappings {
+  $merged = [ordered]@{}
 
-$script:RepoPath = if ($script:RepoPath) {
-  ($script:RepoPath -replace '\\', '/').TrimEnd('/')
-} else {
-  $null
-}
+  if ($script:CommonMappingsPath -and (Test-Path $script:CommonMappingsPath)) {
+    (Read-MappingsFile $script:CommonMappingsPath).GetEnumerator() | ForEach-Object {
+      $merged[$_.Key] = $_.Value
+    }
+  }
 
-$script:DefaultVcsPath = "external/streamdeck/version-control"
-$script:StreamDeckBasePath = "$env:APPDATA\Elgato\StreamDeck\ProfilesV3"
+  (Read-MappingsFile $script:MappingsPath).GetEnumerator() | ForEach-Object {
+    if ($merged.Contains($_.Key)) {
+      Write-Host "  Note: '$($_.Key)' overrides common mapping" -ForegroundColor DarkYellow
+    }
+    $merged[$_.Key] = $_.Value
+  }
+
+  return $merged
+}
 
 function Format-JsonWithPrettier {
   param([string]$FilePath)
 
   if (-not (Test-Path $script:PrettierPath)) {
-    Write-Host "Warning: Prettier not found at $script:PrettierPath.
-    Skipping formatting." -ForegroundColor Yellow
+    Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping
+    formatting." -ForegroundColor Yellow
     return
   }
 
-  Write-Host "Formatting with Prettier..." -ForegroundColor Cyan
   & $script:PrettierPath --write $FilePath
+}
+
+function Assert-StreamDeckPath {
+  param([Parameter(Mandatory=$true)][string]$Path)
+
+  if (-not $Path.StartsWith($script:StreamDeckBasePath, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "This function must target files under: $($script:StreamDeckBasePath)`nCurrent target: $Path"
+  }
 }
 
 function ConvertTo-StreamDeckTemplate {
   param(
     [Parameter(Mandatory=$true)]
-    [string]$InputFile,
+    [string]$InputPath,
 
     [Parameter(Mandatory=$false)]
-    [string]$VcsRelativePath = $script:DefaultVcsPath
+    [string]$RelativeOutPath
   )
-  $InputFile = (Resolve-Path $InputFile).Path
-  $inputFileName = Split-Path $InputFile -Leaf
-  $inputDirectory = Split-Path $InputFile -Parent
-  $expectedPath = $script:StreamDeckBasePath
 
-  if ($inputDirectory -notmatch [regex]::Escape($expectedPath)) {
-    throw "This function must target files in: $expectedPath`nCurrent target: $inputDirectory"
+  $InputPath = (Resolve-Path $InputPath).Path
+  Assert-StreamDeckPath -Path $InputPath
+  if (Test-Path $InputPath -PathType Container) {
+    $manifests = Get-ChildItem $InputPath -Recurse -File -Filter "manifest.json"
+
+    if (-not $manifests) {
+      Write-Host "No manifest.json files found under: $InputPath" -ForegroundColor Yellow
+      return
+    }
+
+    Write-Host "Found $($manifests.Count) manifest.json file(s) under: $InputPath" -ForegroundColor Cyan
+
+    foreach ($manifest in $manifests) {
+      Write-Host ""
+      try {
+        ConvertTo-StreamDeckTemplate -InputPath $manifest.FullName -RelativeOutPath $RelativeOutPath
+      } catch {
+        Write-Host "  Failed: $($manifest.FullName)" -ForegroundColor Red
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+      }
+    }
+    return
   }
-  if ($InputFile -notmatch '\.json$') {
+
+  $inputFileName  = Split-Path $InputPath -Leaf
+  $inputDirectory = Split-Path $InputPath -Parent
+
+  if ([string]::IsNullOrWhiteSpace($script:StreamDeckBasePath)) {
+    throw "StreamDeckBasePath is not set. Check StreamDeck-vcs-paths.bro.ps1 / overrides."
+  }
+
+  Assert-StreamDeckPath -Path $inputDirectory
+
+  if ($InputPath -notmatch '\.json$') {
     throw "Input file must be a .json file, got: $inputFileName"
   }
 
-  $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
-  Write-Host "Creating StreamDeck template from real config..." -ForegroundColor Green
-  Write-Host "Input:  $InputFile"
+  $mappings = Read-ReplacementMappings
 
   # Calculate relative path from StreamDeck base to input file
-  $relativePath = $inputDirectory -replace [regex]::Escape($script:StreamDeckBasePath), ""
-  $relativePath = $relativePath.TrimStart('\')
+  $relativeDeckPath = $inputDirectory.Substring(
+    $script:StreamDeckBasePath.Length
+  ).TrimStart('\')
 
-  # Setup paths
-  $vcsFullPath = Join-Path ($script:RepoPath -replace '/', '\') $VcsRelativePath
-  $vcsMirroredPath = Join-Path $vcsFullPath $relativePath
-  $vcsTemplatePath = Join-Path $vcsMirroredPath $templateFileName
+  $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
+  Write-Host "Creating vcs template from real config..."
+  Write-Host "Input:  $InputPath"
 
-  Write-Host "Output: $vcsTemplatePath"
+  if ($RelativeOutPath) {
+    $finalRelativePath = Join-Path $RelativeOutPath $relativeDeckPath
+    $vcsOutDirPath = Join-Path $PSScriptRoot $finalRelativePath
+  } else {
+    $vcsOutDirPath = Join-Path $script:DefaultVcsOutPath $relativeDeckPath
+  }
+  $vcsOutFilePath = Join-Path $vcsOutDirPath $templateFileName
+  Write-Host "Output: $vcsOutFilePath"
 
-  $forwardSlashPath = $script:RepoPath
-  $backslashPath = $script:RepoPath -replace '/', '\\'
-  $escapedForward = [regex]::Escape($forwardSlashPath)
-  $escapedBackslash = [regex]::Escape($backslashPath)
-
-  # Ensure the VCS mirrored directory exists
-  if (-not (Test-Path $vcsMirroredPath)) {
-    New-Item -ItemType Directory -Path $vcsMirroredPath -Force | Out-Null
-    Write-Host "Created VCs directory: $vcsMirroredPath" -ForegroundColor Cyan
+  if (-not (Test-Path $vcsOutDirPath)) {
+    New-Item -ItemType Directory -Path $vcsOutDirPath -Force | Out-Null
+    Write-Host "Created VCS directory: $vcsOutDirPath" -ForegroundColor Yellow
   }
 
-  # CREATE BACKUP FIRST
-  $backupFileName = $inputFileName -replace "\.json$", ".backup.json"
-  $backupPath = Join-Path $vcsMirroredPath $backupFileName
-  Copy-Item $InputFile $backupPath -Force
+  $backupPath = "$InputPath.bak"
+  Copy-Item $InputPath $backupPath -Force
   Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
 
-  # Remove existing template file or symlink in input directory
   $symlinkPath = Join-Path $inputDirectory $templateFileName
   if (Test-Path $symlinkPath) {
     Remove-Item $symlinkPath -Force
-    Write-Host "Removed existing symlink"
   }
 
-  # Read and process content
-  $content = Get-Content $InputFile -Raw
+  $content = Get-Content $InputPath -Raw
 
-  # Replace both versions with the placeholder
-  $content = $content -replace $escapedForward, "{{STREAMING_REPO_PATH}}"
-  $content = $content -replace $escapedBackslash, "{{STREAMING_REPO_PATH}}"
-  $content | Set-Content $vcsTemplatePath -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $vcsTemplatePath
-  Write-Host "Template saved: $vcsTemplatePath" -ForegroundColor Yellow
+  # Apply substitutions longest-path-first to prevent a shorter path from
+  # matching inside a longer one before it gets a chance to be replaced
+  $sortedMappings = $mappings.GetEnumerator() | Sort-Object { $_.Value.Length } `
+    -Descending
 
-  # Create symlink in mirrored VCS directory pointing to template
-  New-Item -ItemType SymbolicLink -Path $symlinkPath -Target $vcsTemplatePath | Out-Null
-  Write-Host "Created symlink: $symlinkPath -> $vcsTemplatePath" -ForegroundColor Green
+  foreach ($entry in $sortedMappings) {
+    $token     = $entry.Key
+    $localPath = $entry.Value
+    $variants  = @(
+      $localPath,
+      ($localPath -replace '/', '\'),
+      ($localPath -replace '/', '\\')
+    )
+
+    foreach ($variant in $variants) {
+      if ($content -match [regex]::Escape($variant)) {
+        $content = $content -replace [regex]::Escape($variant), $token
+        Write-Host "  Replaced: $variant -> $token" -ForegroundColor DarkCyan
+      }
+    }
+  }
+
+  $content | Set-Content $vcsOutFilePath -Encoding UTF8
+  Format-JsonWithPrettier -FilePath $vcsOutFilePath
+  Write-Host "Template saved: $vcsOutFilePath" -ForegroundColor Green
+
+  New-Item -ItemType SymbolicLink -Path $symlinkPath -Target $vcsOutFilePath | Out-Null
 }
 
 function ConvertFrom-StreamDeckTemplate {
   param(
     [Parameter(Mandatory=$true)]
-    [string]$InputFile
+    [string]$InputFilePath
   )
-  $InputFile = (Resolve-Path $InputFile).Path
-  $inputFileName = Split-Path $InputFile -Leaf
-  $inputDirectory = Split-Path $InputFile -Parent
-  $expectedPath = $script:StreamDeckBasePath
 
-  if ($inputDirectory -notmatch [regex]::Escape($expectedPath)) {
-    throw "This function must target files in: $expectedPath`nCurrent target: $inputDirectory"
+  $InputFilePath  = (Resolve-Path $InputFilePath).Path
+  $inputFileName  = Split-Path $InputFilePath -Leaf
+  $inputDirectory = Split-Path $InputFilePath -Parent
+
+  if ($inputDirectory -ne $script:StreamDeckBasePath) {
+    throw "This function must target files in: $($script:StreamDeckBasePath)`nCurrent
+    target: $inputDirectory"
   }
-  if ($InputFile -notmatch '\.vcs-template\.json$') {
-    throw "Input file must be a .vcs-template.json file, got: $inputFileName"
+  if ($InputFilePath -notmatch '\.vcs-template\.json$') {
+    throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
 
-  $OutputFile = $InputFile -replace "\.vcs-template\.json$", ".json"
+  $mappings = Read-ReplacementMappings
+  $outPath  = $InputFilePath -replace "\.vcs-template\.json$", ".json"
 
-  Write-Host "Creating real StreamDeck config from template..." -ForegroundColor Green
-  Write-Host "Input:  $InputFile"
-  Write-Host "Output: $OutputFile"
+  Write-Host "Input:  $InputFilePath"
+  Write-Host "Output: $outPath"
 
-  $content = Get-Content $InputFile -Raw
+  if (Test-Path $outPath) {
+    $backupPath = "$outPath.bak"
+    Copy-Item $outPath $backupPath -Force
+    Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
+  }
 
-  # Replace with backslash version for Windows paths
-  $windowsPath = $script:RepoPath -replace '/', '\\'
-  $content = $content -replace "{{STREAMING_REPO_PATH}}", $windowsPath
+  $content = Get-Content $InputFilePath -Raw
 
-  $content | Set-Content $OutputFile -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $OutputFile
-  Write-Host "Real config saved: $OutputFile" -ForegroundColor Yellow
+  foreach ($entry in $mappings.GetEnumerator()) {
+    $token     = $entry.Key
+    $localPath = $entry.Value
+    if ($content -match [regex]::Escape($token)) {
+      $content = $content -replace [regex]::Escape($token), $localPath
+      Write-Host "  Replaced: $token -> $localPath" -ForegroundColor DarkCyan
+    }
+  }
+
+  $unresolvedMatches = [regex]::Matches($content, '\{\{[A-Z0-9_]+\}\}') |
+    Select-Object -ExpandProperty Value -Unique
+  foreach ($unresolved in $unresolvedMatches) {
+    Write-Host "Warning: No mapping found for token $unresolved — left as-is" `
+      -ForegroundColor Yellow
+  }
+
+  $content | Set-Content $outPath -Encoding UTF8
+  Format-JsonWithPrettier -FilePath $outPath
+  Write-Host "Real config saved: $outPath" -ForegroundColor Green
 }
 
+Write-Host ""
 Write-Host "StreamDeck Templater functions loaded!" -ForegroundColor Green
-Write-Host "  Repo Path: $($script:RepoPath ?? 'Not set')"
+
+Write-Host "Mappings:" -ForegroundColor Cyan
+(Read-ReplacementMappings).GetEnumerator() | ForEach-Object {
+  Write-Host "  $($_.Key) => $($_.Value)"
+}
 
 Write-Host "Script location:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "  All input files must be under: $script:StreamDeckBasePath"
+Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json'                # Creates vcs-template.json"
-Write-Host "  ConvertTo-ObsTemplate 'manifest.json' 'custom/path'         # Uses custom VCS relative path in repo"
+Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'  # Uses custom out path relative to this script location"
 Write-Host "  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json' # Creates manifest.json"
+
 Export-ModuleMember -Function ConvertTo-StreamDeckTemplate, ConvertFrom-StreamDeckTemplate
 

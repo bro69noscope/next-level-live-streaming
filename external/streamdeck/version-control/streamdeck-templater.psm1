@@ -145,10 +145,6 @@ function ConvertTo-StreamDeckTemplate {
     Write-Host "Created VCS directory: $vcsOutDirPath" -ForegroundColor Yellow
   }
 
-  $backupPath = "$InputPath.bak"
-  Copy-Item $InputPath $backupPath -Force
-  Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
-
   $symlinkPath = Join-Path $inputDirectory $templateFileName
   if (Test-Path $symlinkPath) {
     Remove-Item $symlinkPath -Force

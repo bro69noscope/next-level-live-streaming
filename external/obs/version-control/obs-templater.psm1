@@ -106,10 +106,6 @@ function ConvertTo-ObsTemplate {
     Write-Host "Created VCS directory: $vcsOutDirPath" -ForegroundColor Yellow
   }
 
-  $backupPath = "$InputFilePath.bak"
-  Copy-Item $InputFilePath $backupPath -Force
-  Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
-
   $symlinkPath = Join-Path $inputDirectory $templateFileName
   if (Test-Path $symlinkPath) {
     Remove-Item $symlinkPath -Force

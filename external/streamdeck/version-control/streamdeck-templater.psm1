@@ -191,14 +191,36 @@ function ConvertFrom-StreamDeckTemplate {
     [string]$InputFilePath
   )
 
-  $InputFilePath  = (Resolve-Path $InputFilePath).Path
+  $InputFilePath = (Resolve-Path $InputFilePath).Path
+  Assert-StreamDeckPath -Path $InputFilePath
+
+  if (Test-Path $InputFilePath -PathType Container) {
+    $templates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.vcs-template.json"
+
+    if (-not $templates) {
+      Write-Host "No *.vcs-template.json files found under: $InputFilePath" -ForegroundColor Yellow
+      return
+    }
+
+    Write-Host "Found $($templates.Count) *.vcs-template.json file(s) under: $InputFilePath" -ForegroundColor Cyan
+
+    foreach ($template in $templates) {
+      Write-Host ""
+      try {
+        ConvertFrom-StreamDeckTemplate -InputFilePath $template.FullName
+      } catch {
+        Write-Host "  Failed: $($template.FullName)" -ForegroundColor Red
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+      }
+    }
+    return
+  }
+
   $inputFileName  = Split-Path $InputFilePath -Leaf
   $inputDirectory = Split-Path $InputFilePath -Parent
 
-  if ($inputDirectory -ne $script:StreamDeckBasePath) {
-    throw "This function must target files in: $($script:StreamDeckBasePath)`nCurrent
-    target: $inputDirectory"
-  }
+  Assert-StreamDeckPath -Path $inputDirectory
+
   if ($InputFilePath -notmatch '\.vcs-template\.json$') {
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
@@ -252,9 +274,11 @@ Write-Host "  $PSScriptRoot"
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "  All input files must be under: $script:StreamDeckBasePath"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
-Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json'                # Creates vcs-template.json"
-Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'  # Uses custom out path relative to this script location"
-Write-Host "  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json' # Creates manifest.json"
+Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json'                     # Creates vcs-template.json"
+Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'       # Uses custom out path relative to this script location"
+Write-Host "  ConvertTo-StreamDeckTemplate 'folder'                            # Recursively creates vcs-template.json for every manifest.json under folder"
+Write-Host "  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json'      # Creates manifest.json"
+Write-Host "  ConvertFrom-StreamDeckTemplate 'folder'                          # Recursively restores every *.vcs-template.json under folder"
 
 Export-ModuleMember -Function ConvertTo-StreamDeckTemplate, ConvertFrom-StreamDeckTemplate
 

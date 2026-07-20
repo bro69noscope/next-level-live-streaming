@@ -66,6 +66,29 @@ function Format-JsonWithPrettier {
   & $script:PrettierPath --write $FilePath
 }
 
+function Get-VcsRelativePath {
+  param(
+    [Parameter(Mandatory=$true)]
+    [string]$InputFilePath
+  )
+
+  $relative = $InputFilePath.Substring(
+    $script:ObsBasePath.Length
+  ).TrimStart('\')
+
+  $parts = $relative -split '\\'
+
+  if ($parts[0] -eq "scenes") {
+    return "scenes"
+  }
+
+  if ($parts[0] -eq "profiles" -and $parts.Count -ge 3) {
+    return Join-Path "profiles" $parts[1]
+  }
+
+  throw "Unknown OBS config location: $relative"
+}
+
 function ConvertTo-ObsTemplate {
   param(
     [Parameter(Mandatory=$true)]
@@ -79,25 +102,28 @@ function ConvertTo-ObsTemplate {
   $inputFileName  = Split-Path $InputFilePath -Leaf
   $inputDirectory = Split-Path $InputFilePath -Parent
 
-  if ($inputDirectory -ne $script:ObsBasePath) {
-    throw "This function must target files in: $($script:ObsBasePath)`nCurrent
-    target: $inputDirectory"
+  if ($inputDirectory -notlike "$($script:ObsBasePath)*") {
+    throw "This function must target files in: $($script:ObsBasePath)`n
+    Current target: $inputDirectory"
   }
+
   if ($InputFilePath -notmatch '\.json$') {
     throw "Input file must be a .json file, got: $inputFileName"
   }
+
+  Write-Host "Creating vcs template from real config..."
+  Write-Host "Input:  $InputFilePath"
 
   $mappings = Read-ReplacementMappings
 
   $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
   if (-not $VcsRelativePath) {
-    $collectionName = $inputFileName -replace "\.json$", ""
-    $VcsRelativePath = Join-Path "scenes" $collectionName
+    $VcsRelativePath = get-VcsRelativePath $InputFilePath
   }
-  Write-Host "Creating vcs template from real config..."
-  Write-Host "Input:  $InputFilePath"
 
-  $vcsOutDirPath  = Join-Path $PSScriptRoot $VcsRelativePath
+  $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
+  $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
+
   $vcsOutFilePath = Join-Path $vcsOutDirPath $templateFileName
   Write-Host "Output: $vcsOutFilePath"
 
@@ -152,10 +178,11 @@ function ConvertFrom-ObsTemplate {
   $inputFileName  = Split-Path $InputFilePath -Leaf
   $inputDirectory = Split-Path $InputFilePath -Parent
 
-  if ($inputDirectory -ne $script:ObsBasePath) {
-    throw "This function must target files in: $($script:ObsBasePath)`nCurrent
-    target: $inputDirectory"
+  if ($inputDirectory -notlike "$($script:ObsBasePath)*") {
+    throw "This function must target files in: $($script:ObsBasePath)`n
+    Current target: $inputDirectory"
   }
+
   if ($InputFilePath -notmatch '\.vcs-template\.json$') {
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }

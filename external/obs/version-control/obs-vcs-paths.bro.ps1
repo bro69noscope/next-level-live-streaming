@@ -1,5 +1,5 @@
 $script:PrettierPath = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
-$script:ObsBasePath = Join-Path $env:APPDATA "obs-studio\basic\scenes"
+$script:ObsBasePath = Join-Path $env:APPDATA "obs-studio\basic"
 $script:MappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.jsonc"
 $script:CommonMappingsPath = Join-Path $PSScriptRoot `
   "..\..\common\streaming-software\version-control\common-vcs-mappings.bro.jsonc"

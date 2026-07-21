@@ -9,6 +9,23 @@ Get-ChildItem "$PSScriptRoot\streamerbot-vcs-paths*.ps1" |
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
+function Assert-StreamerbotPath {
+  param([Parameter(Mandatory=$true)][string]$Path)
+
+  $valid = $script:StreamerbotBasePaths | Where-Object {
+    $Path.StartsWith(
+      $_,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )
+  }
+
+  if (-not $valid) {
+    throw "This function must target files under:`n$(
+      $script:StreamerbotBasePaths -join "`n"
+    )`nCurrent target: $Path"
+  }
+}
+
 function Read-MappingsFile {
   param([Parameter(Mandatory=$true)][string]$Path)
 
@@ -79,10 +96,8 @@ function ConvertTo-StreamerbotTemplate {
   $inputFileName  = Split-Path $InputFilePath -Leaf
   $inputDirectory = Split-Path $InputFilePath -Parent
 
-  if ($inputDirectory -ne $script:StreamerbotBasePath) {
-    throw "This function must target files in: $($script:StreamerbotBasePath)`nCurrent
-    target: $inputDirectory"
-  }
+  Assert-StreamerbotPath $InputFilePath
+
   if ($InputFilePath -notmatch '\.json$') {
     throw "Input file must be a .json file, got: $inputFileName"
   }
@@ -149,12 +164,9 @@ function ConvertFrom-StreamerbotTemplate {
 
   $InputFilePath  = (Resolve-Path $InputFilePath).Path
   $inputFileName  = Split-Path $InputFilePath -Leaf
-  $inputDirectory = Split-Path $InputFilePath -Parent
 
-  if ($inputDirectory -ne $script:StreamerbotBasePath) {
-    throw "This function must target files in: $($script:StreamerbotBasePath)`nCurrent
-    target: $inputDirectory"
-  }
+  Assert-StreamerbotPath $InputFilePath
+
   if ($InputFilePath -notmatch '\.vcs-template\.json$') {
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
@@ -206,7 +218,9 @@ Write-Host "Script location:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  All input files must be under: $script:StreamerbotBasePath"
+Write-Host "  All input files must be under:`n$(
+  $script:StreamerbotBasePaths -join "`n"
+)"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                # Creates vcs-template.json"
 Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json' 'custom/path'  # Uses custom out path relative to this script location"

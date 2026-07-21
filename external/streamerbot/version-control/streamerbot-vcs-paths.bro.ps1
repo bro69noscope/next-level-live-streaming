@@ -1,8 +1,15 @@
 $script:PrettierPath = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
-$script:StreamerbotBasePath = Join-Path $env:MYFILES_PATH "programs\Streamer.bot\data"
 $script:MappingsPath = Join-Path $PSScriptRoot "streamerbot-vcs-mappings.bro.jsonc"
 $script:CommonMappingsPath = Join-Path $PSScriptRoot `
   "..\..\common\streaming-software\version-control\common-vcs-mappings.bro.jsonc"
+
+$script:StreamerbotBasePaths = @(
+  Join-Path $env:MYFILES_PATH `
+    "streaming-programs\streamerbot-portable-production"
+
+  Join-Path $env:MYFILES_PATH `
+    "streaming-programs\streamerbot-portable-ftp"
+)
 
 $CommonUserMappings = Get-ChildItem (Join-Path (
     Split-Path $script:CommonMappingsPath) "common-vcs-mappings*.jsonc") |

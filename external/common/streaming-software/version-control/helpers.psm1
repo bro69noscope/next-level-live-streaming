@@ -80,8 +80,6 @@ function Format-JsonWithPrettier {
 }
 
 $FunctionsToExport = @(
-  "ConvertFrom-Json5"
-  "Read-MappingsFile"
   "Read-ReplacementMappings"
   "Format-JsonWithPrettier"
 )

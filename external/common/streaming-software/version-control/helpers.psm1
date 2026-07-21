@@ -120,9 +120,84 @@ function Format-JsonWithPrettier {
   & $script:PrettierPath --write $FilePath
 }
 
+function ConvertTo-VcsTemplateFile {
+  param(
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
+    [Parameter(Mandatory=$true)]  [string]$VcsOutDirPath,
+    [Parameter(Mandatory=$true)] [hashtable]$Mappings,
+    [Parameter(Mandatory=$false)] [switch]$NumericAware
+  )
+
+  $inputFileName  = Split-Path $InputFilePath -Leaf
+  $inputDirectory = Split-Path $InputFilePath -Parent
+
+  if ($InputFilePath -notmatch '\.json$') {
+    throw "Input file must be a .json file, got: $inputFileName"
+  }
+
+  $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
+  $vcsOutFilePath   = Join-Path $VcsOutDirPath $templateFileName
+
+  Write-Host "Creating vcs template from real config..."
+  Write-Host "Input:  $InputFilePath"
+  Write-Host "Output: $vcsOutFilePath"
+
+  if (-not (Test-Path $VcsOutDirPath)) {
+    New-Item -ItemType Directory -Path $VcsOutDirPath -Force | Out-Null
+    Write-Host "Created VCS directory: $VcsOutDirPath" -ForegroundColor Yellow
+  }
+
+  $symlinkPath = Join-Path $inputDirectory $templateFileName
+  if (Test-Path $symlinkPath) {
+    Remove-Item $symlinkPath -Force
+  }
+
+  $content = Get-Content $InputFilePath -Raw
+  $sortedMappings = $Mappings.GetEnumerator() |
+    Sort-Object { $_.Value.Length } -Descending
+
+  foreach ($entry in $sortedMappings) {
+    $token     = $entry.Key
+    $localPath = [string]$entry.Value
+    $isNumeric = $NumericAware -and ($localPath -match '^\d+$')
+
+    $variants = @(
+      $localPath,
+      ($localPath | ConvertTo-Json -Compress).Trim('"')
+    )
+
+    if ($isNumeric) {
+      $quotedPattern = "`"$([regex]::Escape($localPath))`""
+      $barePattern   = "(?<!\d)$([regex]::Escape($localPath))(?!\d)"
+      if ($content -match $quotedPattern) {
+        $content = $content -replace $quotedPattern, "`"$token`""
+        Write-Host "  Replaced: `"$localPath`" -> `"$token`"" -ForegroundColor DarkCyan
+      } elseif ($content -match $barePattern) {
+        $content = [regex]::Replace($content, $barePattern, "`"$token`"")
+        Write-Host "  Replaced: $localPath -> `"$token`"" -ForegroundColor DarkCyan
+      }
+      continue
+    }
+
+    foreach ($variant in $variants) {
+      if ($content.Contains($variant)) {
+        $content = $content.Replace($variant, $token)
+        Write-Host "  Replaced: $variant -> $token" -ForegroundColor DarkCyan
+      }
+    }
+  }
+
+  $content | Set-Content $vcsOutFilePath -Encoding UTF8
+  Format-JsonWithPrettier -FilePath $vcsOutFilePath
+  Write-Host "Template saved: $vcsOutFilePath" -ForegroundColor Green
+
+  New-Item -ItemType SymbolicLink -Path $symlinkPath -Target $vcsOutFilePath | Out-Null
+}
+
 $FunctionsToExport = @(
   "Read-ReplacementMappings"
   "Format-JsonWithPrettier"
+  "ConvertTo-VcsTemplateFile"
 )
 
 Export-ModuleMember -Function $FunctionsToExport

@@ -49,86 +49,22 @@ function Format-JsonWithPrettier {
 
 function ConvertTo-StreamerbotTemplate {
   param(
-    [Parameter(Mandatory=$true)]
-    [string]$InputFilePath,
-
-    [Parameter(Mandatory=$false)]
-    [string]$VcsRelativePath
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
+    [Parameter(Mandatory=$false)] [string]$VcsRelativePath
   )
-
-  $InputFilePath  = (Resolve-Path $InputFilePath).Path
-  $inputFileName  = Split-Path $InputFilePath -Leaf
-  $inputDirectory = Split-Path $InputFilePath -Parent
-
+  $InputFilePath = (Resolve-Path $InputFilePath).Path
   Assert-StreamerbotPath $InputFilePath
 
-  if ($InputFilePath -notmatch '\.json$') {
-    throw "Input file must be a .json file, got: $inputFileName"
-  }
-
-  $vcsTemplateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
   if (-not $VcsRelativePath) {
-    $VcsRelativePath = "vcdata"
+    $VcsRelativePath = "vcdata" 
   }
-  Write-Host "Creating vcs template from real config..."
-  Write-Host "Input:  $InputFilePath"
+  $vcsOutDirPath = Join-Path $PSScriptRoot $VcsRelativePath
 
-  $vcsOutDirPath  = Join-Path $PSScriptRoot $VcsRelativePath
-  $vcsOutFilePath = Join-Path $vcsOutDirPath $vcsTemplateFileName
-  Write-Host "Output: $vcsOutFilePath"
-
-  if (-not (Test-Path $vcsOutDirPath)) {
-    New-Item -ItemType Directory -Path $vcsOutDirPath -Force | Out-Null
-    Write-Host "Created VCS directory: $vcsOutDirPath" -ForegroundColor Yellow
-  }
-
-  $symlinkPath = Join-Path $inputDirectory $vcsTemplateFileName
-  if (Test-Path $symlinkPath) {
-    Remove-Item $symlinkPath -Force
-  }
-
-  $content = Get-Content $InputFilePath -Raw
-
-  # Apply substitutions longest-path-first to prevent a shorter path from
-  # matching inside a longer one before it gets a chance to be replaced
-  $sortedMappings = $mappings.GetEnumerator() | Sort-Object { $_.Value.Length } `
-    -Descending
-
-  foreach ($entry in $sortedMappings) {
-    $token     = $entry.Key
-    $localPath = [string]$entry.Value
-    $isNumeric = $localPath -match '^\d+$'
-
-    $variants = @(
-      $localPath,
-      ($localPath | ConvertTo-Json -Compress).Trim('"')
-    )
-
-    foreach ($variant in $variants) {
-      if ($isNumeric) {
-        $quotedPattern = "`"$([regex]::Escape($localPath))`""
-        $barePattern   = "(?<!\d)$([regex]::Escape($localPath))(?!\d)"
-
-        if ($content -match $quotedPattern) {
-          $content = $content -replace $quotedPattern, "`"$token`""
-          Write-Host "  Replaced: `"$localPath`" -> `"$token`"" -ForegroundColor DarkCyan
-        } elseif ($content -match $barePattern) {
-          $content = [regex]::Replace($content, $barePattern, "`"$token`"")
-          Write-Host "  Replaced: $localPath -> `"$token`"" -ForegroundColor DarkCyan
-        }
-        continue
-      } elseif ($content.Contains($variant)) {
-        $content = $content.Replace($variant, $token)
-        Write-Host "  Replaced: $variant -> $token" -ForegroundColor DarkCyan
-      }
-    }
-  }
-
-  $content | Set-Content $vcsOutFilePath -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $vcsOutFilePath
-  Write-Host "Template saved: $vcsOutFilePath" -ForegroundColor Green
-
-  New-Item -ItemType SymbolicLink -Path $symlinkPath -Target $vcsOutFilePath | Out-Null
+  ConvertTo-VcsTemplateFile `
+    -InputFilePath $InputFilePath `
+    -VcsOutDirPath $vcsOutDirPath `
+    -Mappings $mappings `
+    -NumericAware
 }
 
 function ConvertFrom-StreamerbotTemplate {

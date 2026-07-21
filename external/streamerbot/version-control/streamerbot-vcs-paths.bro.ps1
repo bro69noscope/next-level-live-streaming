@@ -6,6 +6,8 @@ $script:CommonMappingsPath = Join-Path $PSScriptRoot `
 $script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
   "external\common\streaming-software\version-control\helpers.psm1"
 
+$script:PortsPath = Join-Path $env:STREAMING_REPO_PATH "config\ports.json5"
+
 $script:StreamerbotBasePaths = @(
   Join-Path $env:MYFILES_PATH `
     "streaming-programs\streamerbot-portable-production"

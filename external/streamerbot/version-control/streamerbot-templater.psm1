@@ -12,7 +12,10 @@ $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
-  -MappingsPath $script:MappingsPath
+  -MappingsPath $script:MappingsPath `
+  -PortsMappingPaths @($script:PortsPath)
+
+Write-Host "Ports: '$script:PortsPath'"
 
 function Assert-StreamerbotPath {
   param([Parameter(Mandatory=$true)][string]$Path)
@@ -93,17 +96,30 @@ function ConvertTo-StreamerbotTemplate {
 
   foreach ($entry in $sortedMappings) {
     $token     = $entry.Key
-    $localPath = $entry.Value
+    $localPath = [string]$entry.Value
+    $isNumeric = $localPath -match '^\d+$'
+
     $variants = @(
       $localPath,
       ($localPath | ConvertTo-Json -Compress).Trim('"')
     )
 
     foreach ($variant in $variants) {
-      if ($content.Contains($variant)) {
+      if ($isNumeric) {
+        $quotedPattern = "`"$([regex]::Escape($localPath))`""
+        $barePattern   = "(?<!\d)$([regex]::Escape($localPath))(?!\d)"
+
+        if ($content -match $quotedPattern) {
+          $content = $content -replace $quotedPattern, "`"$token`""
+          Write-Host "  Replaced: `"$localPath`" -> `"$token`"" -ForegroundColor DarkCyan
+        } elseif ($content -match $barePattern) {
+          $content = [regex]::Replace($content, $barePattern, "`"$token`"")
+          Write-Host "  Replaced: $localPath -> `"$token`"" -ForegroundColor DarkCyan
+        }
+        continue
+      } elseif ($content.Contains($variant)) {
         $content = $content.Replace($variant, $token)
-        Write-Host "  Replaced: $variant -> $token" `
-          -ForegroundColor DarkCyan
+        Write-Host "  Replaced: $variant -> $token" -ForegroundColor DarkCyan
       }
     }
   }
@@ -146,7 +162,15 @@ function ConvertFrom-StreamerbotTemplate {
   foreach ($entry in $mappings.GetEnumerator()) {
     $token     = $entry.Key
     $localPath = $entry.Value
-    if ($content -match [regex]::Escape($token)) {
+    $isNumeric = ([string]$localPath) -match '^\d+$'
+
+    if ($isNumeric) {
+      $quotedTokenPattern = [regex]::Escape("`"$token`"")
+      if ($content -match $quotedTokenPattern) {
+        $content = $content -replace $quotedTokenPattern, $localPath
+        Write-Host "  Replaced: `"$token`" -> $localPath" -ForegroundColor DarkCyan
+      }
+    } elseif ($content -match [regex]::Escape($token)) {
       $content = $content -replace [regex]::Escape($token), $localPath
       Write-Host "  Replaced: $token -> $localPath" -ForegroundColor DarkCyan
     }

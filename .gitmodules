@@ -7,3 +7,6 @@
 [submodule "external/obs/version-control/vcdata"]
 	path = external/obs/version-control/vcdata
 	url = git@github.com:bro69noscope/obs-version-control.git
+[submodule "external/streamelements/version-control/vcdata"]
+	path = external/streamelements/version-control/vcdata
+	url = git@github.com:bro69noscope/streamelements-version-control.git

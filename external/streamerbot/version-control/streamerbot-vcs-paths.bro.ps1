@@ -3,6 +3,9 @@ $script:MappingsPath = Join-Path $PSScriptRoot "streamerbot-vcs-mappings.bro.jso
 $script:CommonMappingsPath = Join-Path $PSScriptRoot `
   "..\..\common\streaming-software\version-control\common-vcs-mappings.bro.jsonc"
 
+$script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
+  "external\common\streaming-software\version-control\helpers.psm1"
+
 $script:StreamerbotBasePaths = @(
   Join-Path $env:MYFILES_PATH `
     "streaming-programs\streamerbot-portable-production"

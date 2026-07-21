@@ -1,5 +1,6 @@
 # Used to create an editable template from an StreamDeck "scenes.json" file.
 . "$PSScriptRoot\StreamDeck-vcs-paths.bro.ps1"
+Import-Module $HelpersModulePath -Force
 
 Get-ChildItem "$PSScriptRoot\streamdeck-vcs-paths*.ps1" |
   Where-Object { $_.Name -ne "streamdeck-vcs-paths.bro.ps1" } |
@@ -9,62 +10,9 @@ Get-ChildItem "$PSScriptRoot\streamdeck-vcs-paths*.ps1" |
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
-function Read-MappingsFile {
-  param([Parameter(Mandatory=$true)][string]$Path)
-
-  if (-not (Test-Path $Path)) {
-    throw "Mappings file not found: $Path"
-  }
-
-  $content = Get-Content $Path -Raw
-  $content = $content -replace '(?m)^\s*//.*$', ''
-  $raw = $content | ConvertFrom-Json
-
-  $mappings = [ordered]@{}
-  foreach ($category in $raw.PSObject.Properties) {
-    foreach ($prop in $category.Value.PSObject.Properties) {
-      $token = $prop.Name
-      $value = if ($prop.Value -is [string]) {
-        $prop.Value
-      } else {
-        $prop.Value.value
-      }
-      $mappings[$token] = $value
-    }
-  }
-  return $mappings
-}
-
-function Read-ReplacementMappings {
-  $merged = [ordered]@{}
-
-  if ($script:CommonMappingsPath -and (Test-Path $script:CommonMappingsPath)) {
-    (Read-MappingsFile $script:CommonMappingsPath).GetEnumerator() | ForEach-Object {
-      $merged[$_.Key] = $_.Value
-    }
-  }
-
-  (Read-MappingsFile $script:MappingsPath).GetEnumerator() | ForEach-Object {
-    if ($merged.Contains($_.Key)) {
-      Write-Host "  Note: '$($_.Key)' overrides common mapping" -ForegroundColor DarkYellow
-    }
-    $merged[$_.Key] = $_.Value
-  }
-
-  return $merged
-}
-
-function Format-JsonWithPrettier {
-  param([string]$FilePath)
-
-  if (-not (Test-Path $script:PrettierPath)) {
-    Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping
-    formatting." -ForegroundColor Yellow
-    return
-  }
-
-  & $script:PrettierPath --write $FilePath
-}
+$mappings = Read-ReplacementMappings `
+  -CommonMappingsPath $script:CommonMappingsPath `
+  -MappingsPath $script:MappingsPath
 
 function Assert-StreamDeckPath {
   param([Parameter(Mandatory=$true)][string]$Path)
@@ -120,8 +68,6 @@ function ConvertTo-StreamDeckTemplate {
     throw "Input file must be a .json file, got: $inputFileName"
   }
 
-  $mappings = Read-ReplacementMappings
-
   # Calculate relative path from StreamDeck base to input file
   $relativeDeckPath = $inputDirectory.Substring(
     $script:StreamDeckBasePath.Length
@@ -160,16 +106,16 @@ function ConvertTo-StreamDeckTemplate {
   foreach ($entry in $sortedMappings) {
     $token     = $entry.Key
     $localPath = $entry.Value
-    $variants  = @(
+    $variants = @(
       $localPath,
-      ($localPath -replace '/', '\'),
-      ($localPath -replace '/', '\\')
+      ($localPath | ConvertTo-Json -Compress).Trim('"')
     )
 
     foreach ($variant in $variants) {
-      if ($content -match [regex]::Escape($variant)) {
-        $content = $content -replace [regex]::Escape($variant), $token
-        Write-Host "  Replaced: $variant -> $token" -ForegroundColor DarkCyan
+      if ($content.Contains($variant)) {
+        $content = $content.Replace($variant, $token)
+        Write-Host "  Replaced: $variant -> $token" `
+          -ForegroundColor DarkCyan
       }
     }
   }
@@ -221,7 +167,6 @@ function ConvertFrom-StreamDeckTemplate {
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
 
-  $mappings = Read-ReplacementMappings
   $outPath  = $InputFilePath -replace "\.vcs-template\.json$", ".json"
 
   Write-Host "Input:  $InputFilePath"
@@ -260,7 +205,7 @@ Write-Host ""
 Write-Host "StreamDeck Templater functions loaded!" -ForegroundColor Green
 
 Write-Host "Mappings:" -ForegroundColor Cyan
-(Read-ReplacementMappings).GetEnumerator() | ForEach-Object {
+$mappings.GetEnumerator() | ForEach-Object {
   Write-Host "  $($_.Key) => $($_.Value)"
 }
 

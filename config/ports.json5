@@ -1,0 +1,88 @@
+{
+  // Main repository servers
+  repository: {
+    python: {
+      host: "127.0.0.1",
+      port: 50000,
+      token: "{{REPOSITORY_PYTHON_PORT}}",
+    },
+  },
+
+  // OBS servers
+  obs: {
+    production: {
+      host: "127.0.0.1",
+      port: 51000,
+      token: "{{OBS_PRODUCTION_PORT}}",
+      protocol: "websocket",
+    },
+    portable_vcam: {
+      host: "127.0.0.1",
+      port: 51001,
+      token: "{{OBS_PORTABLE_VCAM_PORT}}",
+      protocol: "websocket",
+    },
+    portable_ftp: {
+      host: "127.0.0.1",
+      port: 51002,
+      token: "{{OBS_PORTABLE_FTP_PORT}}",
+      protocol: "websocket",
+    },
+  },
+
+  // Streamer.bot servers
+  streamerbot: {
+    production: {
+      streamerbot: {
+        host: "127.0.0.1",
+        port: 52000,
+        token: "{{STREAMERBOT_PRODUCTION_PORT}}",
+        protocol: "websocket",
+      },
+      integrations: {
+        streamdeck: {
+          host: "127.0.0.1",
+          port: 52100,
+          token: "{{STREAMERBOT_PRODUCTION_STREAMDECK_PORT}}",
+          protocol: "websocket",
+        },
+      },
+    },
+    ftp: {
+      streamerbot: {
+        host: "127.0.0.1",
+        port: 52001,
+        token: "{{STREAMERBOT_FTP_PORT}}",
+        protocol: "websocket",
+      },
+      integrations: {
+        streamdeck: {
+          host: "127.0.0.1",
+          port: 52200,
+          token: "{{STREAMERBOT_FTP_STREAMDECK_PORT}}",
+          protocol: "websocket",
+        },
+      },
+    },
+  },
+
+  // Internal subprocess socket servers
+  subprocesses: {
+    shopwatcher: {
+      port: 59000,
+      token: "{{SHOPWATCHER_PORT}}",
+    },
+    pregamespy: {
+      port: 59001,
+      token: "{{PREGAMESPY_PORT}}",
+    },
+    robeau: {
+      port: 59002,
+      token: "{{ROBEAU_PORT}}",
+    },
+    synonym_adder: {
+      port: 59003,
+      token: "{{SYNONYM_ADDER_PORT}}",
+    },
+  },
+}

@@ -15,8 +15,6 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:MappingsPath `
   -PortsMappingPaths @($script:PortsPath)
 
-Write-Host "Ports: '$script:PortsPath'"
-
 function Assert-StreamerbotPath {
   param([Parameter(Mandatory=$true)][string]$Path)
 
@@ -34,18 +32,6 @@ function Assert-StreamerbotPath {
   }
 }
 
-
-function Format-JsonWithPrettier {
-  param([string]$FilePath)
-
-  if (-not (Test-Path $script:PrettierPath)) {
-    Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping
-    formatting." -ForegroundColor Yellow
-    return
-  }
-
-  & $script:PrettierPath --write $FilePath
-}
 
 function ConvertTo-StreamerbotTemplate {
   param(

@@ -63,8 +63,7 @@ function ConvertTo-StreamerbotTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputFilePath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Mappings $mappings `
-    -NumericAware
+    -Mappings $mappings
 }
 
 function ConvertFrom-StreamerbotTemplate {

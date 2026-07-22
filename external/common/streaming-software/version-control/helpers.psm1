@@ -124,8 +124,7 @@ function ConvertTo-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$true)]  [string]$VcsOutDirPath,
-    [Parameter(Mandatory=$true)] [hashtable]$Mappings,
-    [Parameter(Mandatory=$false)] [switch]$NumericAware
+    [Parameter(Mandatory=$true)] [hashtable]$Mappings
   )
 
   $inputFileName  = Split-Path $InputFilePath -Leaf
@@ -159,7 +158,7 @@ function ConvertTo-VcsTemplateFile {
   foreach ($entry in $sortedMappings) {
     $token     = $entry.Key
     $localPath = [string]$entry.Value
-    $isNumeric = $NumericAware -and ($localPath -match '^\d+$')
+    $isNumeric = $localPath -match '^\d+$'
 
     $variants = @(
       $localPath,

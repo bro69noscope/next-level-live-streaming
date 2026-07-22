@@ -58,12 +58,10 @@ function Assert-ObsPath {
   }
 
   if (-not $valid) {
-    if (-not $valid) {
-      Write-Host "This function must target files under:" -ForegroundColor Red
-      $obsRoots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-      Write-Host "Current target: $Path" -ForegroundColor Red
-      throw "Invalid target path: $Path"
-    }
+    Write-Host "This function must target files under:" -ForegroundColor Red
+    $obsRoots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    Write-Host "Current target: $Path" -ForegroundColor Red
+    throw "Invalid target path: $Path"
   }
 }
 

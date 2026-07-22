@@ -120,6 +120,68 @@ function Format-JsonWithPrettier {
   & $script:PrettierPath --write $FilePath
 }
 
+function Get-VcsRelativePath {
+  param(
+    [Parameter(Mandatory=$true)]
+    [string]$InputFilePath,
+
+    [Parameter(Mandatory=$true)]
+    [array]$Roots,
+
+    [Parameter(Mandatory=$true)]
+    [array]$Markers,
+
+    [Parameter(Mandatory=$true)]
+    [string]$AppName
+  )
+
+  $prefix = $null
+
+  foreach ($root in $Roots) {
+    if ($InputFilePath.StartsWith(
+        $root.Path,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )) {
+      $prefix = $root.Name
+      $relative = $InputFilePath.Substring(
+        $root.Path.Length
+      ).TrimStart('\')
+      break
+    }
+  }
+
+  if ($null -eq $prefix) {
+    throw "Unexpected $AppName import path: $InputFilePath"
+  }
+
+  $parts = $relative -split '\\'
+  $dirOnlyParts = $parts[0..($parts.Count - 2)]
+
+  foreach ($marker in $Markers) {
+    $index = $dirOnlyParts.IndexOf($marker)
+
+    if ($index -ge 0) {
+      $remainingCount = $dirOnlyParts.Count - ($index + 1)
+
+      if ($remainingCount -le 0) {
+        return Join-Path $prefix $marker
+      }
+
+      $dirParts = $dirOnlyParts[
+      ($index + 1)..($dirOnlyParts.Count - 1)
+      ]
+
+      return Join-Path $prefix (
+        Join-Path $marker ($dirParts -join '\')
+      )
+    }
+  }
+
+  throw (
+    "Unexpected $AppName config location: $relative"
+  )
+}
+
 function ConvertTo-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
@@ -261,6 +323,7 @@ $FunctionsToExport = @(
   "Format-JsonWithPrettier"
   "ConvertTo-VcsTemplateFile"
   "ConvertFrom-VcsTemplateFile"
+  "Get-VcsRelativePath"
 )
 
 Export-ModuleMember -Function $FunctionsToExport

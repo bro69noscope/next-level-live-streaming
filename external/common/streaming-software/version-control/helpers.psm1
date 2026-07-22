@@ -120,6 +120,30 @@ function Format-JsonWithPrettier {
   & $script:PrettierPath --write $FilePath
 }
 
+function Assert-InputPath {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Path,
+
+    [Parameter(Mandatory = $true)]
+    [array]$Roots
+  )
+
+  $valid = $Roots | Where-Object {
+    $Path.StartsWith(
+      $_.Path,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )
+  }
+
+  if (-not $valid) {
+    Write-Host "This function must target files under:" -ForegroundColor Red
+    $Roots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    Write-Host "Current target: $Path" -ForegroundColor Red
+    throw "Invalid target path: $Path"
+  }
+}
+
 function Get-VcsRelativePath {
   param(
     [Parameter(Mandatory=$true)]
@@ -177,6 +201,10 @@ function Get-VcsRelativePath {
     }
   }
 
+  Write-Host "Expected config locations:" -ForegroundColor Red
+  foreach ($marker in $Markers) {
+    Write-Host "  <root>\$marker\..." -ForegroundColor Red
+  }
   throw (
     "Unexpected $AppName config location: $relative"
   )
@@ -324,6 +352,7 @@ $FunctionsToExport = @(
   "ConvertTo-VcsTemplateFile"
   "ConvertFrom-VcsTemplateFile"
   "Get-VcsRelativePath"
+  "Assert-InputPath"
 )
 
 Export-ModuleMember -Function $FunctionsToExport

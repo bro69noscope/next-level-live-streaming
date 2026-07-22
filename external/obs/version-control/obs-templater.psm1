@@ -30,13 +30,16 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:MappingsPath `
   -PortsMappingPaths @($script:PortsPath)
 
-function Get-ObsVcsPath {
+function ConvertTo-ObsTemplate {
   param(
     [Parameter(Mandatory=$true)]
     [string]$InputFilePath
   )
 
-  Get-VcsRelativePath `
+  $InputFilePath = (Resolve-Path $InputFilePath).Path
+  Assert-InputPath $InputFilePath -Roots $obsRoots
+
+  $VcsRelativePath = Get-VcsRelativePath `
     -InputFilePath $InputFilePath `
     -Roots $obsRoots `
     -Markers @(
@@ -45,41 +48,6 @@ function Get-ObsVcsPath {
     "plugin_config"
   ) `
     -AppName "OBS"
-}
-
-function Assert-ObsPath {
-  param([Parameter(Mandatory=$true)][string]$Path)
-
-  $valid = $obsRoots | Where-Object {
-    $Path.StartsWith(
-      $_.Path,
-      [System.StringComparison]::OrdinalIgnoreCase
-    )
-  }
-
-  if (-not $valid) {
-    Write-Host "This function must target files under:" -ForegroundColor Red
-    $obsRoots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-    Write-Host "Current target: $Path" -ForegroundColor Red
-    throw "Invalid target path: $Path"
-  }
-}
-
-function ConvertTo-ObsTemplate {
-  param(
-    [Parameter(Mandatory=$true)]
-    [string]$InputFilePath,
-
-    [Parameter(Mandatory=$false)]
-    [string]$VcsRelativePath
-  )
-
-  $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-ObsPath $InputFilePath
-
-  if (-not $VcsRelativePath) {
-    $VcsRelativePath = Get-ObsVcsPath $InputFilePath
-  }
 
   $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
   $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
@@ -99,7 +67,7 @@ function ConvertFrom-ObsTemplate {
   )
 
   $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-ObsPath $InputFilePath
+  Assert-InputPath $InputFilePath -Roots $obsRoots
 
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputFilePath `

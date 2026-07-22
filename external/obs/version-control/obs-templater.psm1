@@ -90,7 +90,6 @@ Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "  All input files must be under:`n  $($obsRoots.Path -join "`n  ")"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates vcs-template.json"
-Write-Host "  ConvertTo-ObsTemplate 'scenes.json' 'custom/path'  # Uses custom out path relative to this script location"
 Write-Host "  ConvertFrom-ObsTemplate 'scenes.vcs-template.json' # Creates scenes.json"
 
 Export-ModuleMember -Function ConvertTo-ObsTemplate, ConvertFrom-ObsTemplate

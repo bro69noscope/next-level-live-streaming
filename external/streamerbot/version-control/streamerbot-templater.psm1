@@ -10,6 +10,30 @@ Get-ChildItem "$PSScriptRoot\streamerbot-vcs-paths*.ps1" |
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
+$script:streamerbotRoots = @(
+  @{
+    Path = $script:StreamerbotFtpPath
+    Name = "ftp"
+  },
+  @{
+    Path = $script:StreamerbotProductionPath
+    Name = "production"
+  }
+)
+
+function Get-StreamerbotVcsPath {
+  param(
+    [Parameter(Mandatory=$true)]
+    [string]$InputFilePath
+  )
+
+  Get-VcsRelativePath `
+    -InputFilePath $InputFilePath `
+    -Roots $streamerbotRoots `
+    -Markers @("data") `
+    -AppName "Streamer.bot"
+}
+
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
   -MappingsPath $script:MappingsPath `
@@ -18,17 +42,18 @@ $mappings = Read-ReplacementMappings `
 function Assert-StreamerbotPath {
   param([Parameter(Mandatory=$true)][string]$Path)
 
-  $valid = $script:StreamerbotBasePaths | Where-Object {
+  $valid = $streamerbotRoots | Where-Object {
     $Path.StartsWith(
-      $_,
+      $_.Path,
       [System.StringComparison]::OrdinalIgnoreCase
     )
   }
 
   if (-not $valid) {
-    throw "This function must target files under:`n$(
-      $script:StreamerbotBasePaths -join "`n"
-    )`nCurrent target: $Path"
+    Write-Host "This function must target files under:" -ForegroundColor Red
+    $streamerbotRoots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    Write-Host "Current target: $Path" -ForegroundColor Red
+    throw "Invalid target path: $Path"
   }
 }
 
@@ -42,9 +67,11 @@ function ConvertTo-StreamerbotTemplate {
   Assert-StreamerbotPath $InputFilePath
 
   if (-not $VcsRelativePath) {
-    $VcsRelativePath = "vcdata" 
+    $VcsRelativePath = Get-StreamerbotVcsPath $InputFilePath
   }
-  $vcsOutDirPath = Join-Path $PSScriptRoot $VcsRelativePath
+
+  $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
+  $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
 
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputFilePath `

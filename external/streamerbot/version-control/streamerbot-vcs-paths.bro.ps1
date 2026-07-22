@@ -3,18 +3,16 @@ $script:MappingsPath = Join-Path $PSScriptRoot "streamerbot-vcs-mappings.bro.jso
 $script:CommonMappingsPath = Join-Path $PSScriptRoot `
   "..\..\common\streaming-software\version-control\common-vcs-mappings.bro.jsonc"
 
+$Script:StreamerBotProductionPath = Join-Path $env:MYFILES_PATH `
+  "streaming-programs\streamerbot-portable-production\Streamer.bot"
+
+$Script:StreamerBotFtpPath = Join-Path $env:MYFILES_PATH `
+  "streaming-programs\streamerbot-portable-ftp\Streamer.bot"
+
 $script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
   "external\common\streaming-software\version-control\helpers.psm1"
 
 $script:PortsPath = Join-Path $env:STREAMING_REPO_PATH "config\ports.json5"
-
-$script:StreamerbotBasePaths = @(
-  Join-Path $env:MYFILES_PATH `
-    "streaming-programs\streamerbot-portable-production"
-
-  Join-Path $env:MYFILES_PATH `
-    "streaming-programs\streamerbot-portable-ftp"
-)
 
 $CommonUserMappings = Get-ChildItem (Join-Path (
     Split-Path $script:CommonMappingsPath) "common-vcs-mappings*.jsonc") |

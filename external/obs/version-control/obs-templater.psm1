@@ -30,49 +30,21 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:MappingsPath `
   -PortsMappingPaths @($script:PortsPath)
 
-function Get-VcsRelativePath {
+function Get-ObsVcsPath {
   param(
     [Parameter(Mandatory=$true)]
     [string]$InputFilePath
   )
 
-
-  $prefix = $null
-
-  foreach ($root in $obsRoots) {
-    if ($InputFilePath.StartsWith($root.Path)) {
-      $prefix = $root.Name
-      $relative = $InputFilePath.Substring(
-        $root.Path.Length
-      ).TrimStart('\')
-      break
-    }
-  }
-
-  if ($null -eq $prefix) {
-    throw "Unknown OBS import path: $InputFilePath"
-  }
-
-  $parts = $relative -split '\\'
-  $dirOnlyParts = $parts[0..($parts.Count - 2)]
-
-  foreach ($marker in @("scenes", "profiles", "plugin_config")) {
-    $index = $dirOnlyParts.IndexOf($marker)
-
-    if ($index -ge 0) {
-      $dirParts = $dirOnlyParts[($index + 1)..($dirOnlyParts.Count - 1)]
-
-      if ($dirParts.Count -eq 0 -or $index -eq $dirOnlyParts.Count - 1) {
-        return Join-Path $prefix $marker
-      }
-
-      return Join-Path $prefix (
-        Join-Path $marker ($dirParts -join '\')
-      )
-    }
-  }
-
-  throw "Unknown OBS config location: $relative"
+  Get-VcsRelativePath `
+    -InputFilePath $InputFilePath `
+    -Roots $obsRoots `
+    -Markers @(
+    "scenes",
+    "profiles",
+    "plugin_config"
+  ) `
+    -AppName "OBS"
 }
 
 function Assert-ObsPath {
@@ -86,9 +58,12 @@ function Assert-ObsPath {
   }
 
   if (-not $valid) {
-    throw "This function must target files under:`n$(
-      $obsRoots.Path -join "`n"
-    )`nCurrent target: $Path"
+    if (-not $valid) {
+      Write-Host "This function must target files under:" -ForegroundColor Red
+      $obsRoots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+      Write-Host "Current target: $Path" -ForegroundColor Red
+      throw "Invalid target path: $Path"
+    }
   }
 }
 
@@ -105,7 +80,7 @@ function ConvertTo-ObsTemplate {
   Assert-ObsPath $InputFilePath
 
   if (-not $VcsRelativePath) {
-    $VcsRelativePath = Get-VcsRelativePath $InputFilePath
+    $VcsRelativePath = Get-ObsVcsPath $InputFilePath
   }
 
   $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"

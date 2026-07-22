@@ -21,54 +21,24 @@ $script:streamerbotRoots = @(
   }
 )
 
-function Get-StreamerbotVcsPath {
-  param(
-    [Parameter(Mandatory=$true)]
-    [string]$InputFilePath
-  )
-
-  Get-VcsRelativePath `
-    -InputFilePath $InputFilePath `
-    -Roots $streamerbotRoots `
-    -Markers @("data") `
-    -AppName "Streamer.bot"
-}
-
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
   -MappingsPath $script:MappingsPath `
   -PortsMappingPaths @($script:PortsPath)
 
-function Assert-StreamerbotPath {
-  param([Parameter(Mandatory=$true)][string]$Path)
-
-  $valid = $streamerbotRoots | Where-Object {
-    $Path.StartsWith(
-      $_.Path,
-      [System.StringComparison]::OrdinalIgnoreCase
-    )
-  }
-
-  if (-not $valid) {
-    Write-Host "This function must target files under:" -ForegroundColor Red
-    $streamerbotRoots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-    Write-Host "Current target: $Path" -ForegroundColor Red
-    throw "Invalid target path: $Path"
-  }
-}
-
-
 function ConvertTo-StreamerbotTemplate {
   param(
-    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
-    [Parameter(Mandatory=$false)] [string]$VcsRelativePath
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath
   )
-  $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-StreamerbotPath $InputFilePath
 
-  if (-not $VcsRelativePath) {
-    $VcsRelativePath = Get-StreamerbotVcsPath $InputFilePath
-  }
+  $InputFilePath = (Resolve-Path $InputFilePath).Path
+  Assert-InputPath $InputFilePath -Roots $streamerbotRoots
+
+  $VcsRelativePath = Get-VcsRelativePath `
+    -InputFilePath $InputFilePath `
+    -Roots $streamerbotRoots `
+    -Markers @("data") `
+    -AppName "Streamer.bot"
 
   $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
   $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
@@ -88,7 +58,7 @@ function ConvertFrom-StreamerbotTemplate {
   )
 
   $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-StreamerbotPath $InputFilePath
+  Assert-InputPath $InputFilePath -Roots $streamerbotRoots
 
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputFilePath `

@@ -10,6 +10,21 @@ Get-ChildItem "$PSScriptRoot\obs-vcs-paths*.ps1" |
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "scenes"
 
+$obsRoots = @(
+  @{
+    Path = $script:ObsVcamPath
+    Name = "vcam"
+  },
+  @{
+    Path = $script:ObsFtpPath
+    Name = "ftp"
+  },
+  @{
+    Path = $script:ObsProductionPath
+    Name = "production"
+  }
+)
+
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
   -MappingsPath $script:MappingsPath `
@@ -20,38 +35,59 @@ function Get-VcsRelativePath {
     [Parameter(Mandatory=$true)]
     [string]$InputFilePath
   )
-  $relative = $InputFilePath.Substring(
-    $script:ObsBasePath.Length
-  ).TrimStart('\')
+
+
+  $prefix = $null
+
+  foreach ($root in $obsRoots) {
+    if ($InputFilePath.StartsWith($root.Path)) {
+      $prefix = $root.Name
+      $relative = $InputFilePath.Substring(
+        $root.Path.Length
+      ).TrimStart('\')
+      break
+    }
+  }
+
+  if ($null -eq $prefix) {
+    throw "Unknown OBS import path: $InputFilePath"
+  }
+
   $parts = $relative -split '\\'
   $dirOnlyParts = $parts[0..($parts.Count - 2)]
 
   foreach ($marker in @("scenes", "profiles", "plugin_config")) {
     $index = $dirOnlyParts.IndexOf($marker)
+
     if ($index -ge 0) {
       $dirParts = $dirOnlyParts[($index + 1)..($dirOnlyParts.Count - 1)]
+
       if ($dirParts.Count -eq 0 -or $index -eq $dirOnlyParts.Count - 1) {
-        return $marker
+        return Join-Path $prefix $marker
       }
-      return Join-Path $marker ($dirParts -join '\')
+
+      return Join-Path $prefix (
+        Join-Path $marker ($dirParts -join '\')
+      )
     }
   }
+
   throw "Unknown OBS config location: $relative"
 }
 
 function Assert-ObsPath {
   param([Parameter(Mandatory=$true)][string]$Path)
 
-  $valid = $script:ObsBasePath | Where-Object {
+  $valid = $obsRoots | Where-Object {
     $Path.StartsWith(
-      $_,
+      $_.Path,
       [System.StringComparison]::OrdinalIgnoreCase
     )
   }
 
   if (-not $valid) {
     throw "This function must target files under:`n$(
-      $script:ObsBasePath -join "`n"
+      $obsRoots.Path -join "`n"
     )`nCurrent target: $Path"
   }
 }
@@ -110,7 +146,7 @@ Write-Host "Script location:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  All input files must be under: $script:ObsBasePath"
+Write-Host "  All input files must be under:`n  $($obsRoots.Path -join "`n  ")"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates vcs-template.json"
 Write-Host "  ConvertTo-ObsTemplate 'scenes.json' 'custom/path'  # Uses custom out path relative to this script location"

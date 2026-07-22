@@ -1,5 +1,11 @@
 $script:PrettierPath = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
-$script:ObsBasePath = Join-Path $env:APPDATA "obs-studio\"
+$script:ObsProductionPath = Join-Path $env:APPDATA "obs-studio\"
+$script:ObsVcamPath = Join-Path $env:MYFILES_PATH `
+  "streaming-programs\obs-studio-portable-vcam\obs-studio\config\obs-studio"
+
+$script:ObsFtpPath = Join-Path $env:MYFILES_PATH `
+  "streaming-programs\obs-studio-portable-ftp\obs-studio\config\obs-studio"
+
 $script:MappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.jsonc"
 $script:CommonMappingsPath = Join-Path $PSScriptRoot `
   "..\..\common\streaming-software\version-control\common-vcs-mappings.bro.jsonc"

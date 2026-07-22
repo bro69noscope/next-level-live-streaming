@@ -231,9 +231,14 @@ function ConvertFrom-VcsTemplateFile {
         $content = $content -replace $quotedTokenPattern, $localPath
         Write-Host "  Replaced: `"$token`" -> $localPath" -ForegroundColor DarkCyan
       }
+
     } elseif ($content -match [regex]::Escape($token)) {
-      $content = $content -replace [regex]::Escape($token), $localPath
-      Write-Host "  Replaced: $token -> $localPath" -ForegroundColor DarkCyan
+      $content = $content -replace `
+        [regex]::Escape($token), {
+        ($localPath | ConvertTo-Json -Compress).Trim('"')
+      }
+      Write-Host "  Replaced: $token -> $localPath" `
+        -ForegroundColor DarkCyan
     }
   }
 

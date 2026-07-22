@@ -55,58 +55,18 @@ function ConvertTo-StreamerbotTemplate {
 function ConvertFrom-StreamerbotTemplate {
   param(
     [Parameter(Mandatory=$true)]
-    [string]$InputFilePath
+    [string]$InputFilePath,
+    [Parameter(Mandatory=$false)]
+    [switch]$Backup
   )
 
-  $InputFilePath  = (Resolve-Path $InputFilePath).Path
-  $inputFileName  = Split-Path $InputFilePath -Leaf
-
+  $InputFilePath = (Resolve-Path $InputFilePath).Path
   Assert-StreamerbotPath $InputFilePath
 
-  if ($InputFilePath -notmatch '\.vcs-template\.json$') {
-    throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
-  }
-
-  $outPath  = $InputFilePath -replace "\.vcs-template\.json$", ".json"
-
-  Write-Host "Input:  $InputFilePath"
-  Write-Host "Output: $outPath"
-
-  if (Test-Path $outPath) {
-    $backupPath = "$outPath.bak"
-    Copy-Item $outPath $backupPath -Force
-    Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
-  }
-
-  $content = Get-Content $InputFilePath -Raw
-
-  foreach ($entry in $mappings.GetEnumerator()) {
-    $token     = $entry.Key
-    $localPath = $entry.Value
-    $isNumeric = ([string]$localPath) -match '^\d+$'
-
-    if ($isNumeric) {
-      $quotedTokenPattern = [regex]::Escape("`"$token`"")
-      if ($content -match $quotedTokenPattern) {
-        $content = $content -replace $quotedTokenPattern, $localPath
-        Write-Host "  Replaced: `"$token`" -> $localPath" -ForegroundColor DarkCyan
-      }
-    } elseif ($content -match [regex]::Escape($token)) {
-      $content = $content -replace [regex]::Escape($token), $localPath
-      Write-Host "  Replaced: $token -> $localPath" -ForegroundColor DarkCyan
-    }
-  }
-
-  $unresolvedMatches = [regex]::Matches($content, '\{\{[A-Z0-9_]+\}\}') |
-    Select-Object -ExpandProperty Value -Unique
-  foreach ($unresolved in $unresolvedMatches) {
-    Write-Host "Warning: No mapping found for token $unresolved — left as-is" `
-      -ForegroundColor Yellow
-  }
-
-  $content | Set-Content $outPath -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $outPath
-  Write-Host "Real config saved: $outPath" -ForegroundColor Green
+  ConvertFrom-VcsTemplateFile `
+    -InputFilePath $InputFilePath `
+    -Mappings $mappings `
+    -Backup:$Backup
 }
 
 Write-Host ""

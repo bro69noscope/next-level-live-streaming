@@ -193,10 +193,69 @@ function ConvertTo-VcsTemplateFile {
   New-Item -ItemType SymbolicLink -Path $symlinkPath -Target $vcsOutFilePath | Out-Null
 }
 
+function ConvertFrom-VcsTemplateFile {
+  param(
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
+    [Parameter(Mandatory=$true)]  [hashtable]$Mappings,
+    [Parameter(Mandatory=$false)] [switch]$Backup
+  )
+
+  $inputFileName = Split-Path $InputFilePath -Leaf
+
+  if ($InputFilePath -notmatch '\.vcs-template\.json$') {
+    throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
+  }
+
+  $outFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
+
+  Write-Host "Restoring real config from template..."
+  Write-Host "Input:  $InputFilePath"
+  Write-Host "Output: $outFilePath"
+
+  if ($Backup -and (Test-Path $outFilePath)) {
+    $backupPath = "$outFilePath.bak"
+    Copy-Item $outFilePath $backupPath -Force
+    Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
+  }
+
+  $content = Get-Content $InputFilePath -Raw
+
+  foreach ($entry in $Mappings.GetEnumerator()) {
+    $token     = $entry.Key
+    $localPath = [string]$entry.Value
+    $isNumeric = $localPath -match '^\d+$'
+
+    if ($isNumeric) {
+      $quotedTokenPattern = [regex]::Escape("`"$token`"")
+      if ($content -match $quotedTokenPattern) {
+        $content = $content -replace $quotedTokenPattern, $localPath
+        Write-Host "  Replaced: `"$token`" -> $localPath" -ForegroundColor DarkCyan
+      }
+    } elseif ($content -match [regex]::Escape($token)) {
+      $content = $content -replace [regex]::Escape($token), $localPath
+      Write-Host "  Replaced: $token -> $localPath" -ForegroundColor DarkCyan
+    }
+  }
+
+  $unresolvedMatches = [regex]::Matches($content, '\{\{[A-Z0-9_]+\}\}') |
+    Select-Object -ExpandProperty Value -Unique
+  foreach ($unresolved in $unresolvedMatches) {
+    Write-Host "Warning: No mapping found for token $unresolved — left as-is" `
+      -ForegroundColor Yellow
+  }
+
+  $content | Set-Content $outFilePath -Encoding UTF8
+  Format-JsonWithPrettier -FilePath $outFilePath
+  Write-Host "Real config saved: $outFilePath" -ForegroundColor Green
+
+  return $outFilePath
+}
+
 $FunctionsToExport = @(
   "Read-ReplacementMappings"
   "Format-JsonWithPrettier"
   "ConvertTo-VcsTemplateFile"
+  "ConvertFrom-VcsTemplateFile"
 )
 
 Export-ModuleMember -Function $FunctionsToExport

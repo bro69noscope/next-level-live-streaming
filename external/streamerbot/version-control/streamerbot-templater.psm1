@@ -24,7 +24,7 @@ $script:streamerbotRoots = @(
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
   -MappingsPath $script:MappingsPath `
-  -PortsMappingPaths @($script:PortsPath)
+  -ScopedMappingsPaths @($script:PortsPath)
 
 function ConvertTo-StreamerbotTemplate {
   param(
@@ -46,7 +46,7 @@ function ConvertTo-StreamerbotTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputFilePath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Mappings $mappings
+    -Rules $mappings
 }
 
 function ConvertFrom-StreamerbotTemplate {
@@ -62,16 +62,21 @@ function ConvertFrom-StreamerbotTemplate {
 
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputFilePath `
-    -Mappings $mappings `
+    -Rules $mappings `
     -Backup:$Backup
 }
 
 Write-Host ""
-Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green
+Write-Host "Streamer.bot Templater functions loading..." -ForegroundColor Yellow
 
 Write-Host "Mappings:" -ForegroundColor Cyan
-$mappings.GetEnumerator() | ForEach-Object {
-  Write-Host "  $($_.Key) => $($_.Value)"
+$mappings | ForEach-Object {
+  $scope = if ($_.Key) {
+    "[$($_.Key)] "
+  } else {
+    ""
+  }
+  Write-Host "  $scope$($_.Token) => $($_.Value)"
 }
 
 Write-Host "Script location:" -ForegroundColor Cyan
@@ -86,5 +91,6 @@ Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                # Crea
 Write-Host "  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' # Creates actions.json"
 
 Export-ModuleMember -Function ConvertTo-StreamerbotTemplate, ConvertFrom-StreamerbotTemplate
+Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green
 
 

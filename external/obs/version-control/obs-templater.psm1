@@ -28,7 +28,7 @@ $obsRoots = @(
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
   -MappingsPath $script:MappingsPath `
-  -PortsMappingPaths @($script:PortsPath)
+  -ScopedMappingsPaths @($script:PortsPath)
 
 function ConvertTo-ObsTemplate {
   param(
@@ -55,7 +55,7 @@ function ConvertTo-ObsTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputFilePath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Mappings $mappings
+    -Rules $mappings
 }
 
 function ConvertFrom-ObsTemplate {
@@ -71,16 +71,21 @@ function ConvertFrom-ObsTemplate {
 
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputFilePath `
-    -Mappings $mappings `
+    -Rules $mappings `
     -Backup:$Backup
 }
 
 Write-Host ""
-Write-Host "OBS Templater functions loaded!" -ForegroundColor Green
+Write-Host "OBS Templater functions loading..." -ForegroundColor Yellow
 
 Write-Host "Mappings:" -ForegroundColor Cyan
-$mappings.GetEnumerator() | ForEach-Object {
-  Write-Host "  $($_.Key) => $($_.Value)"
+$mappings | ForEach-Object {
+  $scope = if ($_.Key) {
+    "[$($_.Key)] "
+  } else {
+    ""
+  }
+  Write-Host "  $scope$($_.Token) => $($_.Value)"
 }
 
 Write-Host "Script location:" -ForegroundColor Cyan
@@ -93,4 +98,5 @@ Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates vcs-t
 Write-Host "  ConvertFrom-ObsTemplate 'scenes.vcs-template.json' # Creates scenes.json"
 
 Export-ModuleMember -Function ConvertTo-ObsTemplate, ConvertFrom-ObsTemplate
+Write-Host "OBS Templater functions loaded!" -ForegroundColor Green
 

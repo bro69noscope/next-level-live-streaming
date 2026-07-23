@@ -26,86 +26,83 @@ function Read-MappingsFile {
   }
 
   $raw = ConvertFrom-Json5 $Path
+  $rules = @()
 
-  $mappings = [ordered]@{}
   foreach ($category in $raw.PSObject.Properties) {
     foreach ($prop in $category.Value.PSObject.Properties) {
-      $mappings[$prop.Name] = $prop.Value
+      $rules += [PSCustomObject]@{
+        Key   = $null
+        Value = [string]$prop.Value
+        Token = $prop.Name
+      }
     }
   }
 
-  return $mappings
+  return $rules
+}
+
+function Read-ScopedMappingsFile {
+  param([Parameter(Mandatory=$true)][string]$Path)
+
+  if (-not (Test-Path $Path)) {
+    throw "Scoped mappings file not found: $Path"
+  }
+
+  $raw = ConvertFrom-Json5 $Path
+
+  if (-not $raw.PSObject.Properties.Name -contains "scoped") {
+    throw "Scoped mappings file is missing a top-level 'scoped' array: $Path"
+  }
+  if (-not $raw.scoped -or $raw.scoped.Count -eq 0) {
+    throw "Scoped mappings file has an empty 'scoped' array: $Path"
+  }
+
+  $rules = @()
+  foreach ($entry in $raw.scoped) {
+    if (-not $entry.key -or -not $entry.value -or -not $entry.token) {
+      throw "Scoped mapping entry missing key/value/token: $($entry | ConvertTo-Json -Compress)"
+    }
+    $rules += [PSCustomObject]@{
+      Key   = [string]$entry.key
+      Value = [string]$entry.value
+      Token = [string]$entry.token
+    }
+  }
+
+  return $rules
 }
 
 function Read-ReplacementMappings {
   param(
     [string]$CommonMappingsPath,
     [string]$MappingsPath,
-    [string[]]$PortsMappingPaths = @()
+    [Parameter(Mandatory=$true)] [string[]]$ScopedMappingsPaths
   )
 
-  $merged = [ordered]@{}
+  if (-not $ScopedMappingsPaths -or $ScopedMappingsPaths.Count -eq 0) {
+    throw "Read-ReplacementMappings requires at least one -ScopedMappingsPaths entry `
+    (e.g. a ports file)."
+  }
+
+  $rules = @()
 
   if ($CommonMappingsPath -and (Test-Path $CommonMappingsPath)) {
-    (Read-MappingsFile $CommonMappingsPath).GetEnumerator() |
-      ForEach-Object {
-        $merged[$_.Key] = $_.Value
-      }
+    $rules += Read-MappingsFile $CommonMappingsPath
   }
-
   if ($MappingsPath -and (Test-Path $MappingsPath)) {
-    (Read-MappingsFile $MappingsPath).GetEnumerator() |
-      ForEach-Object {
-        if ($merged.Contains($_.Key)) {
-          Write-Host "  Note: '$($_.Key)' overrides common mapping" `
-            -ForegroundColor DarkYellow
-        }
-        $merged[$_.Key] = $_.Value
-      }
+    $rules += Read-MappingsFile $MappingsPath
+  }
+  foreach ($path in $ScopedMappingsPaths) {
+    $rules += Read-ScopedMappingsFile $path
   }
 
-  foreach ($path in $PortsMappingPaths) {
-    (Read-PortMappings $path).GetEnumerator() |
-      ForEach-Object {
-        if ($merged.Contains($_.Key)) {
-          Write-Host "  Note: '$($_.Key)' overrides previous mapping" `
-            -ForegroundColor DarkYellow
-        }
-        $merged[$_.Key] = $_.Value
-      }
+  if ($rules.Count -eq 0) {
+    throw "Read-ReplacementMappings produced zero rules — check your mapping file paths and contents."
   }
 
-  return $merged
-}
-
-function Read-PortMappings {
-  param([Parameter(Mandatory)][string]$Path)
-
-  $config = ConvertFrom-Json5 $Path
-  $mappings = [ordered]@{}
-
-  function Visit($obj) {
-    if ($null -eq $obj) {
-      return
-    }
-
-    if (
-      $obj.PSObject.Properties.Name -contains "token" -and
-      $obj.PSObject.Properties.Name -contains "port"
-    ) {
-      $mappings[$obj.token] = [string]$obj.port
-    }
-
-    foreach ($prop in $obj.PSObject.Properties) {
-      if ($prop.Value -is [psobject]) {
-        Visit $prop.Value
-      }
-    }
-  }
-
-  Visit $config
-
-  return $mappings
+  # Longest value first — so a full URL is matched before a bare port
+  # substring that happens to be embedded inside it.
+  return $rules | Sort-Object { $_.Value.Length } -Descending
 }
 
 function Format-JsonWithPrettier {
@@ -210,11 +207,76 @@ function Get-VcsRelativePath {
   )
 }
 
+function Invoke-ScopedReplace {
+  param(
+    [Parameter(Mandatory=$true)] [string]$Content,
+    [Parameter(Mandatory=$true)] [string]$Key,
+    [Parameter(Mandatory=$true)] [string]$SearchValue,
+    [Parameter(Mandatory=$true)] [string]$Token
+  )
+
+  $isNumericSearch = $SearchValue -match '^-?\d+(\.\d+)?$'
+
+  # "Key": "quoted value" OR "Key": bareNumber
+  $pattern = "(?<prefix>`"$([regex]::Escape($Key))`"\s*:\s*)" +
+  "(?<val>`"(?:[^`"\\]|\\.)*`"|-?\d+(?:\.\d+)?)"
+
+  return [regex]::Replace($Content, $pattern, {
+      param($m)
+      $prefix = $m.Groups['prefix'].Value
+      $val    = $m.Groups['val'].Value
+
+      if ($val.StartsWith('"')) {
+        $inner = $val.Substring(1, $val.Length - 2)   # strip surrounding quotes
+
+        if ($isNumericSearch) {
+          # Numeric rule values require an exact match even if the target
+          # happens to be quoted — never a substring match on digits.
+          if ($inner -eq $SearchValue) {
+            Write-Host "  Replaced ($Key): `"$SearchValue`" -> `"$Token`"" -ForegroundColor DarkCyan
+            return $prefix + "`"$Token`""
+          }
+        } elseif ($inner.Contains($SearchValue)) {
+          Write-Host "  Replaced ($Key): $SearchValue -> $Token in $val" -ForegroundColor DarkCyan
+          return $prefix + "`"$($inner.Replace($SearchValue, $Token))`""
+        }
+      } elseif ($val -eq $SearchValue) {
+        Write-Host "  Replaced ($Key): $SearchValue -> `"$Token`"" -ForegroundColor DarkCyan
+        return $prefix + "`"$Token`""
+      }
+
+      return $m.Value
+    })
+}
+
+function Invoke-ScopedRestore {
+  param(
+    [Parameter(Mandatory=$true)] [string]$Content,
+    [Parameter(Mandatory=$true)] [string]$Value,
+    [Parameter(Mandatory=$true)] [string]$Token
+  )
+
+  $isNumeric = $Value -match '^-?\d+(\.\d+)?$'
+
+  if ($isNumeric) {
+    $quotedToken = "`"$Token`""
+    if ($Content.Contains($quotedToken)) {
+      $Content = $Content.Replace($quotedToken, $Value)
+      Write-Host "  Replaced: $quotedToken -> $Value" -ForegroundColor DarkCyan
+    }
+  } elseif ($Content.Contains($Token)) {
+    $Content = $Content.Replace($Token, $Value)
+    Write-Host "  Replaced: $Token -> $Value" -ForegroundColor DarkCyan
+  }
+
+  return $Content
+}
+
 function ConvertTo-VcsTemplateFile {
   param(
-    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
-    [Parameter(Mandatory=$true)]  [string]$VcsOutDirPath,
-    [Parameter(Mandatory=$true)] [hashtable]$Mappings
+    [Parameter(Mandatory=$true)] [string]$InputFilePath,
+    [Parameter(Mandatory=$true)] [string]$VcsOutDirPath,
+    [Parameter(Mandatory=$true)] [array]$Rules
   )
 
   $inputFileName  = Split-Path $InputFilePath -Leaf
@@ -242,36 +304,22 @@ function ConvertTo-VcsTemplateFile {
   }
 
   $content = Get-Content $InputFilePath -Raw
-  $sortedMappings = $Mappings.GetEnumerator() |
-    Sort-Object { $_.Value.Length } -Descending
+  $sortedRules = $Rules | Sort-Object { $_.Value.Length } -Descending
 
-  foreach ($entry in $sortedMappings) {
-    $token     = $entry.Key
-    $localPath = [string]$entry.Value
-    $isNumeric = $localPath -match '^\d+$'
-
-    $variants = @(
-      $localPath,
-      ($localPath | ConvertTo-Json -Compress).Trim('"')
-    )
-
-    if ($isNumeric) {
-      $quotedPattern = "`"$([regex]::Escape($localPath))`""
-      $barePattern   = "(?<!\d)$([regex]::Escape($localPath))(?!\d)"
-      if ($content -match $quotedPattern) {
-        $content = $content -replace $quotedPattern, "`"$token`""
-        Write-Host "  Replaced: `"$localPath`" -> `"$token`"" -ForegroundColor DarkCyan
-      } elseif ($content -match $barePattern) {
-        $content = [regex]::Replace($content, $barePattern, "`"$token`"")
-        Write-Host "  Replaced: $localPath -> `"$token`"" -ForegroundColor DarkCyan
-      }
-      continue
-    }
-
-    foreach ($variant in $variants) {
-      if ($content.Contains($variant)) {
-        $content = $content.Replace($variant, $token)
-        Write-Host "  Replaced: $variant -> $token" -ForegroundColor DarkCyan
+  foreach ($rule in $sortedRules) {
+    if ($rule.Key) {
+      $content = Invoke-ScopedReplace -Content $content -Key $rule.Key `
+        -SearchValue $rule.Value -Token $rule.Token
+    } else {
+      $variants = @(
+        $rule.Value,
+        ($rule.Value | ConvertTo-Json -Compress).Trim('"')
+      )
+      foreach ($variant in $variants) {
+        if ($content.Contains($variant)) {
+          $content = $content.Replace($variant, $rule.Token)
+          Write-Host "  Replaced: $variant -> $($rule.Token)" -ForegroundColor DarkCyan
+        }
       }
     }
   }
@@ -286,7 +334,7 @@ function ConvertTo-VcsTemplateFile {
 function ConvertFrom-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
-    [Parameter(Mandatory=$true)]  [hashtable]$Mappings,
+    [Parameter(Mandatory=$true)]  [array]$Rules,
     [Parameter(Mandatory=$false)] [switch]$Backup
   )
 
@@ -310,26 +358,8 @@ function ConvertFrom-VcsTemplateFile {
 
   $content = Get-Content $InputFilePath -Raw
 
-  foreach ($entry in $Mappings.GetEnumerator()) {
-    $token     = $entry.Key
-    $localPath = [string]$entry.Value
-    $isNumeric = $localPath -match '^\d+$'
-
-    if ($isNumeric) {
-      $quotedTokenPattern = [regex]::Escape("`"$token`"")
-      if ($content -match $quotedTokenPattern) {
-        $content = $content -replace $quotedTokenPattern, $localPath
-        Write-Host "  Replaced: `"$token`" -> $localPath" -ForegroundColor DarkCyan
-      }
-
-    } elseif ($content -match [regex]::Escape($token)) {
-      $content = $content -replace `
-        [regex]::Escape($token), {
-        ($localPath | ConvertTo-Json -Compress).Trim('"')
-      }
-      Write-Host "  Replaced: $token -> $localPath" `
-        -ForegroundColor DarkCyan
-    }
+  foreach ($rule in $Rules) {
+    $content = Invoke-ScopedRestore -Content $content -Value $rule.Value -Token $rule.Token
   }
 
   $unresolvedMatches = [regex]::Matches($content, '\{\{[A-Z0-9_]+\}\}') |

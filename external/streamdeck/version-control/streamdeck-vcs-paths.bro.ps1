@@ -7,6 +7,8 @@ $script:CommonMappingsPath = Join-Path $PSScriptRoot `
 $script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
   "external\common\streaming-software\version-control\helpers.psm1"
 
+$script:PortsPath = Join-Path $env:STREAMING_REPO_PATH "config\ports_generated.json"
+
 $CommonUserMappings = Get-ChildItem (Join-Path (
     Split-Path $script:CommonMappingsPath) "common-vcs-mappings*.jsonc") |
   Where-Object { $_.Name -ne "common-vcs-mappings.bro.jsonc" } |

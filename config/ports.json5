@@ -4,10 +4,22 @@
     python: {
       host: "127.0.0.1",
       port: 50000,
-      token: "{{REPOSITORY_PYTHON_PORT}}",
+      protocol: "websocket",
+      url: "ws://localhost:50000",
+      tokens: {
+        url: {
+          token: "{{REPOSITORY_PYTHON_WS}}",
+          scope_keys: {
+            obs: "url",
+            default: "url",
+          },
+        },
+        port: {
+          token: "{{REPOSITORY_PYTHON_PORT}}",
+        },
+      },
     },
   },
-
   // OBS servers
   obs: {
     production: {
@@ -15,21 +27,32 @@
       port: 51000,
       token: "{{OBS_PRODUCTION_PORT}}",
       protocol: "websocket",
+      scope_keys: {
+        obs: "server_port",
+        default: "port",
+      },
     },
     portable_vcam: {
       host: "127.0.0.1",
       port: 51001,
       token: "{{OBS_PORTABLE_VCAM_PORT}}",
       protocol: "websocket",
+      scope_keys: {
+        obs: "server_port",
+        default: "port",
+      },
     },
     portable_ftp: {
       host: "127.0.0.1",
       port: 51002,
       token: "{{OBS_PORTABLE_FTP_PORT}}",
       protocol: "websocket",
+      scope_keys: {
+        obs: "server_port",
+        default: "port",
+      },
     },
   },
-
   // Streamer.bot servers
   streamerbot: {
     production: {
@@ -65,7 +88,6 @@
       },
     },
   },
-
   // Internal subprocess socket servers
   subprocesses: {
     shopwatcher: {

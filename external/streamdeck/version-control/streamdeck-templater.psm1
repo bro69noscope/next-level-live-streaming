@@ -51,6 +51,7 @@ function ConvertTo-StreamDeckTemplate {
     return
   }
 
+  $inputDirectory = Split-Path $InputPath -Parent
   Assert-StreamDeckPath -Path $inputDirectory
 
   $relativeDeckPath = $inputDirectory.Substring($script:StreamDeckBasePath.Length).TrimStart('\')

@@ -1,5 +1,4 @@
 . "$PSScriptRoot\dotsource-paths.ps1"
-Import-Module "$PSScriptRoot\healthcheck.psm1" -Force
 
 function Import-StreamingTemplatesModules {
   $repo = $Script:repoPath.TrimEnd('\')
@@ -23,9 +22,6 @@ function Import-StreamingTemplatesModules {
   }
 
   Write-Host "Streaming tools loaded!" -ForegroundColor Green
-  Write-Host "Healthcheck:" -ForegroundColor Cyan
-  Write-Host "  Streamerbot:" -ForegroundColor Cyan
-  Test-StreamerbotDllSymlinks
 }
 
 Export-ModuleMember -Function Import-StreamingTemplatesModules

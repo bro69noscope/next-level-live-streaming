@@ -1,5 +1,3 @@
-. "$PSScriptRoot\dotsource-paths.ps1"
-
 function Test-StreamerbotDllSymlinks {
   [CmdletBinding()]
   param(

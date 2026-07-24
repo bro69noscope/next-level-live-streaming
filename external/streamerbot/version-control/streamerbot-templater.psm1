@@ -1,6 +1,7 @@
 # Used to create an editable template from a Streamer.bot "actions/settings.json" file.
 . "$PSScriptRoot\streamerbot-vcs-paths.bro.ps1"
 Import-Module $HelpersModulePath -Force
+Import-Module "$PSScriptRoot\healthcheck.psm1" -Force
 
 Get-ChildItem "$PSScriptRoot\streamerbot-vcs-paths*.ps1" |
   Where-Object { $_.Name -ne "streamerbot-vcs-paths.bro.ps1" } |
@@ -91,6 +92,7 @@ Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                # Crea
 Write-Host "  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' # Creates actions.json"
 
 Export-ModuleMember -Function ConvertTo-StreamerbotTemplate, ConvertFrom-StreamerbotTemplate
+Write-Host "Healthcheck:" -ForegroundColor Cyan
+Test-StreamerbotDllSymlinks
 Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green
-
 

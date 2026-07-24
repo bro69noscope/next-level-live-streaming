@@ -71,7 +71,7 @@ function Get-VcsTargets {
       Paths        = @($script:SdeckBasePath)
       ToFunction   = "ConvertTo-StreamDeckTemplate"
       FromFunction = "ConvertFrom-StreamDeckTemplate"
-      ParamName    = "InputPath"
+      ParamName    = "InputFilePath"
     },
     @{
       App          = "OBS"

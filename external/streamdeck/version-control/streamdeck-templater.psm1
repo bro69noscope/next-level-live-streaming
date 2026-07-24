@@ -20,7 +20,7 @@ function Assert-StreamDeckPath {
 
 function ConvertTo-StreamDeckTemplate {
   param(
-    [Parameter(Mandatory=$true)]  [string]$InputPath,
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$false)] [string]$RelativeOutPath
   )
 

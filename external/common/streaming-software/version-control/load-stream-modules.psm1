@@ -2,7 +2,7 @@
 
 function Import-StreamingTemplatesModules {
   $repo = $Script:repoPath.TrimEnd('\')
-  $modules = @{
+  $modules = [ordered]@{
     OBS = Join-Path $repo `
       "external\obs\version-control\obs-templater.psm1"
 
@@ -11,6 +11,9 @@ function Import-StreamingTemplatesModules {
 
     StreamerBot = Join-Path $repo `
       "external\streamerbot\version-control\streamerbot-templater.psm1"
+
+    Orchestrator = Join-Path $repo `
+      "external\common\streaming-software\version-control\vcs-orchestrator.psm1"
   }
 
   foreach ($module in $modules.GetEnumerator()) {
@@ -18,10 +21,8 @@ function Import-StreamingTemplatesModules {
       Write-ThrowContext
       throw "$($module.Key) module not found at: $($module.Value)"
     }
-
     Import-Module $module.Value -Force -Global
   }
-
   Write-Host "Streaming tools loaded!" -ForegroundColor Green
 }
 

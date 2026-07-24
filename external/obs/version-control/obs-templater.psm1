@@ -30,6 +30,51 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:MappingsPath `
   -ScopedMappingsPaths @($script:PortsPath)
 
+$script:ObsMarkers = @("scenes", "plugin_config")
+$script:ObsPluginAllowlist = @("obs-websocket")
+$script:ObsSceneAllowlist = @("collection_aoe2", "collection_dota2")
+# also allow any scene name that ends with these suffixes, for testing purposes
+$script:ObsSceneTestSuffixPattern = '_(fake|test)$'
+
+function Test-ObsMarkerPath {
+  param([Parameter(Mandatory=$true)] [string]$Path)
+
+  $parts = $Path -split '\\'
+
+  for ($i = 0; $i -lt $parts.Count; $i++) {
+    $marker = $parts[$i]
+    $nextPart = if ($i + 1 -lt $parts.Count) {
+      $parts[$i + 1] 
+    } else {
+      $null 
+    }
+
+    if ($marker -eq "plugin_config") {
+      if ($script:ObsPluginAllowlist -contains $nextPart) {
+        return $true
+      }
+      continue
+    }
+
+    if ($marker -eq "scenes") {
+      $sceneName = if ($nextPart) {
+        $nextPart -replace '\.json$', '' 
+      } else {
+        $null 
+      }
+      if (
+        $script:ObsSceneAllowlist -contains $sceneName -or
+        ($sceneName -and $sceneName -match $script:ObsSceneTestSuffixPattern)
+      ) {
+        return $true
+      }
+      continue
+    }
+  }
+
+  return $false
+}
+
 function ConvertTo-ObsTemplate {
   param(
     [Parameter(Mandatory=$true)]
@@ -39,14 +84,36 @@ function ConvertTo-ObsTemplate {
   $InputFilePath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputFilePath -Roots $obsRoots
 
+  if (Test-Path $InputFilePath -PathType Container) {
+    $candidates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.json" |
+      Where-Object {
+        $_.Name -notmatch '\.vcs-template\.json$' -and
+        (Test-ObsMarkerPath -Path $_.FullName)
+      }
+
+    if (-not $candidates) {
+      Write-Host "No matching .json files found under: $InputFilePath" -ForegroundColor Yellow
+      Write-Host "  (must live under one of: $($script:ObsMarkers -join ', '))" -ForegroundColor Yellow
+      return
+    }
+
+    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputFilePath" -ForegroundColor Cyan
+    foreach ($candidate in $candidates) {
+      Write-Host ""
+      try {
+        ConvertTo-ObsTemplate -InputFilePath $candidate.FullName
+      } catch {
+        Write-Host "  Failed: $($candidate.FullName)" -ForegroundColor Red
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+      }
+    }
+    return
+  }
+
   $VcsRelativePath = Get-VcsRelativePath `
     -InputFilePath $InputFilePath `
     -Roots $obsRoots `
-    -Markers @(
-    "scenes",
-    "profiles",
-    "plugin_config"
-  ) `
+    -Markers $script:ObsMarkers `
     -AppName "OBS"
 
   $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"

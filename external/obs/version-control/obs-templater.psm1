@@ -1,12 +1,7 @@
 # Used to create an editable template from an OBS "scenes.json" file.
-. "$PSScriptRoot\obs-vcs-paths.bro.ps1"
-Import-Module $HelpersModulePath -Force
+. "$PSScriptRoot\dotsource-obs-paths.ps1"
 
-Get-ChildItem "$PSScriptRoot\obs-vcs-paths*.ps1" |
-  Where-Object { $_.Name -ne "obs-vcs-paths.bro.ps1" } |
-  ForEach-Object {
-    . $_.FullName
-  }
+Import-Module $HelpersModulePath -Force
 
 $obsRoots = @(
   @{

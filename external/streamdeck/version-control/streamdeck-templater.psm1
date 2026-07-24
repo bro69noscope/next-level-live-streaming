@@ -1,12 +1,7 @@
 # Used to create an editable template from an StreamDeck "scenes.json" file.
-. "$PSScriptRoot\StreamDeck-vcs-paths.bro.ps1"
-Import-Module $HelpersModulePath -Force
+. "$PSScriptRoot\dotsource-streamdeck-paths.ps1"
 
-Get-ChildItem "$PSScriptRoot\streamdeck-vcs-paths*.ps1" |
-  Where-Object { $_.Name -ne "streamdeck-vcs-paths.bro.ps1" } |
-  ForEach-Object {
-    . $_.FullName
-  }
+Import-Module $HelpersModulePath -Force
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 

@@ -1,5 +1,5 @@
 . (Join-Path $env:STREAMING_REPO_PATH `
-    "external\common\streaming-software\version-control\dotsource-paths.ps1")
+    "external\common\streaming-software\version-control\dotsource-common-paths.ps1")
 
 $script:ObsProductionPath = Join-Path $env:APPDATA "obs-studio\"
 
@@ -12,12 +12,4 @@ $script:ObsFtpPath = Join-Path $env:MYFILES_PATH `
 $script:ObsPortsPath = Join-Path $env:STREAMING_REPO_PATH `
   "\config\ports_generated.obs.json"
 
-$script:ObsMappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.json5"
-
-$ObsOverrideMappings = Get-ChildItem "$PSScriptRoot\obs-vcs-mappings*.json5" |
-  Where-Object { $_.Name -ne "obs-vcs-mappings.bro.json5" } |
-  Select-Object -First 1
-
-if ($ObsOverrideMappings) {
-  $script:ObsMappingsPath = $ObsOverrideMappings.FullName
-}
+$script:ObsMappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.jsonc"

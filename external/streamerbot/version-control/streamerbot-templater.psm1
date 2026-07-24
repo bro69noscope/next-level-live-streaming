@@ -1,13 +1,8 @@
 # Used to create an editable template from a Streamer.bot "actions/settings.json" file.
-. "$PSScriptRoot\streamerbot-vcs-paths.bro.ps1"
+. "$PSScriptRoot\dotsource-streamerbot-paths.ps1"
+
 Import-Module $HelpersModulePath -Force
 Import-Module "$PSScriptRoot\healthcheck.psm1" -Force
-
-Get-ChildItem "$PSScriptRoot\streamerbot-vcs-paths*.ps1" |
-  Where-Object { $_.Name -ne "streamerbot-vcs-paths.bro.ps1" } |
-  ForEach-Object {
-    . $_.FullName
-  }
 
 $script:streamerbotRoots = @(
   @{

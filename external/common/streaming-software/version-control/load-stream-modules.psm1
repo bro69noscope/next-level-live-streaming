@@ -1,4 +1,4 @@
-. "$PSScriptRoot\dotsource-paths.ps1"
+. "$PSScriptRoot\dotsource-common-paths.ps1"
 
 function Import-StreamingTemplatesModules {
   $repo = $Script:repoPath.TrimEnd('\')

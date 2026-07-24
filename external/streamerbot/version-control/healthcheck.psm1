@@ -1,11 +1,8 @@
 function Test-StreamerbotDllSymlinks {
   [CmdletBinding()]
   param(
-    [Parameter(ValueFromPipeline)]
-    [string[]]$Path = @(
-      "$script:StreamerBotProductionPath\dlls\BroStreamerTools.dll"
-      "$Script:StreamerBotFtpPath\dlls\BroStreamerTools.dll"
-    )
+    [Parameter(Mandatory = $true, ValueFromPipeline)]
+    [string[]]$Path
   )
 
   process {
@@ -33,5 +30,4 @@ function Test-StreamerbotDllSymlinks {
   }
 }
 
-Export-ModuleMember `
-  -Function Test-StreamerbotDllSymlinks
+Export-ModuleMember -Function Test-StreamerbotDllSymlinks

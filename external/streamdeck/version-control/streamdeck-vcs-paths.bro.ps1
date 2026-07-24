@@ -19,7 +19,6 @@ if ($CommonUserMappings) {
   $script:CommonMappingsPath = $CommonUserMappings.FullName
 }
 
-
 $UserMappings = Get-ChildItem "$PSScriptRoot\streamdeck-vcs-mappings*.jsonc" |
   Where-Object { $_.Name -ne "streamdeck-vcs-mappings.bro.jsonc" } |
   Select-Object -First 1

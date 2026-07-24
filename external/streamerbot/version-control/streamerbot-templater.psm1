@@ -13,19 +13,19 @@ $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
 $script:streamerbotRoots = @(
   @{
-    Path = $script:StreamerbotFtpPath
+    Path = $script:SbotFtpPath
     Name = "ftp"
   },
   @{
-    Path = $script:StreamerbotProductionPath
+    Path = $script:SbotProductionPath
     Name = "production"
   }
 )
 
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
-  -MappingsPath $script:MappingsPath `
-  -ScopedMappingsPaths @($script:PortsPath)
+  -MappingsPath $script:SbotMappingsPath `
+  -ScopedMappingsPaths @($script:SbotPortsPath)
 
 function ConvertTo-StreamerbotTemplate {
   param(
@@ -85,7 +85,7 @@ Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "  All input files must be under:`n$(
-  $script:StreamerbotBasePaths -join "`n"
+  $script:streamerbotRoots.Path -join "`n"
 )"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                # Creates vcs-template.json"
@@ -93,6 +93,10 @@ Write-Host "  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' # Crea
 
 Export-ModuleMember -Function ConvertTo-StreamerbotTemplate, ConvertFrom-StreamerbotTemplate
 Write-Host "Healthcheck:" -ForegroundColor Cyan
-Test-StreamerbotDllSymlinks
-Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green
+@(
+  "$Script:SbotProductionPath\dlls\BroStreamerTools.dll"
+  "$Script:SbotFtpPath\dlls\BroStreamerTools.dll"
+) | Test-StreamerbotDllSymlinks
 
+Write-Host ""
+Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green

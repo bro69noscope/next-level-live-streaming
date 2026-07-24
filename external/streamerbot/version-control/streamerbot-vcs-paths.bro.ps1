@@ -1,34 +1,25 @@
-$script:PrettierPath = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
-$script:MappingsPath = Join-Path $PSScriptRoot "streamerbot-vcs-mappings.bro.jsonc"
-$script:CommonMappingsPath = Join-Path $PSScriptRoot `
-  "..\..\common\streaming-software\version-control\common-vcs-mappings.bro.jsonc"
+. (Join-Path $env:STREAMING_REPO_PATH `
+    "external\common\streaming-software\version-control\dotsource-paths.ps1")
 
-$Script:StreamerBotProductionPath = Join-Path $env:MYFILES_PATH `
+$script:SbotMappingsPath = "$PSScriptRoot\streamerbot-vcs-mappings.bro.jsonc"
+
+$Script:SbotProductionPath = Join-Path $env:MYFILES_PATH `
   "streaming-programs\streamerbot-portable-production\Streamer.bot"
 
-$Script:StreamerBotFtpPath = Join-Path $env:MYFILES_PATH `
+$Script:SbotFtpPath = Join-Path $env:MYFILES_PATH `
   "streaming-programs\streamerbot-portable-ftp\Streamer.bot"
 
 $script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
   "external\common\streaming-software\version-control\helpers.psm1"
 
-$script:PortsPath = Join-Path $env:STREAMING_REPO_PATH `
+$script:SbotPortsPath = Join-Path $env:STREAMING_REPO_PATH `
   "config\ports_generated.streamerbot.json"
 
-$CommonUserMappings = Get-ChildItem (Join-Path (
-    Split-Path $script:CommonMappingsPath) "common-vcs-mappings*.jsonc") |
-  Where-Object { $_.Name -ne "common-vcs-mappings.bro.jsonc" } |
-  Select-Object -First 1
-
-if ($CommonUserMappings) {
-  $script:CommonMappingsPath = $CommonUserMappings.FullName
-}
-
-$UserMappings = Get-ChildItem "$PSScriptRoot\streamerbot-vcs-mappings*.jsonc" |
+$SbotUserMappings = Get-ChildItem "$PSScriptRoot\streamerbot-vcs-mappings*.jsonc" |
   Where-Object { $_.Name -ne "streamerbot-vcs-mappings.bro.jsonc" } |
   Select-Object -First 1
 
-if ($UserMappings) {
-  $script:MappingsPath = $UserMappings.FullName
+if ($SbotUserMappings) {
+  $script:SbotMappingsPath = $SbotUserMappings.FullName
 }
 

@@ -58,9 +58,9 @@ function Test-ObsMarkerPath {
 
     if ($marker -eq "scenes") {
       $sceneName = if ($nextPart) {
-        $nextPart -replace '\.json$', '' 
+        $nextPart -replace '\.vcs-template\.json$', '' -replace '\.json$', ''
       } else {
-        $null 
+        $null
       }
       if (
         $script:ObsSceneAllowlist -contains $sceneName -or
@@ -135,6 +135,30 @@ function ConvertFrom-ObsTemplate {
 
   $InputFilePath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputFilePath -Roots $obsRoots
+
+  if (Test-Path $InputFilePath -PathType Container) {
+    $templates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.vcs-template.json" |
+      Where-Object { Test-ObsMarkerPath -Path $_.FullName }
+
+    if (-not $templates) {
+      Write-Host "No matching *.vcs-template.json files found under: $InputFilePath" -ForegroundColor Yellow
+      return
+    }
+
+    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputFilePath" -ForegroundColor Cyan
+    foreach ($template in $templates) {
+      Write-Host ""
+      try {
+        ConvertFrom-ObsTemplate `
+          -InputFilePath $template.FullName `
+          -Backup:$Backup
+      } catch {
+        Write-Host "  Failed: $($template.FullName)" -ForegroundColor Red
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+      }
+    }
+    return
+  }
 
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputFilePath `

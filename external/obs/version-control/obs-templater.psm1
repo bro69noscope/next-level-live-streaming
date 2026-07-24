@@ -32,7 +32,12 @@ $mappings = Read-ReplacementMappings `
 
 $script:ObsMarkers = @("scenes", "plugin_config")
 $script:ObsPluginAllowlist = @("obs-websocket")
-$script:ObsSceneAllowlist = @("collection_aoe2", "collection_dota2")
+$script:ObsSceneAllowlist = @(
+  "collection_aoe2",
+  "collection_dota2",
+  "ftp_collection_main",
+  "vcam_collection_main"
+)
 # also allow any scene name that ends with these suffixes, for testing purposes
 $script:ObsSceneTestSuffixPattern = '_(fake|test)$'
 
@@ -44,9 +49,9 @@ function Test-ObsMarkerPath {
   for ($i = 0; $i -lt $parts.Count; $i++) {
     $marker = $parts[$i]
     $nextPart = if ($i + 1 -lt $parts.Count) {
-      $parts[$i + 1] 
+      $parts[$i + 1]
     } else {
-      $null 
+      $null
     }
 
     if ($marker -eq "plugin_config") {

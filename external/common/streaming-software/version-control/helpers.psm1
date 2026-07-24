@@ -1,4 +1,19 @@
-$script:PrettierPath = Join-Path $env:LOCALAPPDATA "nvim-data\mason\bin\prettier.cmd"
+. "$PSScriptRoot\dotsource-paths.ps1"
+
+function Assert-HelpersPaths {
+  $helperPaths = @(
+    $Script:repoPath
+    $Script:PrettierPath
+  )
+  foreach ($path in $helperPaths) {
+    if (-not (Test-Path $path)) {
+      Write-Host "Required path not found: '$path'" -ForegroundColor Red
+      Write-Host "Check $PSScriptRoot\helpers-paths.*.ps1" -ForegroundColor Red
+      throw "Required path not found: $path"
+    }
+  }
+}
+
 function ConvertFrom-Json5 {
   param([string]$Path)
 
@@ -388,4 +403,5 @@ $FunctionsToExport = @(
   "Assert-InputPath"
 )
 
+Assert-HelpersPaths
 Export-ModuleMember -Function $FunctionsToExport

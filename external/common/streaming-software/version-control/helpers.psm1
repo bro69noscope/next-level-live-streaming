@@ -126,9 +126,11 @@ function Assert-InputPath {
     [array]$Roots
   )
 
+  $normalizedPath = $Path.TrimEnd('\')
+
   $valid = $Roots | Where-Object {
-    $Path.StartsWith(
-      $_.Path,
+    $normalizedPath.StartsWith(
+      $_.Path.TrimEnd('\'),
       [System.StringComparison]::OrdinalIgnoreCase
     )
   }

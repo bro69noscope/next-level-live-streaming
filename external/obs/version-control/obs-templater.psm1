@@ -1,7 +1,7 @@
 # Used to create an editable template from an OBS "scenes.json" file.
 . "$PSScriptRoot\dotsource-obs-paths.ps1"
 
-Import-Module $HelpersModulePath -Force
+Import-Module $VcsHelpersModulePath -Force
 
 $obsRoots = @(
   @{

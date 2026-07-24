@@ -1,7 +1,7 @@
 # Used to create an editable template from an StreamDeck "scenes.json" file.
 . "$PSScriptRoot\dotsource-streamdeck-paths.ps1"
 
-Import-Module $HelpersModulePath -Force
+Import-Module $VcsHelpersModulePath -Force
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 

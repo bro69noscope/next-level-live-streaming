@@ -1,7 +1,7 @@
 # Used to create an editable template from a Streamer.bot "actions/settings.json" file.
 . "$PSScriptRoot\dotsource-streamerbot-paths.ps1"
 
-Import-Module $HelpersModulePath -Force
+Import-Module $VcsHelpersModulePath -Force
 Import-Module "$PSScriptRoot\healthcheck.psm1" -Force
 
 $script:streamerbotRoots = @(

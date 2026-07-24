@@ -12,14 +12,14 @@ $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonMappingsPath `
-  -MappingsPath $script:MappingsPath `
+  -MappingsPath $script:SdeckMappingsPath `
   -ScopedMappingsPaths @($script:PortsPath)
 
 function Assert-StreamDeckPath {
   param([Parameter(Mandatory=$true)][string]$Path)
 
-  if (-not $Path.StartsWith($script:StreamDeckBasePath, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "This function must target files under: $($script:StreamDeckBasePath)`nCurrent target: $Path"
+  if (-not $Path.StartsWith($script:SdeckBasePath, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "This function must target files under: $($script:SdeckBasePath)`nCurrent target: $Path"
   }
 }
 
@@ -52,7 +52,7 @@ function ConvertTo-StreamDeckTemplate {
   }
 
   $inputDirectory = Split-Path $InputPath -Parent
-  $relativeDeckPath = $inputDirectory.Substring($script:StreamDeckBasePath.Length).TrimStart('\')
+  $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
 
   $vcsOutDirPath = if ($RelativeOutPath) {
     Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
@@ -117,7 +117,7 @@ Write-Host "Script location:" -ForegroundColor Cyan
 Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  All input files must be under: $script:StreamDeckBasePath"
+Write-Host "  All input files must be under: $script:SdeckBasePath"
 Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json'                     # Creates vcs-template.json"
 Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'       # Uses custom out path relative to this script location"

@@ -267,7 +267,8 @@ function Invoke-ScopedRestore {
       Write-Host "  Replaced: $quotedToken -> $Value" -ForegroundColor DarkCyan
     }
   } elseif ($Content.Contains($Token)) {
-    $Content = $Content.Replace($Token, $Value)
+    $escapedValue = ($Value | ConvertTo-Json -Compress).Trim('"')
+    $Content = $Content.Replace($Token, $escapedValue)
     Write-Host "  Replaced: $Token -> $Value" -ForegroundColor DarkCyan
   }
 

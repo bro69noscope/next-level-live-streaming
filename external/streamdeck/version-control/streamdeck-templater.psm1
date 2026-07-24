@@ -52,9 +52,8 @@ function ConvertTo-StreamDeckTemplate {
   }
 
   $inputDirectory = Split-Path $InputPath -Parent
-  Assert-StreamDeckPath -Path $inputDirectory
-
   $relativeDeckPath = $inputDirectory.Substring($script:StreamDeckBasePath.Length).TrimStart('\')
+
   $vcsOutDirPath = if ($RelativeOutPath) {
     Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
   } else {

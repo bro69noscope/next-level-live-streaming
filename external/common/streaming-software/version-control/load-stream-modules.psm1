@@ -15,6 +15,7 @@ function Import-StreamingTemplatesModules {
 
   foreach ($module in $modules.GetEnumerator()) {
     if (-not (Test-Path $module.Value)) {
+      Write-ThrowContext
       throw "$($module.Key) module not found at: $($module.Value)"
     }
 

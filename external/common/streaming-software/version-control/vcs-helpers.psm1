@@ -9,6 +9,7 @@ function Assert-HelpersPaths {
     if (-not (Test-Path $path)) {
       Write-Host "Required path not found: '$path'" -ForegroundColor Red
       Write-Host "Check $PSScriptRoot\helpers-paths.*.ps1" -ForegroundColor Red
+      Write-ThrowContext
       throw "Required path not found: $path"
     }
   }
@@ -37,6 +38,7 @@ function Read-MappingsFile {
   param([Parameter(Mandatory=$true)][string]$Path)
 
   if (-not (Test-Path $Path)) {
+    Write-ThrowContext
     throw "Mappings file not found: $Path"
   }
 
@@ -60,21 +62,25 @@ function Read-ScopedMappingsFile {
   param([Parameter(Mandatory=$true)][string]$Path)
 
   if (-not (Test-Path $Path)) {
+    Write-ThrowContext
     throw "Scoped mappings file not found: $Path"
   }
 
   $raw = ConvertFrom-Json5 $Path
 
   if (-not $raw.PSObject.Properties.Name -contains "scoped") {
+    Write-ThrowContext
     throw "Scoped mappings file is missing a top-level 'scoped' array: $Path"
   }
   if (-not $raw.scoped -or $raw.scoped.Count -eq 0) {
+    Write-ThrowContext
     throw "Scoped mappings file has an empty 'scoped' array: $Path"
   }
 
   $rules = @()
   foreach ($entry in $raw.scoped) {
     if (-not $entry.key -or -not $entry.value -or -not $entry.token) {
+      Write-ThrowContext
       throw "Scoped mapping entry missing key/value/token: $($entry | ConvertTo-Json -Compress)"
     }
     $rules += [PSCustomObject]@{
@@ -103,6 +109,7 @@ function Read-ReplacementMappings {
   }
 
   if (-not $ScopedMappingsPaths -or $ScopedMappingsPaths.Count -eq 0) {
+    Write-ThrowContext
     throw "Read-ReplacementMappings requires at least one -ScopedMappingsPaths entry `
     (e.g. a ports file)."
   }
@@ -120,6 +127,7 @@ function Read-ReplacementMappings {
   }
 
   if ($rules.Count -eq 0) {
+    Write-ThrowContext
     throw "Read-ReplacementMappings produced zero rules — check your mapping file paths and contents."
   }
 
@@ -162,6 +170,7 @@ function Assert-InputPath {
     Write-Host "This function must target files under:" -ForegroundColor Red
     $Roots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     Write-Host "Current target: $Path" -ForegroundColor Red
+    Write-ThrowContext
     throw "Invalid target path: $Path"
   }
 }
@@ -197,6 +206,7 @@ function Get-VcsRelativePath {
   }
 
   if ($null -eq $prefix) {
+    Write-ThrowContext
     throw "Unexpected $AppName import path: $InputFilePath"
   }
 
@@ -309,6 +319,7 @@ function ConvertTo-VcsTemplateFile {
   $inputDirectory = Split-Path $InputFilePath -Parent
 
   if ($InputFilePath -notmatch '\.json$') {
+    Write-ThrowContext
     throw "Input file must be a .json file, got: $inputFileName"
   }
 
@@ -367,6 +378,7 @@ function ConvertFrom-VcsTemplateFile {
   $inputFileName = Split-Path $InputFilePath -Leaf
 
   if ($InputFilePath -notmatch '\.vcs-template\.json$') {
+    Write-ThrowContext
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
 

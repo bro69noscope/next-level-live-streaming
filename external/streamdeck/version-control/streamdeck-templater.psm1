@@ -14,6 +14,7 @@ function Assert-StreamDeckPath {
   param([Parameter(Mandatory=$true)][string]$Path)
 
   if (-not $Path.StartsWith($script:SdeckBasePath, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-ThrowContext
     throw "This function must target files under: $($script:SdeckBasePath)`nCurrent target: $Path"
   }
 }

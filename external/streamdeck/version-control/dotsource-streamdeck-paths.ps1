@@ -6,8 +6,8 @@ Get-ChildItem "$PSScriptRoot\streamdeck-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$SdeckOverrideMappings = Get-ChildItem "$PSScriptRoot\streamdeck-vcs-mappings*.jsonc" |
-  Where-Object { $_.Name -ne "streamdeck-vcs-mappings.bro.jsonc" } |
+$SdeckOverrideMappings = Get-ChildItem "$PSScriptRoot\streamdeck-vcs-mappings*.json5" |
+  Where-Object { $_.Name -ne "streamdeck-vcs-mappings.bro.json5" } |
   Select-Object -First 1
 
 if ($SdeckOverrideMappings) {

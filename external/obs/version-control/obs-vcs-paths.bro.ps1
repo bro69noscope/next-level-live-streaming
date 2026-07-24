@@ -12,4 +12,4 @@ $script:ObsFtpPath = Join-Path $env:MYFILES_PATH `
 $script:ObsPortsPath = Join-Path $env:STREAMING_REPO_PATH `
   "\config\ports_generated.obs.json"
 
-$script:ObsMappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.jsonc"
+$script:ObsMappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.json5"

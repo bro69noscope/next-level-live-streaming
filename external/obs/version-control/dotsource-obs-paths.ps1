@@ -6,8 +6,8 @@ Get-ChildItem "$PSScriptRoot\obs-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$ObsOverrideMappings = Get-ChildItem "$PSScriptRoot\obs-vcs-mappings*.jsonc" |
-  Where-Object { $_.Name -ne "obs-vcs-mappings.bro.jsonc" } |
+$ObsOverrideMappings = Get-ChildItem "$PSScriptRoot\obs-vcs-mappings*.json5" |
+  Where-Object { $_.Name -ne "obs-vcs-mappings.bro.json5" } |
   Select-Object -First 1
 
 if ($ObsOverrideMappings) {

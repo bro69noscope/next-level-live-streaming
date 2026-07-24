@@ -125,7 +125,8 @@ function Invoke-VcsTemplating {
         continue
       }
 
-      Write-Host "  -> $path" -ForegroundColor Cyan
+      Write-Host ""
+      Write-Host "  -> $path"
 
       $callParams = @{ $target.ParamName = $path }
       if ($Direction -eq "From") {

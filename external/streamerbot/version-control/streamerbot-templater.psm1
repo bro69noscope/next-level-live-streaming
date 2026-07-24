@@ -61,7 +61,7 @@ function ConvertTo-StreamerbotTemplate {
       return
     }
 
-    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputFilePath" -ForegroundColor Cyan
+    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputFilePath"
     foreach ($candidate in $candidates) {
       Write-Host ""
       try {
@@ -109,7 +109,7 @@ function ConvertFrom-StreamerbotTemplate {
       return
     }
 
-    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputFilePath" -ForegroundColor Cyan
+    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputFilePath"
     foreach ($template in $templates) {
       Write-Host ""
       try {

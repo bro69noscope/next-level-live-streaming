@@ -9,9 +9,6 @@ $Script:SbotProductionPath = Join-Path $env:MYFILES_PATH `
 $Script:SbotFtpPath = Join-Path $env:MYFILES_PATH `
   "streaming-programs\streamerbot-portable-ftp\Streamer.bot"
 
-$script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
-  "external\common\streaming-software\version-control\helpers.psm1"
-
 $script:SbotPortsPath = Join-Path $env:STREAMING_REPO_PATH `
   "config\ports_generated.streamerbot.json"
 

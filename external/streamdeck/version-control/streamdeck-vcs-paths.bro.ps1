@@ -1,12 +1,6 @@
 . (Join-Path $env:STREAMING_REPO_PATH `
     "external\common\streaming-software\version-control\dotsource-paths.ps1")
 
-Import-Module (
-  Join-Path `
-    $env:STREAMING_REPO_PATH `
-    "external\common\streaming-software\version-control\helpers.psm1"
-)
-
 $script:SdeckBasePath = Join-Path $env:APPDATA "Elgato\StreamDeck\ProfilesV3"
 
 $script:PortsPath = Join-Path $env:STREAMING_REPO_PATH `

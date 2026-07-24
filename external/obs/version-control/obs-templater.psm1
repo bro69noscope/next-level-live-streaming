@@ -8,8 +8,6 @@ Get-ChildItem "$PSScriptRoot\obs-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$script:DefaultVcsOutPath = Join-Path $PSScriptRoot "scenes"
-
 $obsRoots = @(
   @{
     Path = $script:ObsVcamPath
@@ -189,7 +187,6 @@ Write-Host "  $PSScriptRoot"
 
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "  All input files must be under:`n$($obsRoots.Path -join "`n")"
-Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates vcs-template.json"
 Write-Host "  ConvertFrom-ObsTemplate 'scenes.vcs-template.json' # Creates scenes.json"
 

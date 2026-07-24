@@ -9,8 +9,6 @@ Get-ChildItem "$PSScriptRoot\streamerbot-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
-
 $script:streamerbotRoots = @(
   @{
     Path = $script:SbotFtpPath
@@ -157,7 +155,6 @@ Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "  All input files must be under:`n$(
   $script:streamerbotRoots.Path -join "`n"
 )"
-Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
 Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                        # Creates vcs-template.json"
 Write-Host "  ConvertTo-StreamerbotTemplate 'folder'                              # Recursively creates vcs-template.json for every matching .json under folder"
 Write-Host "  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json'         # Creates actions.json"

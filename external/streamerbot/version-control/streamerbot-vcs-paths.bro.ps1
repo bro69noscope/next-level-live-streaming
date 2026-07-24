@@ -15,11 +15,11 @@ $script:HelpersModulePath = Join-Path $env:STREAMING_REPO_PATH `
 $script:SbotPortsPath = Join-Path $env:STREAMING_REPO_PATH `
   "config\ports_generated.streamerbot.json"
 
-$SbotUserMappings = Get-ChildItem "$PSScriptRoot\streamerbot-vcs-mappings*.jsonc" |
+$SbotOverrideMappings = Get-ChildItem "$PSScriptRoot\streamerbot-vcs-mappings*.jsonc" |
   Where-Object { $_.Name -ne "streamerbot-vcs-mappings.bro.jsonc" } |
   Select-Object -First 1
 
-if ($SbotUserMappings) {
-  $script:SbotMappingsPath = $SbotUserMappings.FullName
+if ($SbotOverrideMappings) {
+  $script:SbotMappingsPath = $SbotOverrideMappings.FullName
 }
 

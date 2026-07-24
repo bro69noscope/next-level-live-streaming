@@ -14,10 +14,10 @@ $script:ObsPortsPath = Join-Path $env:STREAMING_REPO_PATH `
 
 $script:ObsMappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.jsonc"
 
-$ObsUserMappings = Get-ChildItem "$PSScriptRoot\obs-vcs-mappings*.jsonc" |
+$ObsOverrideMappings = Get-ChildItem "$PSScriptRoot\obs-vcs-mappings*.jsonc" |
   Where-Object { $_.Name -ne "obs-vcs-mappings.bro.jsonc" } |
   Select-Object -First 1
 
-if ($ObsUserMappings) {
-  $script:ObsMappingsPath = $ObsUserMappings.FullName
+if ($ObsOverrideMappings) {
+  $script:ObsMappingsPath = $ObsOverrideMappings.FullName
 }

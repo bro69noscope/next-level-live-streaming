@@ -25,8 +25,8 @@
     production: {
       host: "127.0.0.1",
       port: 51000,
-      token: "{{OBS_PRODUCTION_PORT}}",
       protocol: "websocket",
+      token: "{{OBS_PRODUCTION_PORT}}",
       scope_keys: {
         obs: "server_port",
         default: "port",
@@ -35,8 +35,8 @@
     portable_vcam: {
       host: "127.0.0.1",
       port: 51001,
-      token: "{{OBS_PORTABLE_VCAM_PORT}}",
       protocol: "websocket",
+      token: "{{OBS_PORTABLE_VCAM_PORT}}",
       scope_keys: {
         obs: "server_port",
         default: "port",
@@ -45,8 +45,8 @@
     portable_ftp: {
       host: "127.0.0.1",
       port: 51002,
-      token: "{{OBS_PORTABLE_FTP_PORT}}",
       protocol: "websocket",
+      token: "{{OBS_PORTABLE_FTP_PORT}}",
       scope_keys: {
         obs: "server_port",
         default: "port",
@@ -59,15 +59,15 @@
       streamerbot: {
         host: "127.0.0.1",
         port: 52000,
-        token: "{{STREAMERBOT_PRODUCTION_PORT}}",
         protocol: "websocket",
+        token: "{{STREAMERBOT_PRODUCTION_PORT}}",
       },
       integrations: {
         streamdeck: {
           host: "127.0.0.1",
           port: 52100,
-          token: "{{STREAMERBOT_PRODUCTION_STREAMDECK_PORT}}",
           protocol: "websocket",
+          token: "{{STREAMERBOT_PRODUCTION_STREAMDECK_PORT}}",
         },
       },
     },
@@ -75,15 +75,15 @@
       streamerbot: {
         host: "127.0.0.1",
         port: 52001,
-        token: "{{STREAMERBOT_FTP_PORT}}",
         protocol: "websocket",
+        token: "{{STREAMERBOT_FTP_PORT}}",
       },
       integrations: {
         streamdeck: {
           host: "127.0.0.1",
           port: 52200,
-          token: "{{STREAMERBOT_FTP_STREAMDECK_PORT}}",
           protocol: "websocket",
+          token: "{{STREAMERBOT_FTP_STREAMDECK_PORT}}",
         },
       },
     },

@@ -1,5 +1,5 @@
 {
-  "paths": {
+  paths: {
     // code repo.
     "{{STREAMING_REPO_PATH}}": "C:/Users/ville/myfiles/git-repos/woertsposzibllen4me/",
     // main media, icons, etc. source location.

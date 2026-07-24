@@ -1,5 +1,5 @@
 {
-  "paths": {
+  paths: {
     // code repo.
     "{{STREAMING_REPO_PATH}}": "C:/Users/ville/myfiles/git-repos/woertsposzibllen4me/",
 
@@ -10,7 +10,7 @@
     "{{AOE2_EYETRACK_VIDEOS_OUTPATH}}": "C:/Users/ville/OneDrive/Videos/aoe2",
   },
 
-  "devices": {
+  devices: {
     // main facecam
     "{{MAIN_CAMERA_DEVICE}}": "Cam Link 4K:\\\\?\\usb#22vid_0fd9&pid_0066&mi_00#229&70bb0fb&0&0000#22{65e8773d-8f56-11d0-a3b9-00a0c9223196}\\global",
 

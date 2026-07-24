@@ -165,7 +165,7 @@ function ConvertFrom-ObsTemplate {
 }
 
 Write-Host ""
-Write-Host "OBS Templater functions loading..." -ForegroundColor Yellow
+Write-Host "OBS Templater: " -ForegroundColor Yellow
 
 Write-Host "Mappings:" -ForegroundColor Cyan
 $mappings | ForEach-Object {

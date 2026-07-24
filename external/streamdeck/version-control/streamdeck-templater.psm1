@@ -97,7 +97,7 @@ function ConvertFrom-StreamDeckTemplate {
 }
 
 Write-Host ""
-Write-Host "StreamDeck Templater functions loading..." -ForegroundColor Yellow
+Write-Host "StreamDeck Templater:" -ForegroundColor Yellow
 
 Write-Host "Mappings:" -ForegroundColor Cyan
 $mappings | ForEach-Object {

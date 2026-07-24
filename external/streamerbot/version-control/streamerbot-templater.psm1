@@ -131,7 +131,7 @@ function ConvertFrom-StreamerbotTemplate {
 }
 
 Write-Host ""
-Write-Host "Streamer.bot Templater functions loading..." -ForegroundColor Yellow
+Write-Host "Streamer.bot Templater: " -ForegroundColor Yellow
 
 Write-Host "Mappings:" -ForegroundColor Cyan
 $mappings | ForEach-Object {

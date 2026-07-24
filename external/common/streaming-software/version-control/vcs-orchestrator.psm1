@@ -153,4 +153,9 @@ function Invoke-VcsTemplating {
   return $failures
 }
 
+Write-Host ""
+Write-Host "VCS Orchestrator functions loaded" -ForegroundColor Green
+write-Host "Usage:" -ForegroundColor Cyan
+write-Host "  Invoke-VcsTemplating -Direction To [-SkipPortsGeneration]   # Regenerates ports and converts to vcs-template.json"
+write-Host "  Invoke-VcsTemplating -Direction From [-Backup]              # Converts from vcs-template.json to original files"
 Export-ModuleMember -Function Invoke-VcsTemplating, Invoke-PortsGeneration

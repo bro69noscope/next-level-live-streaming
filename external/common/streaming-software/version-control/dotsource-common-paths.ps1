@@ -6,8 +6,6 @@ Get-ChildItem "$PSScriptRoot\common-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$script:CommonMappingsPath = "$PSScriptRoot\common-vcs-mappings.bro.json5"
-
 $script:CommonOverrideMappings = Get-ChildItem (Join-Path (
     Split-Path $script:CommonMappingsPath) "common-vcs-mappings*.json5") |
   Where-Object { $_.Name -ne "common-vcs-mappings.bro.json5" } |

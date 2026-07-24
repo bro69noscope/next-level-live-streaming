@@ -25,7 +25,7 @@ function ConvertTo-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [string]$RelativeOutPath
   )
 
-  $InputPath = (Resolve-Path $InputPath).Path
+  $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-StreamDeckPath -Path $InputPath
 
   if (Test-Path $InputPath -PathType Container) {
@@ -38,7 +38,7 @@ function ConvertTo-StreamDeckTemplate {
     foreach ($manifest in $manifests) {
       Write-Host ""
       try {
-        ConvertTo-StreamDeckTemplate -InputPath $manifest.FullName -RelativeOutPath $RelativeOutPath
+        ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName -RelativeOutPath $RelativeOutPath
       } catch {
         Write-Host "  Failed: $($manifest.FullName)" -ForegroundColor Red
         Write-Host "  $($_.Exception.Message)" -ForegroundColor Red

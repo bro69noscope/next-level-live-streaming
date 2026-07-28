@@ -145,7 +145,7 @@ function Format-JsonWithPrettier {
     return
   }
 
-  & $script:PrettierPath --write $FilePath
+  & $script:PrettierPath --write $FilePath --no-config
 }
 
 function Assert-InputPath {
@@ -416,7 +416,6 @@ function ConvertFrom-VcsTemplateFile {
 
 $FunctionsToExport = @(
   "Read-ReplacementMappings"
-  "Format-JsonWithPrettier"
   "ConvertTo-VcsTemplateFile"
   "ConvertFrom-VcsTemplateFile"
   "Get-VcsRelativePath"

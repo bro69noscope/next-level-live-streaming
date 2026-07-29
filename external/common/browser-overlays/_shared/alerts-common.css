@@ -1,0 +1,45 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+#alert-box {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+  pointer-events: none;
+}
+
+#alert-box.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#alert-box .headline {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+#alert-box .username {
+  color: #a970ff;
+}
+
+#alert-box .message {
+  margin-top: 10px;
+  font-size: 24px;
+  font-weight: 400;
+  max-width: 700px;
+}

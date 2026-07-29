@@ -86,6 +86,12 @@ function createAlertOverlay(opts) {
   }
 
   function connect() {
+    if (!OVERLAY_CONFIG.WS_PORT) {
+      fatalOverlayError(
+        `[${name}-overlay] no WS_PORT configured, refusing to connect`,
+      );
+      return;
+    }
     const ws = new WebSocket(
       `ws://${OVERLAY_CONFIG.WS_HOST}:${OVERLAY_CONFIG.WS_PORT}${OVERLAY_CONFIG.WS_ENDPOINT}`,
     );

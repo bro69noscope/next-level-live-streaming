@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "none",
+    "checkJs": false, // flip to true later if you want real type-checking, not just intellisense
+    "allowJs": true,
+    "lib": ["ES2020", "DOM"],
+    "typeRoots": ["./types"]
+  },
+  "include": [
+    "_shared/**/*.js",
+    "common/**/*.js",
+    "ftp/**/*.html",
+    "production/**/*.html"
+  ]
+}

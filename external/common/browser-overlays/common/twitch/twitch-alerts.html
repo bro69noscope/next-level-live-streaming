@@ -2,7 +2,7 @@
   <head>
     <meta charset="UTF-8" />
 
-    <title>Ko-fi Alert Overlay</title>
+    <title>Twitch Sub Alert Overlay</title>
 
     <style>
       html,
@@ -61,44 +61,42 @@
       <div class="message" id="alert-message"></div>
     </div>
 
-    <script src="../_shared/alerts-constants.js"></script>
-    <script src="../_shared/alerts-common.js"></script>
+    <script src="../../_shared/alerts-constants.js"></script>
+    <script src="../../_shared/alerts-env-config.js"></script>
+    <script src="../../_shared/alerts-common.js"></script>
     <script>
-      createAlertOverlay({
-        name: "kofi",
-        subscribedEvents: ["KofiAlert"],
-        alerts: [
-          {
-            kind: "kofitip",
-            sound: "tip_alert.mp3",
-            headline: (item) =>
-              "tipped " +
-              (item.amount || "?") +
-              " " +
-              (item.currency || "") +
-              "!",
-          },
-          {
-            kind: "kofisub",
-            sound: "kofi_sub_alert.mp3",
-            headline: (item) =>
-              "subscribed via Ko-fi for " +
-              (item.amount || "?") +
-              " " +
-              (item.currency || "") +
-              " Monthly !",
-          },
-          {
-            kind: "kofiresub",
-            sound: "kofi_resub_alert.mp3",
-            headline: (item) =>
-              "renewed their Ko-fi membership for " +
-              (item.amount || "?") +
-              " " +
-              (item.currency || "") +
-              " Monthly !",
-          },
-        ],
+      loadEnvOverrides(function () {
+        createAlertOverlay({
+          name: "twitch",
+          subscribedEvents: ["TwitchAlert"],
+          alerts: [
+            {
+              kind: "sub",
+              sound: "sub_alert.mp3",
+              headline: () => "just subscribed!",
+            },
+            {
+              kind: "resub",
+              sound: "resub_alert.mp3",
+              headline: (item) =>
+                "resubscribed for " + (item.months || "?") + " months!",
+            },
+            {
+              kind: "giftsub",
+              sound: "giftsub_alert.mp3",
+              headline: (item) =>
+                "gifted a sub to " + (item.recipient || "someone") + "!",
+            },
+            {
+              kind: "giftbomb",
+              sound: "giftsub_alert.mp3",
+              headline: (item) =>
+                "gifted " +
+                (item.giftCount || "?") +
+                " subs to a buncha wild animals!",
+            },
+          ],
+        });
       });
     </script>
   </body>

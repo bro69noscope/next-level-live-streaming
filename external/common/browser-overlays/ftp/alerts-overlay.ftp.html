@@ -1,0 +1,42 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Combined Alert Overlay (FTP)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+      }
+      .overlay-frame {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: transparent;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      class="overlay-frame"
+      src="../common/twitch/twitch-alerts.html?env=ftp"
+      title="Twitch alert overlay"
+      allow="autoplay"
+    ></iframe>
+    <iframe
+      class="overlay-frame"
+      src="../common/kofi/kofi-alerts.html?env=ftp"
+      title="Ko-fi alert overlay"
+      allow="autoplay"
+    ></iframe>
+    <script src="../_shared/alerts-overlay-lock.js"></script>
+  </body>
+</html>

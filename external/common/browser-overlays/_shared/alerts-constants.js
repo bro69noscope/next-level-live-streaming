@@ -1,10 +1,6 @@
-// TODO: WS_PORT is hardcoded for now — plan is to source it from
-// ports.json5 (the same source of truth the OBS/StreamDeck/Streamer.bot
-// VCS templaters use) via a small JS reader, instead of duplicating it here.
-
 const OVERLAY_CONFIG = {
   WS_HOST: "127.0.0.1",
-  WS_PORT: 52001,
+  WS_PORT: 52001, // fallback only — see note above
   WS_ENDPOINT: "/",
 
   ALERT_DISPLAY_MS: 7000,
@@ -14,10 +10,15 @@ const OVERLAY_CONFIG = {
 
   SOUND_VOLUME: 1.0, // 0.0 - 1.0
 
+  LOCK_TIMEOUT_MS: 15 * 1000, // auto-release the cross-overlay lock if stuck
+
+  REPO_ROOT: "../../../../../",
   SOUND_FILES: {
     common: {
-      error: "error_alert.mp3",
-      unknown: "unknown_alert.mp3",
+      // these resolve relative to whichever overlay file calls
+      // createAlertOverlay() hence "../../".
+      error: "../../_shared/error_alert.mp3",
+      unknown: "../../_shared/unknown_alert.mp3",
     },
   },
 };

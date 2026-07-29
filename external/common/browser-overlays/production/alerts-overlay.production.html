@@ -27,41 +27,16 @@
   <body>
     <iframe
       class="overlay-frame"
-      src="twitch/twitch-alerts.html"
+      src="../common/twitch/twitch-alerts.html?env=production"
       title="Twitch alert overlay"
       allow="autoplay"
     ></iframe>
-
     <iframe
       class="overlay-frame"
-      src="kofi/kofi-alerts.html"
+      src="../common/kofi/kofi-alerts.html?env=production"
       title="Ko-fi alert overlay"
       allow="autoplay"
     ></iframe>
-
-    <script>
-      let locked = false;
-      const waiting = [];
-
-      window.addEventListener("message", (evt) => {
-        const data = evt.data;
-        if (!data || !data.type) return;
-
-        if (data.type === "alert-lock-request") {
-          waiting.push(evt.source);
-          grantNext();
-        } else if (data.type === "alert-lock-release") {
-          locked = false;
-          grantNext();
-        }
-      });
-
-      function grantNext() {
-        if (locked || waiting.length === 0) return;
-        locked = true;
-        const source = waiting.shift();
-        source.postMessage({ type: "alert-lock-granted" }, "*");
-      }
-    </script>
+    <script src="../_shared/alerts-overlay-lock.js"></script>
   </body>
 </html>

@@ -8,7 +8,7 @@
       url: "ws://localhost:50000",
       tokens: {
         url: {
-          token: "{{REPOSITORY_PYTHON_WS}}",
+          token: "{{REPOSITORY_PYTHON_WS_URL}}",
           scope_keys: {
             obs: "url",
             default: "url",
@@ -56,11 +56,11 @@
   // Streamer.bot servers
   streamerbot: {
     production: {
-      streamerbot: {
+      streamerbot_ws: {
         host: "127.0.0.1",
         port: 52000,
         protocol: "websocket",
-        token: "{{STREAMERBOT_PRODUCTION_PORT}}",
+        token: "{{STREAMERBOT_PRODUCTION_WS_PORT}}",
       },
       integrations: {
         streamdeck: {
@@ -72,11 +72,17 @@
       },
     },
     ftp: {
-      streamerbot: {
+      streamerbot_ws: {
         host: "127.0.0.1",
         port: 52001,
         protocol: "websocket",
-        token: "{{STREAMERBOT_FTP_PORT}}",
+        token: "{{STREAMERBOT_FTP_WS_PORT}}",
+      },
+      streamerbot_http: {
+        host: "127.0.0.1",
+        port: 52002,
+        protocol: "websocket",
+        token: "{{STREAMERBOT_FTP_HTTP_PORT}}",
       },
       integrations: {
         streamdeck: {

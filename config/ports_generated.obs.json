@@ -3,7 +3,7 @@
     {
       "key": "url",
       "value": "ws://localhost:50000",
-      "token": "{{REPOSITORY_PYTHON_WS}}"
+      "token": "{{REPOSITORY_PYTHON_WS_URL}}"
     },
     {
       "key": "port",
@@ -28,7 +28,7 @@
     {
       "key": "port",
       "value": "52000",
-      "token": "{{STREAMERBOT_PRODUCTION_PORT}}"
+      "token": "{{STREAMERBOT_PRODUCTION_WS_PORT}}"
     },
     {
       "key": "port",
@@ -38,7 +38,12 @@
     {
       "key": "port",
       "value": "52001",
-      "token": "{{STREAMERBOT_FTP_PORT}}"
+      "token": "{{STREAMERBOT_FTP_WS_PORT}}"
+    },
+    {
+      "key": "port",
+      "value": "52002",
+      "token": "{{STREAMERBOT_FTP_HTTP_PORT}}"
     },
     {
       "key": "port",

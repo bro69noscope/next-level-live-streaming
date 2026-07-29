@@ -1,0 +1,100 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Twitch Sub Alert Overlay</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+
+      #alert-box {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+        text-align: center;
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        transition:
+          opacity 0.35s ease,
+          transform 0.35s ease;
+        pointer-events: none;
+      }
+
+      #alert-box.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      #alert-box .headline {
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: 1px;
+      }
+
+      #alert-box .username {
+        color: #a970ff;
+      }
+
+      #alert-box .message {
+        margin-top: 10px;
+        font-size: 24px;
+        font-weight: 400;
+        max-width: 700px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="alert-box">
+      <div class="headline">
+        <span class="username" id="alert-user"></span>
+        <span id="headline-text">just subscribed!</span>
+      </div>
+      <div class="message" id="alert-message"></div>
+    </div>
+
+    <script src="../_shared/alerts-constants.js"></script>
+    <script src="../_shared/alerts-common.js"></script>
+    <script>
+      createAlertOverlay({
+        name: "twitch",
+        subscribedEvents: ["TwitchAlert"],
+        alerts: [
+          {
+            kind: "sub",
+            sound: "sub_alert.mp3",
+            headline: () => "just subscribed!",
+          },
+          {
+            kind: "resub",
+            sound: "resub_alert.mp3",
+            headline: (item) =>
+              "resubscribed for " + (item.months || "?") + " months!",
+          },
+          {
+            kind: "giftsub",
+            sound: "giftsub_alert.mp3",
+            headline: (item) =>
+              "gifted a sub to " + (item.recipient || "someone") + "!",
+          },
+          {
+            kind: "giftbomb",
+            sound: "giftsub_alert.mp3",
+            headline: (item) =>
+              "gifted " +
+              (item.giftCount || "?") +
+              " subs to a buncha wild animals!",
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

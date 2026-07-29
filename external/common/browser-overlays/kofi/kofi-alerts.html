@@ -1,0 +1,105 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>Ko-fi Alert Overlay</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+
+      #alert-box {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+        text-align: center;
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        transition:
+          opacity 0.35s ease,
+          transform 0.35s ease;
+        pointer-events: none;
+      }
+
+      #alert-box.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      #alert-box .headline {
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: 1px;
+      }
+
+      #alert-box .username {
+        color: #a970ff;
+      }
+
+      #alert-box .message {
+        margin-top: 10px;
+        font-size: 24px;
+        font-weight: 400;
+        max-width: 700px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="alert-box">
+      <div class="headline">
+        <span class="username" id="alert-user"></span>
+        <span id="headline-text">just subscribed!</span>
+      </div>
+      <div class="message" id="alert-message"></div>
+    </div>
+
+    <script src="../_shared/alerts-constants.js"></script>
+    <script src="../_shared/alerts-common.js"></script>
+    <script>
+      createAlertOverlay({
+        name: "kofi",
+        subscribedEvents: ["KofiAlert"],
+        alerts: [
+          {
+            kind: "kofitip",
+            sound: "tip_alert.mp3",
+            headline: (item) =>
+              "tipped " +
+              (item.amount || "?") +
+              " " +
+              (item.currency || "") +
+              "!",
+          },
+          {
+            kind: "kofisub",
+            sound: "kofi_sub_alert.mp3",
+            headline: (item) =>
+              "subscribed via Ko-fi for " +
+              (item.amount || "?") +
+              " " +
+              (item.currency || "") +
+              " Monthly !",
+          },
+          {
+            kind: "kofiresub",
+            sound: "kofi_resub_alert.mp3",
+            headline: (item) =>
+              "renewed their Ko-fi membership for " +
+              (item.amount || "?") +
+              " " +
+              (item.currency || "") +
+              " Monthly !",
+          },
+        ],
+      });
+    </script>
+  </body>
+</html>

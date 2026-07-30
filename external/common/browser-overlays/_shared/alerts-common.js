@@ -42,19 +42,37 @@ function createAlertOverlay(opts) {
 
   allSounds.forEach((el) => {
     el.volume = OVERLAY_CONFIG.SOUND_VOLUME;
+    el.addEventListener("ended", onSoundEnded);
+
+    [
+      "play",
+      "playing",
+      "pause",
+      "waiting",
+      "stalled",
+      "suspend",
+      "abort",
+    ].forEach((evtName) => {
+      el.addEventListener(evtName, () => {
+        console.log(
+          `[${name}-overlay] ${ts()} audio "${evtName}" on ${el.dataset.relSrc} (currentTime=${el.currentTime.toFixed(2)})`,
+        );
+      });
+    });
+
     el.addEventListener("error", () => {
       const retries = Number(el.dataset.retries);
       const relPath = el.dataset.relSrc;
       if (retries < OVERLAY_CONFIG.SOUND_RETRY_MAX) {
         el.dataset.retries = String(retries + 1);
         console.log(
-          `[${name}-overlay] sound failed to load, retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
+          `[${name}-overlay] ${ts()} sound failed to load, retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
           el.src,
         );
         setTimeout(() => el.load(), OVERLAY_CONFIG.SOUND_RETRY_DELAY_MS);
       } else {
         console.log(
-          `[${name}-overlay] sound permanently failed after ${retries} retries: ${relPath}`,
+          `[${name}-overlay] ${ts()} sound permanently failed after ${retries} retries: ${relPath}`,
           el.src,
         );
         failedSounds.add(el);
@@ -82,6 +100,7 @@ function createAlertOverlay(opts) {
   const isEmbedded = window.parent !== window;
 
   function requestLockThenShow(item) {
+    console.log(`[${name}-overlay] ${ts()} lock requested for`, item.kind);
     if (!isEmbedded) {
       showAlert(item);
       return;
@@ -93,6 +112,7 @@ function createAlertOverlay(opts) {
         evt.data.type === "alert-lock-granted"
       ) {
         window.removeEventListener("message", onGrant);
+        console.log(`[${name}-overlay] ${ts()} lock granted for`, item.kind);
         showAlert(item);
       }
     }
@@ -113,7 +133,7 @@ function createAlertOverlay(opts) {
 
     ws.onopen = () => {
       console.log(
-        `[${name}-overlay] connected to Streamer.bot, subscribing...`,
+        `[${name}-overlay] ${ts()} connected to Streamer.bot, subscribing...`,
       );
       ws.send(
         JSON.stringify({
@@ -152,7 +172,7 @@ function createAlertOverlay(opts) {
     };
 
     ws.onclose = () => {
-      console.log(`[${name}-overlay] disconnected, retrying in 3s`);
+      console.log(`[${name}-overlay] ${ts()} disconnected, retrying in 3s`);
       setTimeout(connect, 3000);
     };
 
@@ -179,14 +199,32 @@ function createAlertOverlay(opts) {
 
     if (failedSounds.has(soundEl) && soundEl !== soundErrorEl) {
       console.log(
-        `[${name}-overlay] sound failed to load previously, using error sound instead: ${soundEl.dataset.relSrc}`,
+        `[${name}-overlay] ${ts()} sound failed to load previously, using error sound instead: ${soundEl.dataset.relSrc}`,
         soundEl.src,
       );
       soundEl = soundErrorEl;
     }
 
     soundEl.currentTime = 0;
-    soundEl.play().catch(() => {}); // ignore autoplay-block errors
+    console.log(
+      `[${name}-overlay] ${ts()} play() called for`,
+      soundEl.dataset.relSrc,
+    );
+    soundEl
+      .play()
+      .then(() =>
+        console.log(
+          `[${name}-overlay] ${ts()} play() resolved for`,
+          soundEl.dataset.relSrc,
+        ),
+      )
+      .catch((err) =>
+        console.log(
+          `[${name}-overlay] ${ts()} play() rejected for`,
+          soundEl.dataset.relSrc,
+          err.message,
+        ),
+      );
     pendingMessage = item.message || null;
 
     setTimeout(() => {
@@ -194,6 +232,7 @@ function createAlertOverlay(opts) {
       setTimeout(() => {
         playing = false;
         if (isEmbedded) {
+          console.log(`[${name}-overlay] ${ts()} lock released for`, item.kind);
           window.parent.postMessage({ type: "alert-lock-release", name }, "*");
         }
         processQueue();

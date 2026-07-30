@@ -18,6 +18,10 @@ const OVERLAY_CONFIG = {
   },
 };
 
+function ts() {
+  return performance.now().toFixed(0) + "ms";
+}
+
 function fatalOverlayError(message) {
   console.error("[alerts-overlay] FATAL:", message);
   const banner = document.createElement("div");

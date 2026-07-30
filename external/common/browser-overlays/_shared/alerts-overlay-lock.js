@@ -30,7 +30,7 @@
 
     clearTimeout(lockTimeoutId);
     lockTimeoutId = setTimeout(() => {
-      console.log("[alerts-overlay] lock timed out, auto-releasing");
+      console.log(`"[alerts-overlay] ${ts()} lock timed out, auto-releasing"`);
       locked = false;
       grantNext();
     }, LOCK_TIMEOUT_MS);

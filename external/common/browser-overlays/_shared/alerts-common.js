@@ -5,8 +5,51 @@ function createSoundElement(id, src) {
   el.preload = "auto";
   el.dataset.retries = "0";
   el.dataset.relSrc = src;
+  el.dataset.origSrc = src;
   document.body.appendChild(el);
+  checkSoundAvailable(el);
   return el;
+}
+
+function checkSoundAvailable(el) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    OVERLAY_CONFIG.SOUND_CHECK_TIMEOUT_MS,
+  );
+
+  fetch(el.dataset.origSrc, { method: "HEAD", signal: controller.signal })
+    .then((res) => {
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    })
+    .catch((err) => {
+      clearTimeout(timeoutId);
+      const reason = err.name === "AbortError" ? "timed out" : err.message;
+      handleSoundCheckFailure(el, reason);
+    });
+}
+
+function handleSoundCheckFailure(el, reason) {
+  const retries = Number(el.dataset.retries);
+  const relPath = el.dataset.relSrc;
+  if (retries < OVERLAY_CONFIG.SOUND_RETRY_MAX) {
+    el.dataset.retries = String(retries + 1);
+    console.log(
+      `[overlay] ${ts()} sound check failed (${reason}), retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
+      el.src,
+    );
+    setTimeout(
+      () => checkSoundAvailable(el),
+      OVERLAY_CONFIG.SOUND_RETRY_DELAY_MS,
+    );
+  } else {
+    console.log(
+      `[overlay] ${ts()} sound permanently failed after ${retries} retries: ${relPath}`,
+      el.src,
+    );
+    el.dataset.failed = "true";
+  }
 }
 
 function createAlertOverlay(opts) {
@@ -30,7 +73,6 @@ function createAlertOverlay(opts) {
   );
 
   const allSounds = ownSounds.concat([soundErrorEl, soundUnknownEl]);
-  const failedSounds = new Set();
   let pendingMessage = null;
 
   function onSoundEnded() {
@@ -60,24 +102,6 @@ function createAlertOverlay(opts) {
       });
     });
 
-    el.addEventListener("error", () => {
-      const retries = Number(el.dataset.retries);
-      const relPath = el.dataset.relSrc;
-      if (retries < OVERLAY_CONFIG.SOUND_RETRY_MAX) {
-        el.dataset.retries = String(retries + 1);
-        console.log(
-          `[${name}-overlay] ${ts()} sound failed to load, retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
-          el.src,
-        );
-        setTimeout(() => el.load(), OVERLAY_CONFIG.SOUND_RETRY_DELAY_MS);
-      } else {
-        console.log(
-          `[${name}-overlay] ${ts()} sound permanently failed after ${retries} retries: ${relPath}`,
-          el.src,
-        );
-        failedSounds.add(el);
-      }
-    });
     el.addEventListener("ended", onSoundEnded);
   });
 
@@ -197,7 +221,7 @@ function createAlertOverlay(opts) {
 
     alertBox.classList.add("show");
 
-    if (failedSounds.has(soundEl) && soundEl !== soundErrorEl) {
+    if (soundEl.dataset.failed === "true" && soundEl !== soundErrorEl) {
       console.log(
         `[${name}-overlay] ${ts()} sound failed to load previously, using error sound instead: ${soundEl.dataset.relSrc}`,
         soundEl.src,

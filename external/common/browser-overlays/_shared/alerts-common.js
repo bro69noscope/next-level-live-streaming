@@ -3,6 +3,8 @@ function createSoundElement(id, src) {
   el.id = id;
   el.src = src;
   el.preload = "auto";
+  el.dataset.retries = "0";
+  el.dataset.relSrc = src;
   document.body.appendChild(el);
   return el;
 }
@@ -10,7 +12,6 @@ function createSoundElement(id, src) {
 function createAlertOverlay(opts) {
   const { name, subscribedEvents, alerts } = opts;
 
-  // Auto-create one <audio> element per declared alert kind.
   const alertsByKind = new Map();
   const ownSounds = [];
   alerts.forEach((def) => {
@@ -42,8 +43,22 @@ function createAlertOverlay(opts) {
   allSounds.forEach((el) => {
     el.volume = OVERLAY_CONFIG.SOUND_VOLUME;
     el.addEventListener("error", () => {
-      console.log(`[${name}-overlay] failed to load sound:`, el.src);
-      failedSounds.add(el);
+      const retries = Number(el.dataset.retries);
+      const relPath = el.dataset.relSrc;
+      if (retries < OVERLAY_CONFIG.SOUND_RETRY_MAX) {
+        el.dataset.retries = String(retries + 1);
+        console.log(
+          `[${name}-overlay] sound failed to load, retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
+          el.src,
+        );
+        setTimeout(() => el.load(), OVERLAY_CONFIG.SOUND_RETRY_DELAY_MS);
+      } else {
+        console.log(
+          `[${name}-overlay] sound permanently failed after ${retries} retries: ${relPath}`,
+          el.src,
+        );
+        failedSounds.add(el);
+      }
     });
     el.addEventListener("ended", onSoundEnded);
   });
@@ -164,7 +179,7 @@ function createAlertOverlay(opts) {
 
     if (failedSounds.has(soundEl) && soundEl !== soundErrorEl) {
       console.log(
-        `[${name}-overlay] sound failed to load previously, using error sound instead:`,
+        `[${name}-overlay] sound failed to load previously, using error sound instead: ${soundEl.dataset.relSrc}`,
         soundEl.src,
       );
       soundEl = soundErrorEl;

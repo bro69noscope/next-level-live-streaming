@@ -7,8 +7,21 @@ function loadScript(src, callback) {
 }
 
 function getWsPortForEnv(ports, env) {
-  const entry = ports.streamerbot[env];
-  return entry ? entry.streamerbot_ws.port : null;
+  const envEntry = ports.streamerbot?.[env];
+  if (!envEntry) {
+    return {
+      port: null,
+      error: `no entry found at ports.streamerbot.${env} in ports.json5`,
+    };
+  }
+  const port = envEntry.streamerbot_ws?.port;
+  if (!port) {
+    return {
+      port: null,
+      error: `ports.streamerbot.${env}.streamerbot_ws.port is missing in ports.json5`,
+    };
+  }
+  return { port, error: null };
 }
 
 function loadEnvOverrides(callback) {
@@ -38,11 +51,9 @@ function loadEnvOverrides(callback) {
         })
         .then((raw) => {
           const ports = JSON5.parse(raw);
-          const wsPort = getWsPortForEnv(ports, env);
-          if (!wsPort) {
-            fatalOverlayError(
-              `no ws port mapping for env "${env}" in ports.json5`,
-            );
+          const { port: wsPort, error } = getWsPortForEnv(ports, env);
+          if (error) {
+            fatalOverlayError(error);
           }
           OVERLAY_CONFIG.WS_PORT = wsPort;
           callback();

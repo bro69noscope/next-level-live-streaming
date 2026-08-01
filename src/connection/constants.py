@@ -18,7 +18,7 @@ class EndpointConfig(TypedDict):
 class StreamerbotEnvironmentConfig(TypedDict):
     """A Streamer.bot environment (production/ftp), with its own port integrations."""
 
-    streamerbot: EndpointConfig
+    streamerbot_ws: EndpointConfig
     integrations: dict[str, EndpointConfig]
 
 
@@ -44,8 +44,8 @@ with PORTS_CFG_PATH.open(encoding="utf-8") as file:
 
     STREAMERBOT_WS_URL = (
         f"ws://"
-        f"{PORTS['streamerbot']['production']['streamerbot']['host']}:"
-        f"{PORTS['streamerbot']['production']['streamerbot']['port']}/"
+        f"{PORTS['streamerbot']['production']['streamerbot_ws']['host']}:"
+        f"{PORTS['streamerbot']['production']['streamerbot_ws']['port']}/"
     )
 STOP_SUBPROCESS_MESSAGE = "stop$subprocess"
 SUBPROCESSES_PORTS = {name: cfg["port"] for name, cfg in PORTS["subprocesses"].items()}

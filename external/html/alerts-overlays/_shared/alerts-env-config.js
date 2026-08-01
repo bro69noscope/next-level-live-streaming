@@ -1,9 +1,11 @@
-function loadScript(src, callback) {
-  const script = document.createElement("script");
-  script.src = src;
-  script.onload = () => callback(null);
-  script.onerror = () => callback(new Error("failed to load " + src));
-  document.head.appendChild(script);
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("failed to load " + src));
+    document.head.appendChild(script);
+  });
 }
 
 function getWsPortForEnv(ports, env) {
@@ -24,44 +26,34 @@ function getWsPortForEnv(ports, env) {
   return { port, error: null };
 }
 
-function loadEnvOverrides(callback) {
+async function loadEnvOverrides() {
   const env = new URLSearchParams(window.location.search).get("env");
-
   if (!env) {
-    fatalOverlayError(
-      "no ?env= param on this overlay's URL — refusing to guess a WS port",
-    );
-    callback();
-    return;
+    const msg =
+      "no ?env= param on this overlay's URL — refusing to guess a WS port";
+    fatalOverlayError(msg);
+    throw new Error(msg);
   }
 
-  loadScript(
-    OVERLAY_CONFIG.REPO_ROOT + "node_modules/json5/dist/index.min.js",
-    (err) => {
-      if (err) {
-        fatalOverlayError("failed to load json5 library: " + err.message);
-        callback();
-        return;
-      }
+  try {
+    await loadScript(
+      OVERLAY_CONFIG.REPO_ROOT + "node_modules/json5/dist/index.min.js",
+    );
+  } catch (err) {
+    fatalOverlayError("failed to load json5 library: " + err.message);
+    throw err;
+  }
 
-      fetch(OVERLAY_CONFIG.REPO_ROOT + "config/ports.json5")
-        .then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.text();
-        })
-        .then((raw) => {
-          const ports = JSON5.parse(raw);
-          const { port: wsPort, error } = getWsPortForEnv(ports, env);
-          if (error) {
-            fatalOverlayError(error);
-          }
-          OVERLAY_CONFIG.WS_PORT = wsPort;
-          callback();
-        })
-        .catch((err) => {
-          fatalOverlayError("failed to read/parse ports.json5: " + err.message);
-          callback();
-        });
-    },
-  );
+  try {
+    const res = await fetch(OVERLAY_CONFIG.REPO_ROOT + "config/ports.json5");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const raw = await res.text();
+    const ports = JSON5.parse(raw);
+    const { port: wsPort, error } = getWsPortForEnv(ports, env);
+    if (error) throw new Error(error);
+    OVERLAY_CONFIG.WS_PORT = wsPort;
+  } catch (err) {
+    fatalOverlayError("failed to read/parse ports.json5: " + err.message);
+    throw err;
+  }
 }

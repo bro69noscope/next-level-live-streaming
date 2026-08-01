@@ -1,4 +1,10 @@
-loadEnvOverrides(function () {
+(async () => {
+  try {
+    await loadEnvOverrides();
+  } catch {
+    return; // fatalOverlayError already ran
+  }
+
   createAlertOverlay({
     name: "kofi",
     subscribedEvents: ["KofiAlert"],
@@ -31,4 +37,4 @@ loadEnvOverrides(function () {
       },
     ],
   });
-});
+})();

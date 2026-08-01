@@ -19,6 +19,24 @@
         },
       },
     },
+    browser_overlays_static: {
+      host: "127.0.0.1",
+      port: 50001,
+      protocol: "http",
+      url: "http://localhost:50001",
+      paths: {
+        ftp: "ftp/alerts-overlay.ftp.html",
+        production: "production/alerts-overlay.production.html",
+      },
+      tokens: {
+        url: {
+          token: "{{BROWSER_OVERLAYS_STATIC_URL}}",
+        },
+        port: {
+          token: "{{BROWSER_OVERLAYS_STATIC_PORT}}",
+        },
+      },
+    },
   },
   // OBS servers
   obs: {

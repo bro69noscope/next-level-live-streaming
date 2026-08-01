@@ -1,3 +1,16 @@
+function loadScript(src, callback) {
+  const script = document.createElement("script");
+  script.src = src;
+  script.onload = () => callback(null);
+  script.onerror = () => callback(new Error("failed to load " + src));
+  document.head.appendChild(script);
+}
+
+function getWsPortForEnv(ports, env) {
+  const entry = ports.streamerbot[env];
+  return entry ? entry.streamerbot_ws.port : null;
+}
+
 function loadEnvOverrides(callback) {
   const env = new URLSearchParams(window.location.search).get("env");
 
@@ -19,7 +32,10 @@ function loadEnvOverrides(callback) {
       }
 
       fetch(OVERLAY_CONFIG.REPO_ROOT + "config/ports.json5")
-        .then((res) => res.text())
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.text();
+        })
         .then((raw) => {
           const ports = JSON5.parse(raw);
           const wsPort = getWsPortForEnv(ports, env);
@@ -37,17 +53,4 @@ function loadEnvOverrides(callback) {
         });
     },
   );
-}
-
-function getWsPortForEnv(ports, env) {
-  const entry = ports.streamerbot[env];
-  return entry ? entry.streamerbot_ws.port : null;
-}
-
-function loadScript(src, callback) {
-  const script = document.createElement("script");
-  script.src = src;
-  script.onload = () => callback(null);
-  script.onerror = () => callback(new Error("failed to load " + src));
-  document.head.appendChild(script);
 }

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import override
 
 from src.config.settings import PROJECT_ROOT_PATH
-from src.connection.constants import BROWSER_OVERLAYS_STATIC
+from src.connection.constants import ALERTS_OVERLAYS_STATIC
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -31,10 +31,10 @@ class ScopedHandler(SimpleHTTPRequestHandler):
 
 
 def _build_urls() -> dict[str, str]:
-    base = f"http://localhost:{BROWSER_OVERLAYS_STATIC['port']}"
+    base = f"http://localhost:{ALERTS_OVERLAYS_STATIC['port']}"
     return {
         env: f"{base}/{rel_path}?env={env}"
-        for env, rel_path in BROWSER_OVERLAYS_STATIC["paths"].items()
+        for env, rel_path in ALERTS_OVERLAYS_STATIC["paths"].items()
     }
 
 
@@ -43,7 +43,7 @@ def main() -> None:
     urls = _build_urls()
 
     print(f"Repo root:  {PROJECT_ROOT_PATH}")
-    print(f"Serving:    {SCRIPT_DIR} on port {BROWSER_OVERLAYS_STATIC['port']}")
+    print(f"Serving:    {SCRIPT_DIR} on port {ALERTS_OVERLAYS_STATIC['port']}")
     print("Mounts:")
     for mount_name, real_dir in EXTERNAL_MOUNTS.items():
         status = "OK" if real_dir.exists() else "MISSING"
@@ -55,7 +55,7 @@ def main() -> None:
 
     handler = partial(ScopedHandler, directory=str(SCRIPT_DIR))
     server = ThreadingHTTPServer(
-        (BROWSER_OVERLAYS_STATIC["host"], BROWSER_OVERLAYS_STATIC["port"]), handler
+        (ALERTS_OVERLAYS_STATIC["host"], ALERTS_OVERLAYS_STATIC["port"]), handler
     )
     try:
         server.serve_forever()

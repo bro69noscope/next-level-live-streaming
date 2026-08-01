@@ -19,7 +19,7 @@
         },
       },
     },
-    browser_overlays_static: {
+    alerts_overlays_static: {
       host: "127.0.0.1",
       port: 50001,
       protocol: "http",
@@ -30,10 +30,10 @@
       },
       tokens: {
         url: {
-          token: "{{BROWSER_OVERLAYS_STATIC_URL}}",
+          token: "{{ALERTS_OVERLAYS_STATIC_URL}}",
         },
         port: {
-          token: "{{BROWSER_OVERLAYS_STATIC_PORT}}",
+          token: "{{ALERTS_OVERLAYS_STATIC_PORT}}",
         },
       },
     },

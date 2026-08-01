@@ -29,7 +29,7 @@ class SubprocessConfig(TypedDict):
 
 
 class RepositoryStaticEntry(TypedDict):
-    """A static file server entry under repository (e.g. browser_overlays_static)."""
+    """A static file server entry under repository (e.g. alerts_overlays_static)."""
 
     host: str
     port: int
@@ -39,7 +39,7 @@ class RepositoryStaticEntry(TypedDict):
 class RepositoryConfig(TypedDict):
     """Config for repo-level dev tooling servers (static file servers, etc.)."""
 
-    browser_overlays_static: RepositoryStaticEntry
+    alerts_overlays_static: RepositoryStaticEntry
 
 
 class PySubProcessesPortsConfig(TypedDict):
@@ -64,4 +64,4 @@ with PORTS_CFG_PATH.open(encoding="utf-8") as file:
     )
 STOP_SUBPROCESS_MESSAGE = "stop$subprocess"
 SUBPROCESSES_PORTS = {name: cfg["port"] for name, cfg in PORTS["subprocesses"].items()}
-BROWSER_OVERLAYS_STATIC = PORTS["repository"]["browser_overlays_static"]
+ALERTS_OVERLAYS_STATIC = PORTS["repository"]["alerts_overlays_static"]

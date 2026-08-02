@@ -11,7 +11,9 @@
       {
         kind: "sub",
         sound: "sub_alert.mp3",
-        headline: () => "just subscribed!",
+        headline: (item) =>
+          "just subscribed!" +
+          (item.tier > 1 ? " (tier " + item.tier + ")" : ""),
       },
       {
         kind: "resub",

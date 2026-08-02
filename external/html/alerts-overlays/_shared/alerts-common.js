@@ -74,7 +74,9 @@ function createAlertOverlay(opts) {
 
   const allSounds = ownSounds.concat([soundErrorEl, soundUnknownEl]);
   let pendingMessage = null;
-  let onSpeechDone = null; // set by the in-flight showAlert(); called once TTS finishes (or is skipped)
+  let onSpeechDone = null;
+  let activeSoundEl = null;
+  let activeFinish = null;
 
   function onSoundEnded() {
     if (pendingMessage) {
@@ -195,7 +197,15 @@ function createAlertOverlay(opts) {
       } catch (e) {
         return;
       }
-      if (!payload || !subscribedEvents.includes(payload.event)) return; // not ours, let another overlay handle it
+
+      if (!payload) return;
+
+      if (payload.event === "SkipCurrentAlert") {
+        skipCurrentAlert();
+        return;
+      }
+
+      if (!subscribedEvents.includes(payload.event)) return; // not ours, let another overlay handle it
 
       queue.push(payload);
       processQueue();
@@ -215,6 +225,23 @@ function createAlertOverlay(opts) {
     const item = queue.shift();
     requestLockThenShow(item);
   }
+
+  function skipCurrentAlert() {
+    if (!playing || !activeFinish) return; // nothing showing on this overlay right now
+    console.log(
+      `[${name}-overlay] ${ts()} skip requested, stopping current alert`,
+    );
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    pendingMessage = null;
+    onSpeechDone = null;
+    if (activeSoundEl) {
+      activeSoundEl.pause();
+      activeSoundEl.currentTime = 0;
+    }
+    activeFinish(OVERLAY_CONFIG.SKIP_SILENCE_MS);
+  }
+
+  window.skipCurrentAlert = skipCurrentAlert; // manual trigger from devtools / a hotkey binding
 
   function showAlert(item) {
     userEl.textContent = item.user || "Some guy or gal";
@@ -256,14 +283,17 @@ function createAlertOverlay(opts) {
         ),
       );
 
+    activeSoundEl = soundEl;
     pendingMessage = item.message || null;
     let ttsDone = false;
     let minTimeElapsed = false;
     let hidden = false;
 
-    function maybeHide() {
-      if (hidden || !(ttsDone && minTimeElapsed)) return;
+    function finish(delayMs) {
+      if (hidden) return;
       hidden = true;
+      activeSoundEl = null;
+      activeFinish = null;
       alertBox.classList.remove("show");
       setTimeout(() => {
         playing = false;
@@ -272,8 +302,15 @@ function createAlertOverlay(opts) {
           window.parent.postMessage({ type: "alert-lock-release", name }, "*");
         }
         processQueue();
-      }, 700);
+      }, delayMs ?? 700);
     }
+
+    function maybeHide() {
+      if (!ttsDone || !minTimeElapsed) return;
+      finish();
+    }
+
+    activeFinish = finish;
 
     onSpeechDone = () => {
       ttsDone = true;

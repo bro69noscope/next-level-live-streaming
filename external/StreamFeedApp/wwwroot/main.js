@@ -1,0 +1,2 @@
+renderStatus();
+INSTANCES.forEach(connectInstance);

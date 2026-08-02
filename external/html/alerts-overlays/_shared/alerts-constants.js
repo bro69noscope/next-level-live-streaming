@@ -10,6 +10,7 @@ const OVERLAY_CONFIG = {
   SOUND_RETRY_MAX: 5,
   SOUND_RETRY_DELAY_MS: 500,
   SOUND_CHECK_TIMEOUT_MS: 300,
+  SKIP_SILENCE_MS: 5000,
   REPO_ROOT: "../../../../../",
   SOUND_FILES: {
     common: {

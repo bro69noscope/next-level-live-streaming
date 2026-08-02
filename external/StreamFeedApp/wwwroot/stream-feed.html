@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Activity Feed</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="hide-raw">
+    <div id="status">connecting…</div>
+    <div id="filters">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="Production">Production</button>
+      <button data-filter="Ftp">Ftp</button>
+      <button id="hideFollowsBtn">Hide Follows</button>
+      <button id="toggleRawBtn">Show JSON</button>
+    </div>
+    <div id="feed"></div>
+
+    <!-- Load order matters: no bundler/modules here, these are plain
+         global scripts, each depending on globals defined by the ones
+         before it (same pattern as the alert overlay _shared/ scripts). -->
+    <script src="config.js"></script>
+    <script src="event-formatters.js"></script>
+    <script src="render.js"></script>
+    <script src="filters.js"></script>
+    <script src="ws-client.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

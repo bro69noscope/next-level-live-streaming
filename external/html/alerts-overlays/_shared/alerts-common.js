@@ -74,11 +74,17 @@ function createAlertOverlay(opts) {
 
   const allSounds = ownSounds.concat([soundErrorEl, soundUnknownEl]);
   let pendingMessage = null;
+  let onSpeechDone = null; // set by the in-flight showAlert(); called once TTS finishes (or is skipped)
 
   function onSoundEnded() {
     if (pendingMessage) {
-      speak(pendingMessage);
+      const text = pendingMessage;
       pendingMessage = null;
+      speak(text);
+    } else if (onSpeechDone) {
+      const done = onSpeechDone;
+      onSpeechDone = null;
+      done();
     }
   }
 
@@ -249,9 +255,15 @@ function createAlertOverlay(opts) {
           err.message,
         ),
       );
-    pendingMessage = item.message || null;
 
-    setTimeout(() => {
+    pendingMessage = item.message || null;
+    let ttsDone = false;
+    let minTimeElapsed = false;
+    let hidden = false;
+
+    function maybeHide() {
+      if (hidden || !(ttsDone && minTimeElapsed)) return;
+      hidden = true;
       alertBox.classList.remove("show");
       setTimeout(() => {
         playing = false;
@@ -261,14 +273,39 @@ function createAlertOverlay(opts) {
         }
         processQueue();
       }, 700);
+    }
+
+    onSpeechDone = () => {
+      ttsDone = true;
+      maybeHide();
+    };
+
+    setTimeout(() => {
+      minTimeElapsed = true;
+      maybeHide();
     }, OVERLAY_CONFIG.ALERT_DISPLAY_MS);
   }
 
   function speak(text) {
-    if (!("speechSynthesis" in window)) return;
+    if (!("speechSynthesis" in window)) {
+      if (onSpeechDone) {
+        const done = onSpeechDone;
+        onSpeechDone = null;
+        done();
+      }
+      return;
+    }
     const utter = new SpeechSynthesisUtterance(text);
     utter.volume = OVERLAY_CONFIG.TTS_VOLUME;
     utter.rate = OVERLAY_CONFIG.TTS_RATE;
+    utter.onend = () => {
+      if (onSpeechDone) {
+        const done = onSpeechDone;
+        onSpeechDone = null;
+        done();
+      }
+    };
+    utter.onerror = utter.onend; // don't let a TTS error hang the lock
     window.speechSynthesis.speak(utter);
   }
 

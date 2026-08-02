@@ -11,6 +11,7 @@ body {
   position: absolute;
   top: 30%;
   left: 50%;
+  width: 900px;
   transform: translate(-50%, -50%) scale(0.8);
   opacity: 0;
   text-align: center;
@@ -38,8 +39,9 @@ body {
 }
 
 #alert-box .message {
-  margin-top: 10px;
+  margin: 10px auto 0;
   font-size: 24px;
   font-weight: 400;
   max-width: 700px;
+  overflow-wrap: break-word;
 }

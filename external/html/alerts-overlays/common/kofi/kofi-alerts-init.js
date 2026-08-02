@@ -23,7 +23,7 @@
           (item.amount || "?") +
           " " +
           (item.currency || "") +
-          " Monthly !",
+          "!",
       },
       {
         kind: "kofiresub",
@@ -33,7 +33,7 @@
           (item.amount || "?") +
           " " +
           (item.currency || "") +
-          " Monthly !",
+          "!",
       },
     ],
   });

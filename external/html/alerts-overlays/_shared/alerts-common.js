@@ -217,7 +217,7 @@ function createAlertOverlay(opts) {
   }
 
   function showAlert(item) {
-    userEl.textContent = item.user || "Someone";
+    userEl.textContent = item.user || "Some guy or gal";
     msgEl.textContent = item.message || "";
 
     const display = getAlertDisplay(item) || {};

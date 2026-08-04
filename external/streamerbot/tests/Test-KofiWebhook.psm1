@@ -24,6 +24,10 @@
 
 function Test-KofiWebhook {
   param(
+    [Parameter(Position = 0)]
+    [ValidateSet("sub", "resub", "dono")]
+    [string]$Preset,
+
     [string]$Type = "Donation",
     [string]$FromName = "TestUser",
     [string]$Message = "This is a custom test message",
@@ -32,6 +36,30 @@ function Test-KofiWebhook {
     [bool]$IsFirstSubscriptionPayment = $false,
     [bool]$IsPublic = $true
   )
+
+  switch ($Preset) {
+    "dono"   {
+      if (-not $PSBoundParameters.ContainsKey('Type')) {
+        $Type = "Donation"
+      }
+    }
+    "sub"   {
+      if (-not $PSBoundParameters.ContainsKey('Type')) {
+        $Type = "Subscription"
+      }
+      if (-not $PSBoundParameters.ContainsKey('IsFirstSubscriptionPayment')) {
+        $IsFirstSubscriptionPayment = $true
+      }
+    }
+    "resub" {
+      if (-not $PSBoundParameters.ContainsKey('Type')) {
+        $Type = "Subscription"
+      }
+      if (-not $PSBoundParameters.ContainsKey('IsFirstSubscriptionPayment')) {
+        $IsFirstSubscriptionPayment = $false
+      }
+    }
+  }
 
   Import-Module "$env:STREAMING_REPO_PATH\src\scripts\CredentialHelpers.psm1" -Force
   $WebhookUrl = Get-CmdkeySecret -Target "HardscopeKofiWebhookUrl"

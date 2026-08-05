@@ -10,7 +10,16 @@
 
   window.addEventListener("message", (evt) => {
     const data = evt.data;
-    if (!data || !data.type) return;
+
+    if (!data) {
+      console.warn("[Alert Lock] Received message with no data", evt);
+      return;
+    }
+
+    if (!data.type) {
+      console.warn("[Alert Lock] Message missing type property", data);
+      return;
+    }
 
     if (data.type === "alert-lock-request") {
       waiting.push(evt.source);
@@ -19,6 +28,8 @@
       clearTimeout(lockTimeoutId);
       locked = false;
       grantNext();
+    } else {
+      console.warn("[Alert Lock] Unknown message type:", data.type, data);
     }
   });
 

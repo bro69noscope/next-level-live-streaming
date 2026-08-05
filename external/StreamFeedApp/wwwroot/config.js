@@ -26,4 +26,12 @@ INSTANCES.forEach((inst) => (state[inst.name] = "connecting"));
 
 // Filter state, mutated by filters.js, read by render.js
 let activeFilter = "all";
-let hideFollows = false;
+
+const twitchFollowToggle = {
+  btn: document.getElementById("toggleTwitchFollowsBtn"),
+  shown: true,
+  labels: {
+    whenShown: "Hide Follows", // click to hide follows
+    whenHidden: "Show Follows", // click to reveal follows
+  },
+};

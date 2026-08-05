@@ -61,11 +61,6 @@ body.hide-raw .entry .raw {
   background: #5b9dff;
   border-color: #5b9dff;
 }
-#hideFollowsBtn.active {
-  color: #111;
-  background: #ff5c5c;
-  border-color: #ff5c5c;
-}
 .entry {
   display: flex;
   gap: var(--gap-entry);

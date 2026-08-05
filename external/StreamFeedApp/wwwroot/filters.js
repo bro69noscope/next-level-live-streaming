@@ -1,15 +1,22 @@
+function applyTwitchFollowToggleState() {
+  twitchFollowToggle.btn.classList.toggle("active", twitchFollowToggle.shown);
+  twitchFollowToggle.btn.textContent = twitchFollowToggle.shown
+    ? twitchFollowToggle.labels.whenShown
+    : twitchFollowToggle.labels.whenHidden;
+}
+
 function applyFilter() {
   document
     .querySelectorAll("#filters button[data-filter]")
     .forEach((b) =>
       b.classList.toggle("active", b.dataset.filter === activeFilter),
     );
-
   document.querySelectorAll(".entry").forEach((row) => {
     const instanceMismatch =
       activeFilter !== "all" && row.dataset.instance !== activeFilter;
-    const followHidden = hideFollows && row.dataset.type === "Twitch.Follow";
-    row.classList.toggle("hidden", instanceMismatch || followHidden);
+    const twitchFollowHidden =
+      !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
+    row.classList.toggle("hidden", instanceMismatch || twitchFollowHidden);
   });
 }
 
@@ -20,11 +27,13 @@ filtersEl.querySelectorAll("button[data-filter]").forEach((btn) => {
   };
 });
 
-document.getElementById("hideFollowsBtn").onclick = (e) => {
-  hideFollows = !hideFollows;
-  e.target.classList.toggle("active", hideFollows);
+twitchFollowToggle.btn.onclick = () => {
+  twitchFollowToggle.shown = !twitchFollowToggle.shown;
+  applyTwitchFollowToggleState();
   applyFilter();
 };
+
+applyTwitchFollowToggleState(); // sync button to initial shown=false state on load
 
 document.getElementById("toggleRawBtn").onclick = (e) => {
   document.body.classList.toggle("hide-raw");

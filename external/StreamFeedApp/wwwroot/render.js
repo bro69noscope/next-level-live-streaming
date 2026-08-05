@@ -51,8 +51,9 @@ function addEntry(inst, eventType, data) {
   row.dataset.type = eventType;
 
   const instanceMismatch = activeFilter !== "all" && activeFilter !== inst.name;
-  const followHidden = hideFollows && row.dataset.type === "Twitch.Follow";
-  if (instanceMismatch || followHidden) {
+  const twitchFollowHidden =
+    !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
+  if (instanceMismatch || twitchFollowHidden) {
     row.classList.add("hidden");
   }
 

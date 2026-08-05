@@ -67,7 +67,7 @@ namespace StreamFeedApp
             {
                 e.Handled = true;
                 WebView.CoreWebView2.ExecuteScriptAsync(
-                    "document.getElementById('hideFollowsBtn').click();"
+                    "document.getElementById('toggleTwitchFollowsBtn').click();"
                 );
             }
         }

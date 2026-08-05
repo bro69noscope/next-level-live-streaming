@@ -45,7 +45,7 @@ const EVENT_MAP = {
   }),
 
   "Kofi.kofitip": (d) => ({
-    icon: "☕💸",
+    icon: "☕💵",
     label: "Ko-fi Tip",
     user: d.user || "?",
     message: d.message || "",

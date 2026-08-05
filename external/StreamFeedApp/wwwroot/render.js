@@ -61,8 +61,8 @@ function addEntry(inst, eventType, data) {
     <div class="icon">${mapped.icon}</div>
     <div>
       <div>
-        <span style="color:#5b9dff">[${inst.name}]</span>
-        ${new Date().toLocaleTimeString()} —
+        <span class="instance">[${inst.name}]</span>
+        <span class="timestamp">${new Date().toLocaleTimeString()}</span>
         <b>${escapeHtml(mapped.user || "?")}</b>
         <span class="label">${escapeHtml(mapped.label)}</span>
       </div>

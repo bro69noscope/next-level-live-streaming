@@ -7,6 +7,7 @@
   createAlertOverlay({
     name: "twitch",
     subscribedEvents: ["TwitchAlert"],
+    kindChance: { follow: 0.0 },
     alerts: [
       {
         kind: "sub",
@@ -34,6 +35,12 @@
           "gifted " +
           (item.giftCount || "?") +
           " subs to a buncha wild animals!",
+      },
+      {
+        // TODO: add a low % funny disproportionate follow alert
+        kind: "follow",
+        sound: "follow_alert.mp3",
+        headline: () => "just followed!",
       },
     ],
   });

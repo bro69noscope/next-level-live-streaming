@@ -53,7 +53,7 @@ function handleSoundCheckFailure(el, reason) {
 }
 
 function createAlertOverlay(opts) {
-  const { name, subscribedEvents, alerts } = opts;
+  const { name, subscribedEvents, alerts, kindChance = {} } = opts;
 
   const alertsByKind = new Map();
   const ownSounds = [];
@@ -206,6 +206,14 @@ function createAlertOverlay(opts) {
       }
 
       if (!subscribedEvents.includes(payload.event)) return; // not ours, let another overlay handle it
+      const chance = payload.kind in kindChance ? kindChance[payload.kind] : 1;
+      if (Math.random() >= chance) {
+        console.log(
+          `[${name}-overlay] ${ts()} dropped by chance roll (chance=${chance}):`,
+          payload.kind,
+        );
+        return;
+      }
 
       queue.push(payload);
       processQueue();

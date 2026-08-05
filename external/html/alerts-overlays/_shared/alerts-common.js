@@ -5,7 +5,6 @@ function createSoundElement(id, src) {
   el.preload = "auto";
   el.dataset.retries = "0";
   el.dataset.relSrc = src;
-  el.dataset.origSrc = src;
   document.body.appendChild(el);
   checkSoundAvailable(el);
   return el;
@@ -18,7 +17,7 @@ function checkSoundAvailable(el) {
     OVERLAY_CONFIG.SOUND_CHECK_TIMEOUT_MS,
   );
 
-  fetch(el.dataset.origSrc, { method: "HEAD", signal: controller.signal })
+  fetch(el.dataset.relSrc, { method: "HEAD", signal: controller.signal })
     .then((res) => {
       clearTimeout(timeoutId);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

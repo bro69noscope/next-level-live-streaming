@@ -1,5 +1,8 @@
-window.DEBUG_ALERT_LOCK = false;
-window.DEBUG_ALERT_COMMON = false;
-window.DEBUG_TWITCH = false;
-window.DEBUG_KOFI = false;
-window.DEBUG_ALL = false;
+window.debug = {
+  "alerts-common": false,
+  "alerts-overlay-lock": false,
+  "alerts-utils": false,
+  "twitch-alerts-init": false,
+  "kofi-alerts-init": false,
+  all: true,
+};

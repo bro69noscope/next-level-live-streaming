@@ -1,4 +1,4 @@
-const DEBUG = window.DEBUG_ALERT_LOCK === true || window.DEBUG_ALL === true;
+const log = new Log();
 
 (function () {
   const DEFAULT_LOCK_TIMEOUT_MS = 15000;
@@ -14,12 +14,12 @@ const DEBUG = window.DEBUG_ALERT_LOCK === true || window.DEBUG_ALL === true;
     const data = evt.data;
 
     if (!data) {
-      console.warn("[Alert Lock] Received message with no data", evt);
+      log.warn("Received message with no data", evt);
       return;
     }
 
     if (!data.type) {
-      console.warn("[Alert Lock] Message missing type property", data);
+      log.warn("Message missing type property", data);
       return;
     }
 
@@ -31,7 +31,7 @@ const DEBUG = window.DEBUG_ALERT_LOCK === true || window.DEBUG_ALL === true;
       locked = false;
       grantNext();
     } else {
-      console.warn("[Alert Lock] Unknown message type:", data.type, data);
+      log.warn("Unknown message type:", data.type, data);
     }
   });
 
@@ -43,7 +43,7 @@ const DEBUG = window.DEBUG_ALERT_LOCK === true || window.DEBUG_ALL === true;
 
     clearTimeout(lockTimeoutId);
     lockTimeoutId = setTimeout(() => {
-      console.log(`"[alerts-overlay] ${ts()} lock timed out, auto-releasing"`);
+      log.info("Lock timed out, auto-releasing");
       locked = false;
       grantNext();
     }, LOCK_TIMEOUT_MS);

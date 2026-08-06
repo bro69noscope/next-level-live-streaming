@@ -1,4 +1,4 @@
-const DEBUG = window.DEBUG_ALERT_COMMON === true || window.DEBUG_ALL === true;
+const log = new Log();
 
 function createSoundElement(id, src) {
   const el = document.createElement("audio");
@@ -36,8 +36,8 @@ function handleSoundCheckFailure(el, reason) {
   const relPath = el.dataset.relSrc;
   if (retries < OVERLAY_CONFIG.SOUND_RETRY_MAX) {
     el.dataset.retries = String(retries + 1);
-    console.log(
-      `[overlay] ${ts()} sound check failed (${reason}), retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
+    log.warn(
+      `sound check failed (${reason}), retrying (${retries + 1}/${OVERLAY_CONFIG.SOUND_RETRY_MAX}): ${relPath}`,
       el.src,
     );
     setTimeout(
@@ -45,8 +45,8 @@ function handleSoundCheckFailure(el, reason) {
       OVERLAY_CONFIG.SOUND_RETRY_DELAY_MS,
     );
   } else {
-    console.log(
-      `[overlay] ${ts()} sound permanently failed after ${retries} retries: ${relPath}`,
+    log.warn(
+      `sound permanently failed after ${retries} retries: ${relPath}`,
       el.src,
     );
     el.dataset.failed = "true";
@@ -94,7 +94,6 @@ function createAlertOverlay(opts) {
   allSounds.forEach((el) => {
     el.volume = OVERLAY_CONFIG.SOUND_VOLUME;
     el.addEventListener("ended", onSoundEnded);
-
     [
       "play",
       "playing",
@@ -105,13 +104,11 @@ function createAlertOverlay(opts) {
       "abort",
     ].forEach((evtName) => {
       el.addEventListener(evtName, () => {
-        console.log(
-          `[${name}-overlay] ${ts()} audio "${evtName}" on ${el.dataset.relSrc} (currentTime=${el.currentTime.toFixed(2)})`,
+        log.debug(
+          `audio "${evtName}" on ${el.dataset.relSrc} (currentTime=${el.currentTime.toFixed(2)})`,
         );
       });
     });
-
-    el.addEventListener("ended", onSoundEnded);
   });
 
   function getAlertDisplay(item) {
@@ -133,7 +130,7 @@ function createAlertOverlay(opts) {
   const isEmbedded = window.parent !== window;
 
   function requestLockThenShow(item) {
-    console.log(`[${name}-overlay] ${ts()} lock requested for`, item.kind);
+    log.debug("lock requested for", item.kind);
     if (!isEmbedded) {
       showAlert(item);
       return;
@@ -145,7 +142,7 @@ function createAlertOverlay(opts) {
         evt.data.type === "alert-lock-granted"
       ) {
         window.removeEventListener("message", onGrant);
-        console.log(`[${name}-overlay] ${ts()} lock granted for`, item.kind);
+        log.debug("lock granted for", item.kind);
         showAlert(item);
       }
     }
@@ -155,9 +152,7 @@ function createAlertOverlay(opts) {
 
   function connect() {
     if (!OVERLAY_CONFIG.WS_PORT) {
-      fatalOverlayError(
-        `[${name}-overlay] ${ts()} no WS_PORT configured, refusing to connect`,
-      );
+      fatalOverlayError(`no WS_PORT configured, refusing to connect`);
       return;
     }
     const ws = new WebSocket(
@@ -165,9 +160,7 @@ function createAlertOverlay(opts) {
     );
 
     ws.onopen = () => {
-      console.log(
-        `[${name}-overlay] ${ts()} connected to Streamer.bot, subscribing...`,
-      );
+      log.info("connected to Streamer.bot, subscribing...");
       ws.send(
         JSON.stringify({
           request: "Subscribe",
@@ -207,35 +200,25 @@ function createAlertOverlay(opts) {
       }
 
       if (!subscribedEvents.includes(payload.event)) return; // not ours, let another overlay handle it
-      if (DEBUG) {
-        console.debug(
-          `[${name}-overlay] ${ts()} Alert received:`,
-          { kind: payload.kind, event: payload.event },
-          payload,
-        );
-      }
+      log.debug(
+        `Alert received:`,
+        { kind: payload.kind, event: payload.event },
+        payload,
+      );
 
       const chance = payload.kind in kindChance ? kindChance[payload.kind] : 1;
       if (Math.random() >= chance) {
-        console.log(
-          `[${name}-overlay] ${ts()} dropped by chance roll (chance=${chance}):`,
-          payload.kind,
-        );
+        log.info(`Dropped by chance roll (chance=${chance}):`, payload.kind);
         return;
       }
 
       queue.push(payload);
-      if (DEBUG) {
-        console.debug(
-          `[${name}-overlay] ${ts()} Queued. Queue length: ${queue.length}`,
-          queue,
-        );
-      }
+      log.debug(`Queued. Queue length: ${queue.length}`, queue);
       processQueue();
     };
 
     ws.onclose = () => {
-      console.log(`[${name}-overlay] ${ts()} disconnected, retrying in 3s`);
+      log.info("Disconnected, retrying in 3s");
       setTimeout(connect, 3000);
     };
 
@@ -246,22 +229,18 @@ function createAlertOverlay(opts) {
     if (playing || queue.length === 0) return;
     playing = true;
     const item = queue.shift();
-    if (DEBUG) {
-      console.debug(
-        `[${name}-overlay] Processing alert:`,
-        { kind: item.kind, event: item.event },
-        `Queue remaining: ${queue.length}`,
-        queue,
-      );
-    }
+    log.debug(
+      `Processing alert:`,
+      { kind: item.kind, event: item.event },
+      `Queue remaining: ${queue.length}`,
+      queue,
+    );
     requestLockThenShow(item);
   }
 
   function skipCurrentAlert() {
     if (!playing || !activeFinish) return; // nothing showing on this overlay right now
-    console.log(
-      `[${name}-overlay] ${ts()} skip requested, stopping current alert`,
-    );
+    log.info("Skip requested, stopping current alert");
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     pendingMessage = null;
     onSpeechDone = null;
@@ -286,32 +265,20 @@ function createAlertOverlay(opts) {
     alertBox.classList.add("show");
 
     if (soundEl.dataset.failed === "true" && soundEl !== soundErrorEl) {
-      console.log(
-        `[${name}-overlay] ${ts()} sound failed to load previously, using error sound instead: ${soundEl.dataset.relSrc}`,
+      log.warn(
+        `Sound failed to load previously, using error sound instead: ${soundEl.dataset.relSrc}`,
         soundEl.src,
       );
       soundEl = soundErrorEl;
     }
 
     soundEl.currentTime = 0;
-    console.log(
-      `[${name}-overlay] ${ts()} play() called for`,
-      soundEl.dataset.relSrc,
-    );
+    log.debug("play() called for", soundEl.dataset.relSrc);
     soundEl
       .play()
-      .then(() =>
-        console.log(
-          `[${name}-overlay] ${ts()} play() resolved for`,
-          soundEl.dataset.relSrc,
-        ),
-      )
+      .then(() => log.debug("play() resolved for", soundEl.dataset.relSrc))
       .catch((err) =>
-        console.log(
-          `[${name}-overlay] ${ts()} play() rejected for`,
-          soundEl.dataset.relSrc,
-          err.message,
-        ),
+        log.error("play() rejected for", soundEl.dataset.relSrc, err.message),
       );
 
     activeSoundEl = soundEl;
@@ -329,7 +296,7 @@ function createAlertOverlay(opts) {
       setTimeout(() => {
         playing = false;
         if (isEmbedded) {
-          console.log(`[${name}-overlay] ${ts()} lock released for`, item.kind);
+          log.debug("lock released for", item.kind);
           window.parent.postMessage({ type: "alert-lock-release", name }, "*");
         }
         processQueue();

@@ -1,3 +1,5 @@
+const DEBUG = window.DEBUG_ALERT_LOCK === true || window.DEBUG_ALL === true;
+
 (function () {
   const DEFAULT_LOCK_TIMEOUT_MS = 15000;
   const LOCK_TIMEOUT_MS =

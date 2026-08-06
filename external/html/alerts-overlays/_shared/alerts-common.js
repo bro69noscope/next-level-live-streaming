@@ -1,3 +1,5 @@
+const DEBUG = window.DEBUG_ALERT_COMMON === true || window.DEBUG_ALL === true;
+
 function createSoundElement(id, src) {
   const el = document.createElement("audio");
   el.id = id;
@@ -154,7 +156,7 @@ function createAlertOverlay(opts) {
   function connect() {
     if (!OVERLAY_CONFIG.WS_PORT) {
       fatalOverlayError(
-        `[${name}-overlay] no WS_PORT configured, refusing to connect`,
+        `[${name}-overlay] ${ts()} no WS_PORT configured, refusing to connect`,
       );
       return;
     }
@@ -205,6 +207,14 @@ function createAlertOverlay(opts) {
       }
 
       if (!subscribedEvents.includes(payload.event)) return; // not ours, let another overlay handle it
+      if (DEBUG) {
+        console.debug(
+          `[${name}-overlay] ${ts()} Alert received:`,
+          { kind: payload.kind, event: payload.event },
+          payload,
+        );
+      }
+
       const chance = payload.kind in kindChance ? kindChance[payload.kind] : 1;
       if (Math.random() >= chance) {
         console.log(
@@ -215,6 +225,12 @@ function createAlertOverlay(opts) {
       }
 
       queue.push(payload);
+      if (DEBUG) {
+        console.debug(
+          `[${name}-overlay] ${ts()} Queued. Queue length: ${queue.length}`,
+          queue,
+        );
+      }
       processQueue();
     };
 
@@ -230,6 +246,14 @@ function createAlertOverlay(opts) {
     if (playing || queue.length === 0) return;
     playing = true;
     const item = queue.shift();
+    if (DEBUG) {
+      console.debug(
+        `[${name}-overlay] Processing alert:`,
+        { kind: item.kind, event: item.event },
+        `Queue remaining: ${queue.length}`,
+        queue,
+      );
+    }
     requestLockThenShow(item);
   }
 

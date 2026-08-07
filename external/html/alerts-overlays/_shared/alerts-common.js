@@ -58,10 +58,13 @@ function createAlertOverlay(opts) {
 
   const alertsByKind = new Map();
   const ownSounds = [];
-  alerts.forEach((def) => {
-    const soundEl = createSoundElement(`alert-sound-${def.kind}`, def.sound);
+  alerts.forEach((alert) => {
+    const soundEl = createSoundElement(
+      `alert-sound-${alert.kind}`,
+      alert.sound,
+    );
     ownSounds.push(soundEl);
-    alertsByKind.set(def.kind, { soundEl, headline: def.headline });
+    alertsByKind.set(alert.kind, { soundEl, headline: alert.headline });
   });
 
   const soundErrorEl = createSoundElement(
@@ -112,9 +115,12 @@ function createAlertOverlay(opts) {
   });
 
   function getAlertDisplay(item) {
-    const def = alertsByKind.get(item.kind);
-    if (!def) return null; // unrecognized kind -> shared unknown fallback
-    return { headline: def.headline(item), soundEl: def.soundEl };
+    const alertConfig = alertsByKind.get(item.kind);
+    if (!alertConfig) return null;
+    return {
+      headline: alertConfig.headline(item),
+      soundEl: alertConfig.soundEl,
+    };
   }
 
   const alertBox = document.getElementById("alert-box");

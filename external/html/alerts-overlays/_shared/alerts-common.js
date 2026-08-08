@@ -131,7 +131,6 @@ function createAlertOverlay(opts) {
   let queue = [];
   let playing = false;
 
-  // If loaded standalone (not inside alerts-overlay.html's iframes), there's
   // no parent to broker a lock with — just show immediately in that case.
   const isEmbedded = window.parent !== window;
 
@@ -262,7 +261,7 @@ function createAlertOverlay(opts) {
   }
 
   function skipCurrentAlert() {
-    if (!playing || !activeFinish) return; // nothing showing on this overlay right now
+    if (!playing || !activeFinish) return;
     log.info("Skip requested, stopping current alert");
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     pendingMessage = null;
@@ -274,7 +273,7 @@ function createAlertOverlay(opts) {
     activeFinish(OVERLAY_CONFIG.SKIP_SILENCE_MS);
   }
 
-  window.skipCurrentAlert = skipCurrentAlert; // manual trigger from devtools / a hotkey binding
+  window.skipCurrentAlert = skipCurrentAlert;
 
   function showAlert(item) {
     userEl.textContent = item.user || "Some guy or gal (this shouldn't show)";

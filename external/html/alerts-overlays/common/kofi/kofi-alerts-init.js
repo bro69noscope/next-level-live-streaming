@@ -2,7 +2,8 @@
   try {
     await loadEnvOverrides();
   } catch {
-    return; // fatalOverlayError already ran
+    log.debug("Aborting overlay init, env setup failed:", err.message);
+    return;
   }
 
   createAlertOverlay({

@@ -181,13 +181,14 @@ function createAlertOverlay(opts) {
       try {
         msg = JSON.parse(evt.data);
       } catch (e) {
-        return; // not JSON, ignore
+        log.warn("Failed to parse WebSocket message:", evt.data, e.message);
       }
       if (
         !msg.event ||
         msg.event.source !== "General" ||
         msg.event.type !== "Custom"
       ) {
+        log.debug("Ignoring non 'Custom'/'General' event:", msg.event);
         return;
       }
       let payload;
@@ -195,17 +196,31 @@ function createAlertOverlay(opts) {
         payload =
           typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
       } catch (e) {
+        log.warn(
+          "Failed to parse WebSocket message data:",
+          msg.data,
+          e.message,
+        );
         return;
       }
 
-      if (!payload) return;
+      if (!payload) {
+        log.debug("Ignoring payload with msg:", msg.data);
+        return;
+      }
 
       if (payload.event === "SkipCurrentAlert") {
         skipCurrentAlert();
         return;
       }
 
-      if (!subscribedEvents.includes(payload.event)) return; // not ours, let another overlay handle it
+      if (!subscribedEvents.includes(payload.event)) {
+        log.debug(
+          `Ignoring event: ${payload.event}, not in subscribedEvents: ${subscribedEvents}`,
+        );
+        return;
+      }
+
       log.debug(
         `Alert received:`,
         { kind: payload.kind, event: payload.event },

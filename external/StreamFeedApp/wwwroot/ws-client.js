@@ -1,4 +1,4 @@
-function connectInstance(inst) {
+function connectSbotInstance(inst) {
   const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
 
   ws.onopen = () => {
@@ -8,7 +8,7 @@ function connectInstance(inst) {
       JSON.stringify({
         request: "Subscribe",
         id: `activity-feed-${inst.name}`,
-        events: { Twitch: SUBSCRIBE_EVENTS, General: ["Custom"] },
+        events: { Twitch: TWITCH_SBOT_EVENTS, General: ["Custom"] },
       }),
     );
   };
@@ -17,8 +17,8 @@ function connectInstance(inst) {
     const parsed = JSON.parse(msg.data);
     if (!parsed.event) return;
 
-    // General.Custom -- fed by CPH.WebsocketBroadcastJson() from a
-    // Streamer.bot action. Payload arrives directly as parsed.data.
+    // General.Custom: CPH.WebsocketBroadcastJson() from Streamer.bot
+    // https://docs.streamer.bot/api/csharp/methods/core/websocket/broadcast-json
     if (parsed.event.source === "General" && parsed.event.type === "Custom") {
       if (parsed.data?.clearStreamFeed === true) {
         feedEl.innerHTML = "";
@@ -33,14 +33,14 @@ function connectInstance(inst) {
 
     if (parsed.event.source !== "Twitch") return;
     const eventType = parsed.event.type;
-    if (!SUBSCRIBE_EVENTS.includes(eventType)) return;
+    if (!TWITCH_SBOT_EVENTS.includes(eventType)) return;
     addEntry(inst, `Twitch.${eventType}`, parsed.data || {});
   };
 
   ws.onclose = () => {
     state[inst.name] = "disconnected";
     renderStatus();
-    setTimeout(() => connectInstance(inst), 2000);
+    setTimeout(() => connectSbotInstance(inst), 2000);
   };
   ws.onerror = () => ws.close();
 }

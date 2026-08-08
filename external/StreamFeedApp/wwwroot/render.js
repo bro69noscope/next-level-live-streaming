@@ -1,5 +1,5 @@
 function renderStatus() {
-  statusEl.innerHTML = INSTANCES.map((inst) => {
+  statusEl.innerHTML = STREAMERBOT_INSTANCES.map((inst) => {
     const s = state[inst.name];
     const cls = s === "connected" ? "ok" : "bad";
     return `<span class="${cls}">${inst.name}: ${s}</span>`;
@@ -20,8 +20,6 @@ function escapeHtml(s) {
   );
 }
 
-// Forwards unverified/unknown event payloads to the C# host, which
-// appends them to logs/unverified-events.log. See MainWindow.xaml.cs.
 function logUnverified(eventType, instanceName, data) {
   if (window.chrome && window.chrome.webview) {
     window.chrome.webview.postMessage(
@@ -41,7 +39,7 @@ function addEntry(inst, eventType, data) {
     ? mapper(data)
     : { icon: "❔", label: eventType, user: "", detail: "", unknown: true };
 
-  if (mapped.unknown || UNVERIFIED_TYPES.has(eventType)) {
+  if (mapped.unknown || UNVERIFIED_SBOT_EVENTS.has(eventType)) {
     logUnverified(eventType, inst.name, data);
   }
 

@@ -8,9 +8,6 @@ function userName(u) {
   return (u && (u.name || u.login)) || "?";
 }
 
-// One formatter per event type. Each returns { icon, label, user, detail }.
-// Unmapped/unknown types fall back to a raw-JSON dump in render.js so
-// nothing is silently dropped while a type is still being verified.
 const EVENT_MAP = {
   "Twitch.Follow": (d) => ({
     icon: "👾➕",

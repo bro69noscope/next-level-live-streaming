@@ -1,2 +1,2 @@
 renderStatus();
-INSTANCES.forEach(connectInstance);
+STREAMERBOT_INSTANCES.forEach(connectSbotInstance);

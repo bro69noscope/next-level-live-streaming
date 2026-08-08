@@ -1,4 +1,3 @@
-<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -16,9 +15,6 @@
     </div>
     <div id="feed"></div>
 
-    <!-- Load order matters: no bundler/modules here, these are plain
-         global scripts, each depending on globals defined by the ones
-         before it (same pattern as the alert overlay _shared/ scripts). -->
     <script src="config.js"></script>
     <script src="event-formatters.js"></script>
     <script src="render.js"></script>

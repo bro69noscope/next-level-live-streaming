@@ -33,7 +33,7 @@ twitchFollowToggle.btn.onclick = () => {
   applyFilter();
 };
 
-applyTwitchFollowToggleState(); // sync button to initial shown=false state on load
+applyTwitchFollowToggleState(); // starts activated
 
 document.getElementById("toggleRawBtn").onclick = (e) => {
   document.body.classList.toggle("hide-raw");

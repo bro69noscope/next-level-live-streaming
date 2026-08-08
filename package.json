@@ -1,6 +1,7 @@
 {
   "devDependencies": {
-    "@prettier/plugin-xml": "^3.4.2"
+    "@prettier/plugin-xml": "^3.4.2",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "json5": "^2.2.3"

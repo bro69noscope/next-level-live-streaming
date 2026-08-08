@@ -8,10 +8,28 @@ namespace StreamFeedApp
 {
     public partial class MainWindow : Window
     {
+        private string _repoRoot = "";
+
         public MainWindow()
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
+        }
+
+        private static string FindRepoRoot(string startDir)
+        {
+            var dir = new DirectoryInfo(startDir);
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "pyproject.toml")))
+                {
+                    return dir.FullName;
+                }
+                dir = dir.Parent;
+            }
+            throw new DirectoryNotFoundException(
+                "Could not locate repo root (expected pyproject.toml) walking up from " + startDir
+            );
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -34,6 +52,14 @@ namespace StreamFeedApp
                 wwwroot,
                 CoreWebView2HostResourceAccessKind.Allow
             );
+
+            _repoRoot = FindRepoRoot(AppDomain.CurrentDomain.BaseDirectory);
+            WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "repo.local",
+                _repoRoot,
+                CoreWebView2HostResourceAccessKind.Allow
+            );
+
             WebView.CoreWebView2.Navigate("https://appassets.local/stream-feed.html");
 
             WebView.Focus();

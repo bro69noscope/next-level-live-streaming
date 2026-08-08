@@ -1,14 +1,22 @@
-function tierLabel(raw) {
+function tierLabel(raw: number | string | undefined): number | string {
   if (!raw) return "?";
   const n = Number(raw);
   return Number.isFinite(n) ? n / 1000 : raw;
 }
 
-function userName(u) {
+function userName(u: any): string {
   return (u && (u.name || u.login)) || "?";
 }
 
-const EVENT_MAP = {
+interface FormattedEvent {
+  icon: string;
+  label: string;
+  user: string;
+  detail: string;
+  message?: string;
+}
+
+const EVENT_MAP: Record<string, (d: any) => FormattedEvent> = {
   "Twitch.Follow": (d) => ({
     icon: "👾➕",
     label: "Twitch Follow",

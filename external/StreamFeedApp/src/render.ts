@@ -1,4 +1,4 @@
-function renderStatus() {
+function renderStatus(): void {
   statusEl.innerHTML = STREAMERBOT_INSTANCES.map((inst) => {
     const s = state[inst.name];
     const cls = s === "connected" ? "ok" : "bad";
@@ -6,22 +6,23 @@ function renderStatus() {
   }).join("  ·  ");
 }
 
-function escapeHtml(s) {
-  return String(s).replace(
-    /[&<>"']/g,
-    (c) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[c],
-  );
+function escapeHtml(s: unknown): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return String(s).replace(/[&<>"']/g, (c) => map[c]);
 }
 
-function logUnverified(eventType, instanceName, data) {
-  if (window.chrome && window.chrome.webview) {
+function logUnverified(
+  eventType: string,
+  instanceName: string,
+  data: unknown,
+): void {
+  if (window.chrome?.webview) {
     window.chrome.webview.postMessage(
       JSON.stringify({
         eventType,
@@ -33,9 +34,13 @@ function logUnverified(eventType, instanceName, data) {
   }
 }
 
-function addEntry(inst, eventType, data) {
+function addEntry(
+  inst: StreamerbotInstance,
+  eventType: string,
+  data: any,
+): void {
   const mapper = EVENT_MAP[eventType];
-  const mapped = mapper
+  const mapped: FormattedEvent & { unknown?: boolean } = mapper
     ? mapper(data)
     : { icon: "❔", label: eventType, user: "", detail: "", unknown: true };
 

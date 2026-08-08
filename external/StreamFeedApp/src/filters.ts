@@ -1,17 +1,17 @@
-function applyTwitchFollowToggleState() {
+function applyTwitchFollowToggleState(): void {
   twitchFollowToggle.btn.classList.toggle("active", twitchFollowToggle.shown);
   twitchFollowToggle.btn.textContent = twitchFollowToggle.shown
     ? twitchFollowToggle.labels.whenShown
     : twitchFollowToggle.labels.whenHidden;
 }
 
-function applyFilter() {
+function applyFilter(): void {
   document
-    .querySelectorAll("#filters button[data-filter]")
+    .querySelectorAll<HTMLButtonElement>("#filters button[data-filter]")
     .forEach((b) =>
       b.classList.toggle("active", b.dataset.filter === activeFilter),
     );
-  document.querySelectorAll(".entry").forEach((row) => {
+  document.querySelectorAll<HTMLElement>(".entry").forEach((row) => {
     const instanceMismatch =
       activeFilter !== "all" && row.dataset.instance !== activeFilter;
     const twitchFollowHidden =
@@ -20,12 +20,14 @@ function applyFilter() {
   });
 }
 
-filtersEl.querySelectorAll("button[data-filter]").forEach((btn) => {
-  btn.onclick = () => {
-    activeFilter = btn.dataset.filter;
-    applyFilter();
-  };
-});
+filtersEl
+  .querySelectorAll<HTMLButtonElement>("button[data-filter]")
+  .forEach((btn) => {
+    btn.onclick = () => {
+      activeFilter = btn.dataset.filter ?? "all";
+      applyFilter();
+    };
+  });
 
 twitchFollowToggle.btn.onclick = () => {
   twitchFollowToggle.shown = !twitchFollowToggle.shown;
@@ -35,9 +37,10 @@ twitchFollowToggle.btn.onclick = () => {
 
 applyTwitchFollowToggleState(); // starts activated
 
-document.getElementById("toggleRawBtn").onclick = (e) => {
+document.getElementById("toggleRawBtn")!.addEventListener("click", (e) => {
   document.body.classList.toggle("hide-raw");
   const showing = !document.body.classList.contains("hide-raw");
-  e.target.classList.toggle("active", showing);
-  e.target.textContent = showing ? "Hide JSON" : "Show JSON";
-};
+  const target = e.target as HTMLElement;
+  target.classList.toggle("active", showing);
+  target.textContent = showing ? "Hide JSON" : "Show JSON";
+});

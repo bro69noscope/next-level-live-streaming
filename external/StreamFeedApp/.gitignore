@@ -2,6 +2,8 @@
 bin/
 obj/
 artifacts/
+wwwroot/*.js
+wwwroot/*.js.map
 
 # Visual Studio
 .vs/

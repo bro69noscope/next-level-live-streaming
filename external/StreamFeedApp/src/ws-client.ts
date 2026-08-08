@@ -1,4 +1,4 @@
-function connectStreamerbotInstance(inst) {
+function connectStreamerbotInstance(inst: StreamerbotInstance): void {
   const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
 
   ws.onopen = () => {

@@ -141,18 +141,18 @@ function createAlertOverlay(opts) {
       showAlert(item);
       return;
     }
-    function onGrant(evt) {
+    function checkLockGrant(evt) {
       if (
         evt.source === window.parent &&
         evt.data &&
         evt.data.type === "alert-lock-granted"
       ) {
-        window.removeEventListener("message", onGrant);
+        window.removeEventListener("message", checkLockGrant);
         log.debug("lock granted for", item.kind);
         showAlert(item);
       }
     }
-    window.addEventListener("message", onGrant);
+    window.addEventListener("message", checkLockGrant);
     window.parent.postMessage({ type: "alert-lock-request", name }, "*");
   }
 

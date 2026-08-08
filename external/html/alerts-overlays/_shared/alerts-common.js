@@ -238,9 +238,11 @@ function createAlertOverlay(opts) {
       processQueue();
     };
 
-    ws.onclose = () => {
-      log.info("Disconnected, retrying in 3s");
-      setTimeout(connect, 3000);
+    ws.onclose = (evt) => {
+      let dur = 3000;
+      log.info("WebSocket closed with code", evt.code, "reason", evt.reason);
+      log.info("Trying reconnect in " + dur + "ms...");
+      setTimeout(connect, dur);
     };
 
     ws.onerror = () => ws.close();

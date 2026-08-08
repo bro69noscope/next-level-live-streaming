@@ -277,7 +277,7 @@ function createAlertOverlay(opts) {
   window.skipCurrentAlert = skipCurrentAlert; // manual trigger from devtools / a hotkey binding
 
   function showAlert(item) {
-    userEl.textContent = item.user || "Some guy or gal";
+    userEl.textContent = item.user || "Some guy or gal (this shouldn't show)";
     msgEl.textContent = item.message || "";
 
     const display = getAlertDisplay(item) || {};

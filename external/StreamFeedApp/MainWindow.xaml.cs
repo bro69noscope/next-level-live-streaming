@@ -8,7 +8,9 @@ namespace StreamFeedApp
 {
     public partial class MainWindow : Window
     {
+        private const string AppName = "StreamFeedApp";
         private string _repoRoot = "";
+        private string _logDir = "";
 
         public MainWindow()
         {
@@ -36,29 +38,31 @@ namespace StreamFeedApp
         {
             var userDataFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "StreamFeedApp",
+                AppName,
                 "WebView2"
             );
+
+            _repoRoot = FindRepoRoot(AppDomain.CurrentDomain.BaseDirectory);
+            _logDir = Path.Combine(_repoRoot, "external", AppName, "logs");
+            var wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
 
             var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
             await WebView.EnsureCoreWebView2Async(env);
 
-            WebView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
-            WebView.PreviewKeyDown += WebView_PreviewKeyDown;
-
-            var wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "appassets.local",
                 wwwroot,
                 CoreWebView2HostResourceAccessKind.Allow
             );
 
-            _repoRoot = FindRepoRoot(AppDomain.CurrentDomain.BaseDirectory);
             WebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "repo.local",
                 _repoRoot,
                 CoreWebView2HostResourceAccessKind.Allow
             );
+
+            WebView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
+            WebView.PreviewKeyDown += WebView_PreviewKeyDown;
 
             WebView.CoreWebView2.Navigate("https://appassets.local/stream-feed.html");
 
@@ -106,15 +110,8 @@ namespace StreamFeedApp
             try
             {
                 var json = e.TryGetWebMessageAsString();
-                var logDir = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "..",
-                    "..",
-                    "..",
-                    "logs"
-                );
-                Directory.CreateDirectory(logDir);
-                var logPath = Path.Combine(logDir, "unverified-events.log");
+                Directory.CreateDirectory(_logDir);
+                var logPath = Path.Combine(_logDir, "unverified-events.log");
                 File.AppendAllText(logPath, $"{DateTime.Now:O}\t{json}{Environment.NewLine}");
             }
             catch

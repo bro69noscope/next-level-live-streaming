@@ -285,7 +285,7 @@ function createAlertOverlay(opts) {
       display.headline || "triggered an alert I've improperly coded XD";
     let soundEl = display.soundEl || soundUnknownEl;
 
-    alertBox.classList.add("show");
+    alertBox.classList.add("alert-box--show");
 
     if (soundEl.dataset.failed === "true" && soundEl !== soundErrorEl) {
       log.warn(
@@ -315,7 +315,7 @@ function createAlertOverlay(opts) {
       hidden = true;
       activeSoundEl = null;
       activeFinish = null;
-      alertBox.classList.remove("show");
+      alertBox.classList.remove("alert-box--show");
       setTimeout(() => {
         playing = false;
         if (isEmbedded) {

@@ -7,7 +7,7 @@ body {
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
-#alert-box {
+.alert-box {
   position: absolute;
   top: 30%;
   left: 50%;
@@ -23,22 +23,22 @@ body {
   pointer-events: none;
 }
 
-#alert-box.alert-box--show {
+.alert-box--show {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
 
-#alert-box .headline {
+.alert-box__headline {
   font-size: 48px;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
-#alert-box .username {
+.alert-box__username {
   color: #a970ff;
 }
 
-#alert-box .message {
+.alert-box__message {
   margin: 10px auto 0;
   font-size: 24px;
   font-weight: 400;

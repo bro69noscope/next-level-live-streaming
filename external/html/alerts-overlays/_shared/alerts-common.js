@@ -123,10 +123,10 @@ function createAlertOverlay(opts) {
     };
   }
 
-  const alertBox = document.getElementById("alert-box");
-  const userEl = document.getElementById("alert-user");
-  const msgEl = document.getElementById("alert-message");
-  const headlineText = document.getElementById("headline-text");
+  const alertBox = document.querySelector(".alert-box");
+  const userEl = document.querySelector(".alert-box__username");
+  const msgEl = document.querySelector(".alert-box__message");
+  const headlineText = document.querySelector(".alert-box__headline-text");
 
   let queue = [];
   let playing = false;

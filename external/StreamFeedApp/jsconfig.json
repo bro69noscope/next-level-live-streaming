@@ -7,5 +7,9 @@
     "lib": ["ES2020", "DOM"],
     "typeRoots": ["./types"]
   },
-  "include": ["wwwroot/**/*.js", "wwwroot/**/*.html"]
+  "include": [
+    "../common/helpers/js/**/*.js",
+    "wwwroot/**/*.js",
+    "wwwroot/**/*.html"
+  ]
 }

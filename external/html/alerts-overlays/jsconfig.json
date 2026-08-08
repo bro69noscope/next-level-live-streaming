@@ -10,6 +10,7 @@
   "include": [
     "_shared/**/*.js",
     "common/**/*.js",
+    "../../common/helpers/js/**/*.js",
     "ftp/**/*.html",
     "production/**/*.html"
   ]

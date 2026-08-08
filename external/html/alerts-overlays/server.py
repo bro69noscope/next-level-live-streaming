@@ -13,6 +13,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 EXTERNAL_MOUNTS: dict[str, Path] = {
     "config": PROJECT_ROOT_PATH / "config",
     "node_modules": PROJECT_ROOT_PATH / "node_modules",
+    "js_helpers": PROJECT_ROOT_PATH / "external" / "common" / "helpers" / "js",
 }
 
 

@@ -1,4 +1,4 @@
-function connectSbotInstance(inst) {
+function connectStreamerbotInstance(inst) {
   const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
 
   ws.onopen = () => {
@@ -8,7 +8,7 @@ function connectSbotInstance(inst) {
       JSON.stringify({
         request: "Subscribe",
         id: `activity-feed-${inst.name}`,
-        events: { Twitch: TWITCH_SBOT_EVENTS, General: ["Custom"] },
+        events: { Twitch: TWITCH_STREAMERBOT_EVENTS, General: ["Custom"] },
       }),
     );
   };
@@ -33,14 +33,14 @@ function connectSbotInstance(inst) {
 
     if (parsed.event.source !== "Twitch") return;
     const eventType = parsed.event.type;
-    if (!TWITCH_SBOT_EVENTS.includes(eventType)) return;
+    if (!TWITCH_STREAMERBOT_EVENTS.includes(eventType)) return;
     addEntry(inst, `Twitch.${eventType}`, parsed.data || {});
   };
 
   ws.onclose = () => {
     state[inst.name] = "disconnected";
     renderStatus();
-    setTimeout(() => connectSbotInstance(inst), 2000);
+    setTimeout(() => connectStreamerbotInstance(inst), 2000);
   };
   ws.onerror = () => ws.close();
 }

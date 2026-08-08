@@ -39,7 +39,7 @@ function addEntry(inst, eventType, data) {
     ? mapper(data)
     : { icon: "❔", label: eventType, user: "", detail: "", unknown: true };
 
-  if (mapped.unknown || UNVERIFIED_SBOT_EVENTS.has(eventType)) {
+  if (mapped.unknown || UNVERIFIED_STREAMERBOT_EVENTS.has(eventType)) {
     logUnverified(eventType, inst.name, data);
   }
 

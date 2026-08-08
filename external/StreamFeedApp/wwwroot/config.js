@@ -22,8 +22,8 @@ async function loadStreamerbotInstances() {
   return instances;
 }
 
-const TWITCH_SBOT_EVENTS = ["Follow", "Sub", "ReSub", "GiftSub"];
-const UNVERIFIED_SBOT_EVENTS = new Set(["Twitch.GiftBomb"]);
+const TWITCH_STREAMERBOT_EVENTS = ["Follow", "Sub", "ReSub", "GiftSub"];
+const UNVERIFIED_STREAMERBOT_EVENTS = new Set(["Twitch.GiftBomb"]);
 
 const feedEl = document.getElementById("feed");
 const statusEl = document.getElementById("status");

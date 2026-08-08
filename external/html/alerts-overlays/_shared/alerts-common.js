@@ -341,7 +341,7 @@ function createAlertOverlay(opts) {
     setTimeout(() => {
       minTimeElapsed = true;
       maybeHide();
-    }, OVERLAY_CONFIG.ALERT_DISPLAY_MS);
+    }, OVERLAY_CONFIG.ALERT_BASE_DISPLAY_MS);
   }
 
   function speak(text) {

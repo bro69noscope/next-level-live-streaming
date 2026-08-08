@@ -2,7 +2,7 @@ const OVERLAY_CONFIG = {
   WS_HOST: "127.0.0.1",
   WS_PORT: null,
   WS_ENDPOINT: "/",
-  ALERT_DISPLAY_MS: 7000,
+  ALERT_BASE_DISPLAY_MS: 7000, // non-TTS part of the alert
   TTS_VOLUME: 0.8,
   TTS_RATE: 1.0,
   SOUND_VOLUME: 1.0,

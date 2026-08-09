@@ -4,6 +4,7 @@ obj/
 artifacts/
 wwwroot/*.js
 wwwroot/*.js.map
+*.tsbuildinfo
 
 # Visual Studio
 .vs/

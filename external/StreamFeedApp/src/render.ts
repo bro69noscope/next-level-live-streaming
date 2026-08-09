@@ -1,4 +1,14 @@
-function renderStatus(): void {
+import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
+import { activeFilter, twitchFollowToggle } from "./filters.js";
+import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
+
+export const statusEl = document.getElementById("status")!;
+export const feedEl = document.getElementById("feed")!;
+export const state: Record<string, ConnState> = {};
+export const UNVERIFIED_STREAMERBOT_EVENTS = new Set(["Twitch.GiftBomb"]);
+export type ConnState = "connecting" | "connected" | "disconnected";
+
+export function renderStatus(): void {
   statusEl.innerHTML = STREAMERBOT_INSTANCES.map((inst) => {
     const s = state[inst.name];
     const cls = s === "connected" ? "ok" : "bad";
@@ -34,7 +44,7 @@ function logUnverified(
   }
 }
 
-function addEntry(
+export function addEntry(
   inst: StreamerbotInstance,
   eventType: string,
   data: any,

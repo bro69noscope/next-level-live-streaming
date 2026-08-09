@@ -8,7 +8,7 @@ function userName(u: any): string {
   return (u && (u.name || u.login)) || "?";
 }
 
-interface FormattedEvent {
+export interface FormattedEvent {
   icon: string;
   label: string;
   user: string;
@@ -16,7 +16,7 @@ interface FormattedEvent {
   message?: string;
 }
 
-const EVENT_MAP: Record<string, (d: any) => FormattedEvent> = {
+export const EVENT_MAP: Record<string, (d: any) => FormattedEvent> = {
   "Twitch.Follow": (d) => ({
     icon: "👾➕",
     label: "Twitch Follow",

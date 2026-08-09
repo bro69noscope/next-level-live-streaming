@@ -14,14 +14,14 @@
       <button id="toggleRawBtn">Show JSON</button>
     </div>
     <div id="feed"></div>
-
-    <script src="https://repo.local/external/common/helpers/js/load-script.js"></script>
-    <script src="https://repo.local/external/common/helpers/js/get-ports.js"></script>
-    <script src="config.js"></script>
-    <script src="event-formatters.js"></script>
-    <script src="render.js"></script>
-    <script src="filters.js"></script>
-    <script src="ws-client.js"></script>
-    <script src="main.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "json5": "https://esm.sh/json5@2",
+          "../../common/helpers/js/dist/get-ports.js": "https://repo.local/external/common/helpers/js/dist/get-ports.js"
+        }
+      }
+    </script>
+    <script type="module" src="main.js"></script>
   </body>
 </html>

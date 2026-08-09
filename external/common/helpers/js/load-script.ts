@@ -1,4 +1,4 @@
-function loadScript(src) {
+export function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = src;

@@ -1,6 +1,8 @@
-function connectStreamerbotInstance(inst: StreamerbotInstance): void {
-  const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
+import { StreamerbotInstance, TWITCH_STREAMERBOT_EVENTS } from "./config.js";
+import { state, renderStatus, feedEl, addEntry } from "./render.js";
 
+export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
+  const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
   ws.onopen = () => {
     state[inst.name] = "connected";
     renderStatus();

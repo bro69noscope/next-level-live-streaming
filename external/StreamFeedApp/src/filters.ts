@@ -1,11 +1,24 @@
-function applyTwitchFollowToggleState(): void {
+export let activeFilter = "all";
+
+export const twitchFollowToggle = {
+  btn: document.getElementById("toggleTwitchFollowsBtn") as HTMLButtonElement,
+  shown: true,
+  labels: {
+    whenShown: "Hide Follows",
+    whenHidden: "Show Follows",
+  },
+};
+
+const filtersEl = document.getElementById("filters")!;
+
+export function applyTwitchFollowToggleState(): void {
   twitchFollowToggle.btn.classList.toggle("active", twitchFollowToggle.shown);
   twitchFollowToggle.btn.textContent = twitchFollowToggle.shown
     ? twitchFollowToggle.labels.whenShown
     : twitchFollowToggle.labels.whenHidden;
 }
 
-function applyFilter(): void {
+export function applyFilter(): void {
   document
     .querySelectorAll<HTMLButtonElement>("#filters button[data-filter]")
     .forEach((b) =>

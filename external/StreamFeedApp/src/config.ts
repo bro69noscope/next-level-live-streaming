@@ -21,13 +21,31 @@ export async function loadStreamerbotInstances(): Promise<
       REPO_ROOT,
       `streamerbot.${envKey}.streamerbot_ws.port`,
     );
+
     if (error || port === null) {
       console.error(
         `StreamFeedApp: failed to load port for ${envKey}: ${error}`,
       );
       continue;
     }
-    instances.push({ name: envKey, host: "127.0.0.1", port: port as number });
+
+    if (typeof port !== "number" && typeof port !== "string") {
+      console.error(
+        `StreamFeedApp: expected port for ${envKey} to be a number or string, got ${typeof port} (value: ${JSON.stringify(port)})`,
+      );
+      continue;
+    }
+
+    const portNum = typeof port === "string" ? Number(port) : port;
+
+    if (Number.isNaN(portNum)) {
+      console.error(
+        `StreamFeedApp: port for ${envKey} could not be parsed as a number (raw value: ${JSON.stringify(port)})`,
+      );
+      continue;
+    }
+
+    instances.push({ name: envKey, host: "127.0.0.1", port: portNum });
   }
   return instances;
 }

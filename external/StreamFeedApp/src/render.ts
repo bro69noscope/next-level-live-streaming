@@ -8,6 +8,10 @@ export const state: Record<string, ConnState> = {};
 export const UNVERIFIED_STREAMERBOT_EVENTS = new Set(["Twitch.GiftBomb"]);
 export type ConnState = "connecting" | "connected" | "disconnected";
 
+const entryTemplate = document.getElementById(
+  "feed-entry-template",
+) as HTMLTemplateElement;
+
 export function renderStatus(): void {
   statusEl.innerHTML = STREAMERBOT_INSTANCES.map((inst) => {
     const s = state[inst.name];
@@ -15,17 +19,6 @@ export function renderStatus(): void {
       s === "connected" ? "status__item--ok" : "status__item--bad";
     return `<span class="status__item ${modifier}">${inst.name}: ${s}</span>`;
   }).join("  ·  ");
-}
-
-function escapeHtml(s: unknown): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return String(s).replace(/[&<>"']/g, (c) => map[c]);
 }
 
 function logUnverified(
@@ -59,7 +52,9 @@ export function addEntry(
     logUnverified(eventType, inst.name, data);
   }
 
-  const row = document.createElement("div");
+  const clone = entryTemplate.content.cloneNode(true) as DocumentFragment;
+  const row = clone.querySelector(".feed__entry") as HTMLElement;
+
   row.className =
     "feed__entry" + (mapped.unknown ? " feed__entry--unknown" : "");
   row.dataset.instance = inst.name;
@@ -72,19 +67,27 @@ export function addEntry(
     row.classList.add("feed__entry--hidden");
   }
 
-  row.innerHTML = `
-    <div class="feed__entry-icon">${mapped.icon}</div>
-    <div class="feed__entry-body">
-      <div class="feed__entry-header">
-        <span class="feed__entry-instance">[${inst.name}]</span>
-        <span class="feed__entry-timestamp">${new Date().toLocaleTimeString()}</span>
-        <b class="feed__entry-user">${escapeHtml(mapped.user || "?")}</b>
-        <span class="feed__entry-label">${escapeHtml(mapped.label)}</span>
-      </div>
-      <div class="feed__entry-detail">${escapeHtml(mapped.detail || "")}</div>
-      ${mapped.message ? `<div class="feed__entry-message">${escapeHtml(mapped.message)}</div>` : ""}
-      <div class="feed__entry-raw">${escapeHtml(JSON.stringify(data))}</div>
-    </div>
-  `;
+  (row.querySelector(".feed__entry-icon") as HTMLElement).textContent =
+    mapped.icon;
+  (row.querySelector(".feed__entry-instance") as HTMLElement).textContent =
+    `[${inst.name}]`;
+  (row.querySelector(".feed__entry-timestamp") as HTMLElement).textContent =
+    new Date().toLocaleTimeString();
+  (row.querySelector(".feed__entry-user") as HTMLElement).textContent =
+    mapped.user || "?";
+  (row.querySelector(".feed__entry-label") as HTMLElement).textContent =
+    mapped.label;
+  (row.querySelector(".feed__entry-detail") as HTMLElement).textContent =
+    mapped.detail || "";
+  (row.querySelector(".feed__entry-raw") as HTMLElement).textContent =
+    JSON.stringify(data);
+
+  const messageEl = row.querySelector(".feed__entry-message") as HTMLElement;
+  if (mapped.message) {
+    messageEl.textContent = mapped.message;
+  } else {
+    messageEl.remove();
+  }
+
   feedEl.prepend(row);
 }

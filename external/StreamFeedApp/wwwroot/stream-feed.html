@@ -18,6 +18,24 @@
       <button id="toggleRawBtn" class="filters__btn">Show JSON</button>
     </div>
     <div id="feed" class="feed"></div>
+
+    <template id="feed-entry-template">
+      <div class="feed__entry">
+        <div class="feed__entry-icon"></div>
+        <div class="feed__entry-body">
+          <div class="feed__entry-header">
+            <span class="feed__entry-instance"></span>
+            <span class="feed__entry-timestamp"></span>
+            <b class="feed__entry-user"></b>
+            <span class="feed__entry-label"></span>
+          </div>
+          <div class="feed__entry-detail"></div>
+          <div class="feed__entry-message"></div>
+          <div class="feed__entry-raw"></div>
+        </div>
+      </div>
+    </template>
+
     <script type="importmap">
       {
         "imports": {

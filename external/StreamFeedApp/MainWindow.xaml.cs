@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
@@ -110,14 +111,33 @@ namespace StreamFeedApp
             try
             {
                 var json = e.TryGetWebMessageAsString();
-                Directory.CreateDirectory(_logDir);
-                var logPath = Path.Combine(_logDir, "unverified-events.log");
-                File.AppendAllText(logPath, $"{DateTime.Now:O}\t{json}{Environment.NewLine}");
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                var messageType = root.GetProperty("type").GetString();
+
+                switch (messageType)
+                {
+                    case "unverifiedEvent":
+                        HandleUnverifiedEvent(root.GetProperty("payload"));
+                        break;
+
+                    default:
+                        // unrecognized message type — ignore
+                        break;
+                }
             }
             catch
             {
-                // logging failure shouldn't crash the app
+                // logging/parsing failure shouldn't crash the app
             }
+        }
+
+        private void HandleUnverifiedEvent(JsonElement payload)
+        {
+            Directory.CreateDirectory(_logDir);
+            var logPath = Path.Combine(_logDir, "unverified-events.log");
+            var payloadJson = payload.GetRawText();
+            File.AppendAllText(logPath, $"{DateTime.Now:O}\t{payloadJson}{Environment.NewLine}");
         }
     }
 }

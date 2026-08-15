@@ -29,10 +29,13 @@ function logUnverified(
   if (window.chrome?.webview) {
     window.chrome.webview.postMessage(
       JSON.stringify({
-        eventType,
-        instance: instanceName,
-        data,
-        loggedAt: new Date().toISOString(),
+        type: "unverifiedEvent",
+        payload: {
+          eventType,
+          instance: instanceName,
+          data,
+          loggedAt: new Date().toISOString(),
+        },
       }),
     );
   }

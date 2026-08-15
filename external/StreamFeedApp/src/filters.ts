@@ -12,7 +12,10 @@ export const twitchFollowToggle = {
 const filtersEl = document.getElementById("filters")!;
 
 export function applyTwitchFollowToggleState(): void {
-  twitchFollowToggle.btn.classList.toggle("active", twitchFollowToggle.shown);
+  twitchFollowToggle.btn.classList.toggle(
+    "filters__btn--active",
+    twitchFollowToggle.shown,
+  );
   twitchFollowToggle.btn.textContent = twitchFollowToggle.shown
     ? twitchFollowToggle.labels.whenShown
     : twitchFollowToggle.labels.whenHidden;
@@ -20,21 +23,27 @@ export function applyTwitchFollowToggleState(): void {
 
 export function applyFilter(): void {
   document
-    .querySelectorAll<HTMLButtonElement>("#filters button[data-filter]")
+    .querySelectorAll<HTMLButtonElement>("#filters .filters__btn[data-filter]")
     .forEach((b) =>
-      b.classList.toggle("active", b.dataset.filter === activeFilter),
+      b.classList.toggle(
+        "filters__btn--active",
+        b.dataset.filter === activeFilter,
+      ),
     );
-  document.querySelectorAll<HTMLElement>(".entry").forEach((row) => {
+  document.querySelectorAll<HTMLElement>(".feed__entry").forEach((row) => {
     const instanceMismatch =
       activeFilter !== "all" && row.dataset.instance !== activeFilter;
     const twitchFollowHidden =
       !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
-    row.classList.toggle("hidden", instanceMismatch || twitchFollowHidden);
+    row.classList.toggle(
+      "feed__entry--hidden",
+      instanceMismatch || twitchFollowHidden,
+    );
   });
 }
 
 filtersEl
-  .querySelectorAll<HTMLButtonElement>("button[data-filter]")
+  .querySelectorAll<HTMLButtonElement>(".filters__btn[data-filter]")
   .forEach((btn) => {
     btn.onclick = () => {
       activeFilter = btn.dataset.filter ?? "all";
@@ -51,9 +60,9 @@ twitchFollowToggle.btn.onclick = () => {
 applyTwitchFollowToggleState(); // starts activated
 
 document.getElementById("toggleRawBtn")!.addEventListener("click", (e) => {
-  document.body.classList.toggle("hide-raw");
-  const showing = !document.body.classList.contains("hide-raw");
+  document.body.classList.toggle("body--hide-raw");
+  const showing = !document.body.classList.contains("body--hide-raw");
   const target = e.target as HTMLElement;
-  target.classList.toggle("active", showing);
+  target.classList.toggle("filters__btn--active", showing);
   target.textContent = showing ? "Hide JSON" : "Show JSON";
 });

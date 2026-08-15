@@ -4,16 +4,20 @@
     <title>Activity Feed</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="hide-raw">
-    <div id="status">connecting…</div>
-    <div id="filters">
-      <button data-filter="all" class="active">All</button>
-      <button data-filter="production">Production</button>
-      <button data-filter="ftp">Ftp</button>
-      <button id="toggleTwitchFollowsBtn">Hide Follows</button>
-      <button id="toggleRawBtn">Show JSON</button>
+  <body class="body--hide-raw">
+    <div id="status" class="status">connecting...</div>
+    <div id="filters" class="filters">
+      <button class="filters__btn filters__btn--active" data-filter="all">
+        All
+      </button>
+      <button class="filters__btn" data-filter="production">Production</button>
+      <button class="filters__btn" data-filter="ftp">Ftp</button>
+      <button id="toggleTwitchFollowsBtn" class="filters__btn">
+        Hide Follows
+      </button>
+      <button id="toggleRawBtn" class="filters__btn">Show JSON</button>
     </div>
-    <div id="feed"></div>
+    <div id="feed" class="feed"></div>
     <script type="importmap">
       {
         "imports": {

@@ -35,26 +35,28 @@ body {
   margin: 0;
   padding: var(--pad-body);
 }
-body.hide-raw .entry .raw {
+body.body--hide-raw .feed__entry-raw {
   display: none;
 }
-#status {
+
+.status {
   font-size: var(--font-status);
   color: #888;
   margin-bottom: var(--pad-body);
 }
-#status .ok {
+.status .status__item--ok {
   color: #3ddc84;
 }
-#status .bad {
+.status .status__item--bad {
   color: #ff5c5c;
 }
-#filters {
+
+.filters {
   display: flex;
   gap: var(--gap-filters);
   margin-bottom: var(--pad-body);
 }
-#filters button {
+.filters__btn {
   background: transparent;
   border: 1px solid #333;
   color: #888;
@@ -63,57 +65,58 @@ body.hide-raw .entry .raw {
   font-size: var(--font-status);
   cursor: pointer;
 }
-#filters button.active {
+.filters__btn--active {
   color: #111;
   background: #5b9dff;
   border-color: #5b9dff;
 }
-.entry {
+
+.feed__entry {
   display: flex;
   gap: var(--gap-entry);
   padding: var(--pad-entry-v) var(--pad-entry-h);
   border-bottom: 1px solid #222;
 }
-.entry .icon {
+.feed__entry-icon {
   width: var(--icon-width);
   text-align: center;
 }
-.entry b {
+.feed__entry-user {
   color: #ffd166;
 }
-.entry .label {
+.feed__entry-label {
   color: #888;
   font-size: var(--font-label);
 }
-.entry .instance {
+.feed__entry-instance {
   font-size: var(--font-instance);
   color: #5b9dff;
 }
-.entry .timestamp {
+.feed__entry-timestamp {
   font-size: var(--font-timestamp);
   color: #888;
 }
-.entry .detail {
+.feed__entry-detail {
   color: #eee;
   font-size: var(--font-detail);
   margin-top: calc(4.5px * var(--scale));
 }
-.entry .message {
+.feed__entry-message {
   color: #adadad;
   font-size: var(--font-message);
   margin-top: calc(2px * var(--scale));
   font-style: italic;
 }
-.entry.hidden {
+.feed__entry--hidden {
   display: none;
 }
-.entry.unknown .detail {
+.feed__entry--unknown .feed__entry-detail {
   font-family: Consolas, monospace;
   font-size: var(--font-detail);
   color: #ffb84d;
   word-break: break-all;
 }
-.entry .raw {
+.feed__entry-raw {
   font-family: Consolas, monospace;
   font-size: var(--font-raw);
   color: #555;

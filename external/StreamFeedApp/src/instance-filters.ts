@@ -9,11 +9,11 @@ export const twitchFollowToggle = {
   },
 };
 
-const filtersEl = document.getElementById("filters")!;
+const instanceFiltersEl = document.getElementById("instanceFilters")!;
 
 export function applyTwitchFollowToggleState(): void {
   twitchFollowToggle.btn.classList.toggle(
-    "filters__btn--active",
+    "instanceFilters__btn--active",
     twitchFollowToggle.shown,
   );
   twitchFollowToggle.btn.textContent = twitchFollowToggle.shown
@@ -23,11 +23,13 @@ export function applyTwitchFollowToggleState(): void {
 
 export function applyFilter(): void {
   document
-    .querySelectorAll<HTMLButtonElement>("#filters .filters__btn[data-filter]")
+    .querySelectorAll<HTMLButtonElement>(
+      "#instanceFilters .instanceFilters__btn[data-instance-filter]",
+    )
     .forEach((b) =>
       b.classList.toggle(
-        "filters__btn--active",
-        b.dataset.filter === activeFilter,
+        "instanceFilters__btn--active",
+        b.dataset.instanceFilter === activeFilter,
       ),
     );
   document.querySelectorAll<HTMLElement>(".feed__entry").forEach((row) => {
@@ -42,11 +44,13 @@ export function applyFilter(): void {
   });
 }
 
-filtersEl
-  .querySelectorAll<HTMLButtonElement>(".filters__btn[data-filter]")
+instanceFiltersEl
+  .querySelectorAll<HTMLButtonElement>(
+    ".instanceFilters__btn[data-instance-filter]",
+  )
   .forEach((btn) => {
     btn.onclick = () => {
-      activeFilter = btn.dataset.filter ?? "all";
+      activeFilter = btn.dataset.instanceFilter ?? "all";
       applyFilter();
     };
   });
@@ -63,6 +67,6 @@ document.getElementById("toggleRawBtn")!.addEventListener("click", (e) => {
   document.body.classList.toggle("body--hide-raw");
   const showing = !document.body.classList.contains("body--hide-raw");
   const target = e.target as HTMLElement;
-  target.classList.toggle("filters__btn--active", showing);
+  target.classList.toggle("instanceFilters__btn--active", showing);
   target.textContent = showing ? "Hide JSON" : "Show JSON";
 });

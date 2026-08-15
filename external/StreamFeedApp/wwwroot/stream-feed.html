@@ -6,16 +6,23 @@
   </head>
   <body class="body--hide-raw">
     <div id="status" class="status">connecting...</div>
-    <div id="filters" class="filters">
-      <button class="filters__btn filters__btn--active" data-filter="all">
+    <div id="instanceFilters" class="instanceFilters">
+      <button
+        class="instanceFilters__btn instanceFilters__btn--active"
+        data-instance-filter="all"
+      >
         All
       </button>
-      <button class="filters__btn" data-filter="production">Production</button>
-      <button class="filters__btn" data-filter="ftp">Ftp</button>
-      <button id="toggleTwitchFollowsBtn" class="filters__btn">
+      <button class="instanceFilters__btn" data-instance-filter="production">
+        Production
+      </button>
+      <button class="instanceFilters__btn" data-instance-filter="ftp">
+        Ftp
+      </button>
+      <button id="toggleTwitchFollowsBtn" class="instanceFilters__btn">
         Hide Follows
       </button>
-      <button id="toggleRawBtn" class="filters__btn">Show JSON</button>
+      <button id="toggleRawBtn" class="instanceFilters__btn">Show JSON</button>
     </div>
     <div id="feed" class="feed"></div>
 

@@ -1,6 +1,7 @@
 import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
 import { activeSbotInstanceFilter, twitchFollowToggle } from "./filters.js";
 import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
+import { sendHistoryEntry } from "./history/feed-history.js";
 
 export const statusEl = document.getElementById("status")!;
 export const feedEl = document.getElementById("feed")!;
@@ -11,6 +12,10 @@ export type ConnState = "connecting" | "connected" | "disconnected";
 const entryTemplate = document.getElementById(
   "feed-entry-template",
 ) as HTMLTemplateElement;
+
+export function clearFeed(): void {
+  feedEl.innerHTML = "";
+}
 
 export function renderStatus(): void {
   statusEl.innerHTML = STREAMERBOT_INSTANCES.map((inst) => {
@@ -45,7 +50,10 @@ export function addEntry(
   inst: StreamerbotInstance,
   eventType: string,
   data: any,
+  options: { isReplay?: boolean } = {},
 ): void {
+  const { isReplay = false } = options;
+
   const mapper = EVENT_MAP[eventType];
   const mapped: FormattedEvent & { unknown?: boolean } = mapper
     ? mapper(data)
@@ -53,6 +61,15 @@ export function addEntry(
 
   if (mapped.unknown || UNVERIFIED_STREAMERBOT_EVENTS.has(eventType)) {
     logUnverified(eventType, inst.name, data);
+  }
+
+  if (!isReplay) {
+    sendHistoryEntry({
+      inst: inst.name,
+      eventType,
+      data,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   const clone = entryTemplate.content.cloneNode(true) as DocumentFragment;

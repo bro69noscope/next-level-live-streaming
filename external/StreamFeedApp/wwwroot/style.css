@@ -55,6 +55,7 @@ body.body--hide-raw .feed__entry-raw {
   display: flex;
   gap: var(--gap-filterBar);
   margin-bottom: var(--pad-body);
+  align-items: flex-start;
 }
 .filterBar__btn {
   background: transparent;
@@ -69,6 +70,26 @@ body.body--hide-raw .feed__entry-raw {
   color: #111;
   background: #5b9dff;
   border-color: #5b9dff;
+}
+
+.actionBar {
+  display: flex;
+  gap: var(--gap-filterBar);
+  margin-bottom: var(--pad-body);
+  align-items: flex-start;
+}
+.actionBar__btn {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  color: #aaa;
+  border-radius: var(--radius-btn);
+  padding: var(--pad-filterBar-btn-v) var(--pad-filterBar-btn-h);
+  font-size: var(--font-status);
+  cursor: pointer;
+}
+.actionBar__btn:hover {
+  border-color: #888;
+  color: #fff;
 }
 
 .feed__entry {

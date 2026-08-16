@@ -1,5 +1,5 @@
 import { StreamerbotInstance, TWITCH_STREAMERBOT_EVENTS } from "./config.js";
-import { state, renderStatus, feedEl, addEntry } from "./render.js";
+import { state, renderStatus, clearFeed, addEntry } from "./render.js";
 
 export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
   const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
@@ -24,7 +24,7 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
     // https://docs.streamer.bot/api/csharp/methods/core/websocket/broadcast-json
     if (parsed.event.source === "General" && parsed.event.type === "Custom") {
       if (parsed.data?.clearStreamFeed === true) {
-        feedEl.innerHTML = "";
+        clearFeed();
         return;
       }
       if (parsed.data?.event === "KofiAlert") {

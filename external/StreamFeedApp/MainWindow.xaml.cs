@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
@@ -12,6 +14,9 @@ namespace StreamFeedApp
         private const string AppName = "StreamFeedApp";
         private string _repoRoot = "";
         private string _logDir = "";
+        private string _historyPath = "";
+
+        private const int MaxHistoryBytes = 500 * 1024;
 
         public MainWindow()
         {
@@ -45,6 +50,7 @@ namespace StreamFeedApp
 
             _repoRoot = FindRepoRoot(AppDomain.CurrentDomain.BaseDirectory);
             _logDir = Path.Combine(_repoRoot, "external", AppName, "logs");
+            _historyPath = Path.Combine(_logDir, "feed-history.json");
             var wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
 
             var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
@@ -80,13 +86,6 @@ namespace StreamFeedApp
                 e.Handled = true;
                 Application.Current.Shutdown();
             }
-            else if (e.Key == Key.X && Keyboard.Modifiers == mods)
-            {
-                e.Handled = true;
-                WebView.CoreWebView2.ExecuteScriptAsync(
-                    "document.getElementById('feed').innerHTML = '';"
-                );
-            }
             else if (e.Key == Key.J && Keyboard.Modifiers == mods)
             {
                 e.Handled = true;
@@ -100,6 +99,16 @@ namespace StreamFeedApp
                 WebView.CoreWebView2.ExecuteScriptAsync(
                     "document.getElementById('toggleTwitchFollowsBtn').click();"
                 );
+            }
+            else if (e.Key == Key.X && Keyboard.Modifiers == mods)
+            {
+                e.Handled = true;
+                WebView.CoreWebView2.ExecuteScriptAsync("window.clearFeed();");
+            }
+            else if (e.Key == Key.H && Keyboard.Modifiers == mods)
+            {
+                e.Handled = true;
+                WebView.CoreWebView2.ExecuteScriptAsync("window.loadHistoryIntoFeed();");
             }
         }
 
@@ -121,8 +130,14 @@ namespace StreamFeedApp
                         HandleUnverifiedEvent(root.GetProperty("payload"));
                         break;
 
+                    case "historyEntry":
+                        HandleHistoryEntry(root.GetProperty("payload"));
+                        break;
+                    case "requestHistory":
+                        HandleRequestHistory();
+                        break;
+
                     default:
-                        // unrecognized message type — ignore
                         break;
                 }
             }
@@ -138,6 +153,57 @@ namespace StreamFeedApp
             var logPath = Path.Combine(_logDir, "unverified-events.log");
             var payloadJson = payload.GetRawText();
             File.AppendAllText(logPath, $"{DateTime.Now:O}\t{payloadJson}{Environment.NewLine}");
+        }
+
+        private void HandleRequestHistory()
+        {
+            string historyJson = "[]";
+            if (File.Exists(_historyPath))
+            {
+                historyJson = File.ReadAllText(_historyPath);
+            }
+
+            var response = new
+            {
+                type = "historyResponse",
+                payload = JsonSerializer.Deserialize<JsonElement>(historyJson),
+            };
+
+            var responseJson = JsonSerializer.Serialize(response);
+            WebView.CoreWebView2.PostWebMessageAsJson(responseJson);
+        }
+
+        private void HandleHistoryEntry(JsonElement payload)
+        {
+            Directory.CreateDirectory(_logDir);
+
+            List<JsonElement> entries = [];
+            if (File.Exists(_historyPath))
+            {
+                var existingJson = File.ReadAllText(_historyPath);
+                using var existingDoc = JsonDocument.Parse(existingJson);
+                entries = [.. existingDoc.RootElement.EnumerateArray().Select(el => el.Clone())];
+            }
+
+            entries.Add(payload.Clone());
+
+            while (TotalBytes(entries) > MaxHistoryBytes && entries.Count > 0)
+            {
+                entries.RemoveAt(0);
+            }
+
+            var serialized = JsonSerializer.Serialize(entries);
+            File.WriteAllText(_historyPath, serialized);
+        }
+
+        private static int TotalBytes(List<JsonElement> entries)
+        {
+            int total = 0;
+            foreach (var entry in entries)
+            {
+                total += System.Text.Encoding.UTF8.GetByteCount(entry.GetRawText());
+            }
+            return total;
         }
     }
 }

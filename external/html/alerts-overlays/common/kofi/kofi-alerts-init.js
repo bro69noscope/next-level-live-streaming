@@ -1,7 +1,7 @@
 (async () => {
   try {
     await loadEnvOverrides();
-  } catch {
+  } catch (err) {
     log.debug("Aborting overlay init, env setup failed:", err.message);
     return;
   }

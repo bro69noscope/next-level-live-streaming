@@ -6,6 +6,9 @@ async function loadEnvOverrides() {
     fatalOverlayError(msg);
     throw new Error(msg);
   }
+
+  const { getPortConfigValue } = await import("/js_helpers/dist/get-ports.js");
+
   const { value: wsPort, error } = await getPortConfigValue(
     OVERLAY_CONFIG.REPO_ROOT,
     `streamerbot.${env}.streamerbot_ws.port`,

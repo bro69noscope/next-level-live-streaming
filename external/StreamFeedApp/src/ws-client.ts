@@ -17,6 +17,7 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
 
   ws.onmessage = (msg) => {
     const parsed = JSON.parse(msg.data);
+    console.debug(`[${inst.name}] raw message:`, parsed);
     if (!parsed.event) return;
 
     // General.Custom: CPH.WebsocketBroadcastJson() from Streamer.bot

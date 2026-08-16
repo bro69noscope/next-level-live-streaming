@@ -1,7 +1,7 @@
 import { STREAMERBOT_INSTANCES, loadStreamerbotInstances } from "./config.js";
 import { state, renderStatus, clearFeed } from "./render.js";
 import { connectStreamerbotInstance } from "./ws-client.js";
-import { loadHistoryIntoFeed } from "./history/history-loader.js";
+import { loadHistoryIntoFeed } from "./history.js";
 
 (window as any).clearFeed = clearFeed;
 (window as any).loadHistoryIntoFeed = loadHistoryIntoFeed;

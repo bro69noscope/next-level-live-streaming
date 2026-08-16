@@ -1,7 +1,7 @@
 import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
 import { activeSbotInstanceFilter, twitchFollowToggle } from "./filters.js";
 import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
-import { sendHistoryEntry } from "./history/feed-history.js";
+import { sendHistoryEntry } from "./history.js";
 
 export const statusEl = document.getElementById("status")!;
 export const feedEl = document.getElementById("feed")!;

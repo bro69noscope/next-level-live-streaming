@@ -1,5 +1,5 @@
 import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
-import { activeFilter, twitchFollowToggle } from "./instance-filters.js";
+import { activeSbotInstanceFilter, twitchFollowToggle } from "./filters.js";
 import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
 
 export const statusEl = document.getElementById("status")!;

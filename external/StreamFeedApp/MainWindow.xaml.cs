@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -133,6 +131,7 @@ namespace StreamFeedApp
                     case "historyEntry":
                         HandleHistoryEntry(root.GetProperty("payload"));
                         break;
+
                     case "requestHistory":
                         HandleRequestHistory();
                         break;

@@ -1,8 +1,15 @@
 import { StreamerbotInstance, TWITCH_STREAMERBOT_EVENTS } from "./config.js";
 import { state, renderStatus, clearFeed, addEntry } from "./render.js";
 
+const connections: Record<string, WebSocket> = {};
+
+export function getConnection(instanceName: string): WebSocket | undefined {
+  return connections[instanceName];
+}
+
 export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
   const ws = new WebSocket(`ws://${inst.host}:${inst.port}/`);
+  connections[inst.name] = ws;
   ws.onopen = () => {
     state[inst.name] = "connected";
     renderStatus();
@@ -27,21 +34,38 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
         clearFeed();
         return;
       }
+
       if (parsed.data?.event === "KofiAlert") {
-        addEntry(inst, `Kofi.${parsed.data.kind}`, parsed.data);
+        addEntry(inst, `Kofi.${parsed.data.kind}`, parsed.data, {
+          isReplayEcho: !!parsed.data.isReplay,
+        });
         return;
       }
+
+      if (parsed.data?.event === "TwitchAlert") {
+        addEntry(inst, `Twitch.${parsed.data.kind}`, parsed.data, {
+          isReplayEcho: !!parsed.data.isReplay,
+        });
+        return;
+      }
+
       return;
     }
 
+    // only for source of truth documentation purposes
     if (parsed.event.source !== "Twitch") return;
     const eventType = parsed.event.type;
     if (!TWITCH_STREAMERBOT_EVENTS.includes(eventType)) return;
-    addEntry(inst, `Twitch.${eventType}`, parsed.data || {});
+
+    console.debug(
+      `[${inst.name}] native Twitch.${eventType} (logged only):`,
+      parsed.data,
+    );
   };
 
   ws.onclose = () => {
     state[inst.name] = "disconnected";
+    delete connections[inst.name];
     renderStatus();
     setTimeout(() => connectStreamerbotInstance(inst), 2000);
   };

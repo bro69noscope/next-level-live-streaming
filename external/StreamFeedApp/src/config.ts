@@ -50,4 +50,10 @@ export async function loadStreamerbotInstances(): Promise<
   return instances;
 }
 
-export const TWITCH_STREAMERBOT_EVENTS = ["Follow", "Sub", "ReSub", "GiftSub"];
+export const TWITCH_STREAMERBOT_EVENTS = [
+  "Follow",
+  "Sub",
+  "ReSub",
+  "GiftSub",
+  "GiftBomb",
+];

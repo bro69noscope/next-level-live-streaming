@@ -2,11 +2,12 @@ import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
 import { activeSbotInstanceFilter, twitchFollowToggle } from "./filters.js";
 import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
 import { sendHistoryEntry } from "./history.js";
+import { replayAlert } from "./replay.js";
 
 export const statusEl = document.getElementById("status")!;
 export const feedEl = document.getElementById("feed")!;
 export const state: Record<string, ConnState> = {};
-export const UNVERIFIED_STREAMERBOT_EVENTS = new Set(["Twitch.GiftBomb"]);
+export const UNVERIFIED_STREAMERBOT_EVENTS = new Set(["Twitch.giftbomb"]);
 export type ConnState = "connecting" | "connected" | "disconnected";
 
 const entryTemplate = document.getElementById(
@@ -50,9 +51,11 @@ export function addEntry(
   inst: StreamerbotInstance,
   eventType: string,
   data: any,
-  options: { isReplay?: boolean } = {},
+  options: { isReplay?: boolean; isReplayEcho?: boolean } = {},
 ): void {
-  const { isReplay = false } = options;
+  const { isReplay = false, isReplayEcho = false } = options;
+
+  if (isReplayEcho) return;
 
   const mapper = EVENT_MAP[eventType];
   const mapped: FormattedEvent & { unknown?: boolean } = mapper
@@ -74,6 +77,22 @@ export function addEntry(
 
   const clone = entryTemplate.content.cloneNode(true) as DocumentFragment;
   const row = clone.querySelector(".feed__entry") as HTMLElement;
+  const replayBtn = row.querySelector(
+    ".feed__entry-replay",
+  ) as HTMLButtonElement;
+
+  if (eventType.startsWith("Kofi.") || eventType.startsWith("Twitch.")) {
+    row.dataset.overlayPayload = JSON.stringify(data);
+  } else {
+    replayBtn.disabled = true;
+    replayBtn.title = "replay not available for this entry";
+  }
+
+  replayBtn.onclick = () => {
+    const raw = row.dataset.overlayPayload;
+    if (!raw) return;
+    replayAlert(inst.name, JSON.parse(raw));
+  };
 
   row.className =
     "feed__entry" + (mapped.unknown ? " feed__entry--unknown" : "");

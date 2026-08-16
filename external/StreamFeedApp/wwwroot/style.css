@@ -1,3 +1,8 @@
+@font-face {
+  font-family: "JetBrainsMono Nerd Font";
+  src: url("fonts/JetBrainsMonoNerdFont-Regular.ttf") format("truetype");
+}
+
 :root {
   --scale: 1.4;
 
@@ -143,4 +148,22 @@ body.body--hide-raw .feed__entry-raw {
   color: #555;
   word-break: break-all;
   margin-top: calc(2px * var(--scale));
+}
+.feed__entry-replay {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: calc(18px * var(--scale));
+  line-height: 1;
+  padding: calc(2px * var(--scale)) calc(6px * var(--scale));
+  font-family: "JetBrainsMono Nerd Font", sans-serif;
+}
+.feed__entry-replay:hover:not(:disabled) {
+  color: #5b9dff;
+}
+.feed__entry-replay:disabled {
+  color: #444;
+  cursor: default;
 }

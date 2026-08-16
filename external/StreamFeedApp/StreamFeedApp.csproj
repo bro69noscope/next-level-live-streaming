@@ -19,4 +19,11 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="FetchNerdFont" BeforeTargets="Build">
+  <Exec
+      Command="powershell -ExecutionPolicy Bypass -File fetch-nerd-font.ps1"
+      Condition="!Exists('wwwroot/fonts/JetBrainsMonoNerdFont-Regular.ttf')"
+    />
+</Target>
+
 </Project>

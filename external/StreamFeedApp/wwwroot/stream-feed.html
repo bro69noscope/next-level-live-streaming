@@ -4,26 +4,26 @@
     <title>Activity Feed</title>
     <link rel="stylesheet" href="style.css" />
   </head>
+
   <body class="body--hide-raw">
     <div id="status" class="status">connecting...</div>
-    <div id="instanceFilters" class="instanceFilters">
-      <button
-        class="instanceFilters__btn instanceFilters__btn--active"
-        data-instance-filter="all"
-      >
+
+    <div id="streamFeedFilterBar" class="filterBar">
+      <button class="filterBar__btn" data-sbot-instance-filter="all">
         All
       </button>
-      <button class="instanceFilters__btn" data-instance-filter="production">
+      <button class="filterBar__btn" data-sbot-instance-filter="production">
         Production
       </button>
-      <button class="instanceFilters__btn" data-instance-filter="ftp">
+      <button class="filterBar__btn" data-sbot-instance-filter="ftp">
         Ftp
       </button>
-      <button id="toggleTwitchFollowsBtn" class="instanceFilters__btn">
+      <button id="toggleTwitchFollowsBtn" class="filterBar__btn">
         Hide Follows
       </button>
-      <button id="toggleRawBtn" class="instanceFilters__btn">Show JSON</button>
+      <button id="toggleRawBtn" class="filterBar__btn">Show JSON</button>
     </div>
+
     <div id="feed" class="feed"></div>
 
     <template id="feed-entry-template">
@@ -51,6 +51,7 @@
         }
       }
     </script>
+
     <script type="module" src="main.js"></script>
   </body>
 </html>

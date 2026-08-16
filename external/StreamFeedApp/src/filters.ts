@@ -1,4 +1,4 @@
-export let activeFilter = "all";
+export let activeSbotInstanceFilter = "all";
 
 export const twitchFollowToggle = {
   btn: document.getElementById("toggleTwitchFollowsBtn") as HTMLButtonElement,
@@ -9,11 +9,11 @@ export const twitchFollowToggle = {
   },
 };
 
-const instanceFiltersEl = document.getElementById("instanceFilters")!;
+const filterBarEl = document.getElementById("streamFeedFilterBar")!;
 
 export function applyTwitchFollowToggleState(): void {
   twitchFollowToggle.btn.classList.toggle(
-    "instanceFilters__btn--active",
+    "filterBar__btn--active",
     twitchFollowToggle.shown,
   );
   twitchFollowToggle.btn.textContent = twitchFollowToggle.shown
@@ -24,17 +24,18 @@ export function applyTwitchFollowToggleState(): void {
 export function applyFilter(): void {
   document
     .querySelectorAll<HTMLButtonElement>(
-      "#instanceFilters .instanceFilters__btn[data-instance-filter]",
+      "#streamFeedFilterBar .filterBar__btn[data-sbot-instance-filter]",
     )
     .forEach((b) =>
       b.classList.toggle(
-        "instanceFilters__btn--active",
-        b.dataset.instanceFilter === activeFilter,
+        "filterBar__btn--active",
+        b.dataset.sbotInstanceFilter === activeSbotInstanceFilter,
       ),
     );
   document.querySelectorAll<HTMLElement>(".feed__entry").forEach((row) => {
     const instanceMismatch =
-      activeFilter !== "all" && row.dataset.instance !== activeFilter;
+      activeSbotInstanceFilter !== "all" &&
+      row.dataset.instance !== activeSbotInstanceFilter;
     const twitchFollowHidden =
       !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
     row.classList.toggle(
@@ -44,29 +45,30 @@ export function applyFilter(): void {
   });
 }
 
-instanceFiltersEl
+filterBarEl
   .querySelectorAll<HTMLButtonElement>(
-    ".instanceFilters__btn[data-instance-filter]",
+    ".filterBar__btn[data-sbot-instance-filter]",
   )
   .forEach((btn) => {
     btn.onclick = () => {
-      activeFilter = btn.dataset.instanceFilter ?? "all";
+      activeSbotInstanceFilter = btn.dataset.sbotInstanceFilter ?? "all";
       applyFilter();
     };
   });
 
 twitchFollowToggle.btn.onclick = () => {
   twitchFollowToggle.shown = !twitchFollowToggle.shown;
-  applyTwitchFollowToggleState();
   applyFilter();
+  applyTwitchFollowToggleState();
 };
-
-applyTwitchFollowToggleState(); // starts activated
 
 document.getElementById("toggleRawBtn")!.addEventListener("click", (e) => {
   document.body.classList.toggle("body--hide-raw");
   const showing = !document.body.classList.contains("body--hide-raw");
   const target = e.target as HTMLElement;
-  target.classList.toggle("instanceFilters__btn--active", showing);
+  target.classList.toggle("filterBar__btn--active", showing);
   target.textContent = showing ? "Hide JSON" : "Show JSON";
 });
+
+applyFilter();
+applyTwitchFollowToggleState();

@@ -12,12 +12,12 @@
 
   --font-raw: calc(9.5px * var(--scale));
 
-  --gap-instanceFilters: calc(6px * var(--scale));
+  --gap-filterBar: calc(6px * var(--scale));
   --gap-entry: calc(8px * var(--scale));
 
   --pad-body: calc(10px * var(--scale));
-  --pad-instanceFilter-btn-v: calc(3px * var(--scale));
-  --pad-instanceFilter-btn-h: calc(10px * var(--scale));
+  --pad-filterBar-btn-v: calc(3px * var(--scale));
+  --pad-filterBar-btn-h: calc(10px * var(--scale));
   --pad-entry-v: calc(6px * var(--scale));
   --pad-entry-h: calc(4px * var(--scale));
 
@@ -51,21 +51,21 @@ body.body--hide-raw .feed__entry-raw {
   color: #ff5c5c;
 }
 
-.instanceFilters {
+.filterBar {
   display: flex;
-  gap: var(--gap-instanceFilters);
+  gap: var(--gap-filterBar);
   margin-bottom: var(--pad-body);
 }
-.instanceFilters__btn {
+.filterBar__btn {
   background: transparent;
   border: 1px solid #333;
   color: #888;
   border-radius: var(--radius-btn);
-  padding: var(--pad-instanceFilter-btn-v) var(--pad-instanceFilter-btn-h);
+  padding: var(--pad-filterBar-btn-v) var(--pad-filterBar-btn-h);
   font-size: var(--font-status);
   cursor: pointer;
 }
-.instanceFilters__btn--active {
+.filterBar__btn--active {
   color: #111;
   background: #5b9dff;
   border-color: #5b9dff;

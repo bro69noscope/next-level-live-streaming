@@ -63,9 +63,13 @@ export function addEntry(
   row.dataset.instance = inst.name;
   row.dataset.type = eventType;
 
-  const instanceMismatch = activeFilter !== "all" && activeFilter !== inst.name;
+  const instanceMismatch =
+    activeSbotInstanceFilter !== "all" &&
+    activeSbotInstanceFilter !== inst.name;
+
   const twitchFollowHidden =
     !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
+
   if (instanceMismatch || twitchFollowHidden) {
     row.classList.add("feed__entry--hidden");
   }

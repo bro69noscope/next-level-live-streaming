@@ -17,7 +17,7 @@ export function replayAlert(instanceName: string, payload: unknown): void {
     JSON.stringify({
       request: "DoAction",
       action: { name: BROADCAST_ACTION_NAME },
-      args: { payloadJson: JSON.stringify(taggedPayload) },
+      args: { replayPayloadJson: JSON.stringify(taggedPayload) },
       id: `replay-${Date.now()}`,
     }),
   );

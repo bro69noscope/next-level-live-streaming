@@ -47,13 +47,34 @@ function logUnverified(
   }
 }
 
+function formatEntryTimestamp(ts?: string): string {
+  const date = ts ? new Date(ts) : new Date();
+  const now = new Date();
+
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (isToday) {
+    return date.toLocaleTimeString();
+  }
+
+  const dayName = date.toLocaleDateString(undefined, { weekday: "short" });
+  return `${dayName} ${date.toLocaleTimeString()}`;
+}
+
 export function addEntry(
   inst: StreamerbotInstance,
   eventType: string,
   data: any,
-  options: { isReplay?: boolean; isReplayEcho?: boolean } = {},
+  options: {
+    isReplay?: boolean;
+    isReplayEcho?: boolean;
+    timestamp?: string;
+  } = {},
 ): void {
-  const { isReplay = false, isReplayEcho = false } = options;
+  const { isReplay = false, isReplayEcho = false, timestamp } = options;
 
   if (isReplayEcho) return;
 
@@ -77,6 +98,7 @@ export function addEntry(
 
   const clone = entryTemplate.content.cloneNode(true) as DocumentFragment;
   const row = clone.querySelector(".feed__entry") as HTMLElement;
+
   const replayBtn = row.querySelector(
     ".feed__entry-replay",
   ) as HTMLButtonElement;
@@ -115,7 +137,7 @@ export function addEntry(
   (row.querySelector(".feed__entry-instance") as HTMLElement).textContent =
     `[${inst.name}]`;
   (row.querySelector(".feed__entry-timestamp") as HTMLElement).textContent =
-    new Date().toLocaleTimeString();
+    formatEntryTimestamp(timestamp);
   (row.querySelector(".feed__entry-user") as HTMLElement).textContent =
     mapped.user || "?";
   (row.querySelector(".feed__entry-label") as HTMLElement).textContent =

@@ -49,7 +49,7 @@ export async function loadHistoryIntoFeed(): Promise<void> {
         { name: entry.inst, host: "", port: 0 },
         entry.eventType,
         entry.data,
-        { isReplay: true },
+        { isReplay: true, timestamp: entry.timestamp },
       );
     }
   } catch (err) {

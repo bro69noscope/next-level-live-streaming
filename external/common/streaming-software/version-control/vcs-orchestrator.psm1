@@ -9,7 +9,7 @@
 #   Invoke-VcsTemplating -Direction From -Backup
 
 . "$PSScriptRoot\dotsource-common-paths.ps1"
-Import-Module "$script:repoPath\external\pwsh\helpers.psm1" -Force
+Import-Module "$script:repoPath\external\common\helpers\ps1\helpers.psm1" -Force
 
 $script:StreamDeckDir = Join-Path $script:repoPath "external\streamdeck\version-control"
 $script:ObsDir = Join-Path $script:repoPath "external\obs\version-control"

@@ -1,5 +1,12 @@
 function ts(): string {
-  return performance.now().toFixed(0) + "ms";
+  const totalMs = performance.now();
+  const hours = Math.floor(totalMs / 3600000);
+  const minutes = Math.floor((totalMs % 3600000) / 60000);
+  const seconds = Math.floor((totalMs % 60000) / 1000);
+  const millis = totalMs % 1000;
+
+  const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${millis.toFixed(3).padStart(7, "0")}`;
 }
 
 function fatalOverlayError(message: string): never {

@@ -1,8 +1,11 @@
 (async () => {
   try {
     await loadEnvOverrides();
-  } catch {
-    log.debug("Aborting overlay init, env setup failed:", err.message);
+  } catch (err) {
+    log.debug(
+      "Aborting overlay init, env setup failed:",
+      (err as Error).message,
+    );
     return;
   }
   createAlertOverlay({
@@ -15,7 +18,7 @@
         sound: "sub_alert.mp3",
         headline: (item) =>
           "just subscribed!" +
-          (item.tier > 1 ? " (tier " + item.tier + ")" : ""),
+          (item.tier && item.tier > 1 ? " (tier " + item.tier + ")" : ""),
       },
       {
         kind: "resub",

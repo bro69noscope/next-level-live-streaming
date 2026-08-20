@@ -2,7 +2,10 @@
   try {
     await loadEnvOverrides();
   } catch (err) {
-    log.debug("Aborting overlay init, env setup failed:", err.message);
+    log.debug(
+      "Aborting overlay init, env setup failed:",
+      (err as Error).message,
+    );
     return;
   }
 

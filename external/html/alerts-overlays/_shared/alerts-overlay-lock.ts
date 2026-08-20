@@ -1,5 +1,3 @@
-const log = new Log();
-
 (function () {
   const DEFAULT_LOCK_TIMEOUT_MS = 15000;
   const LOCK_TIMEOUT_MS =
@@ -7,10 +5,10 @@ const log = new Log();
     DEFAULT_LOCK_TIMEOUT_MS;
 
   let locked = false;
-  let lockTimeoutId = null;
-  const waiting = [];
+  let lockTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  const waiting: MessageEventSource[] = [];
 
-  window.addEventListener("message", (evt) => {
+  window.addEventListener("message", (evt: MessageEvent) => {
     const data = evt.data;
 
     if (!data) {
@@ -24,6 +22,10 @@ const log = new Log();
     }
 
     if (data.type === "alert-lock-request") {
+      if (!evt.source) {
+        log.warn("Lock request with no message source", evt);
+        return;
+      }
       waiting.push(evt.source);
       grantNext();
     } else if (data.type === "alert-lock-release") {
@@ -35,11 +37,11 @@ const log = new Log();
     }
   });
 
-  function grantNext() {
+  function grantNext(): void {
     if (locked || waiting.length === 0) return;
     locked = true;
-    const source = waiting.shift();
-    source.postMessage({ type: "alert-lock-granted" }, "*");
+    const source = waiting.shift()!;
+    source.postMessage({ type: "alert-lock-granted" }, { targetOrigin: "*" });
 
     clearTimeout(lockTimeoutId);
     lockTimeoutId = setTimeout(() => {

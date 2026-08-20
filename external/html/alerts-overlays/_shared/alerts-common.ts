@@ -1,6 +1,35 @@
-const log = new Log();
+interface AlertItem {
+  kind: string;
+  event: string;
+  user?: string;
+  message?: string;
+  tier?: number;
+  months?: number;
+  recipient?: string;
+  giftCount?: number;
+  amount?: number | string;
+  currency?: string;
+}
 
-function createSoundElement(id, src) {
+interface AlertDef {
+  kind: string;
+  sound: string;
+  headline: (item: AlertItem) => string;
+}
+
+interface CreateAlertOverlayOptions {
+  name: string;
+  subscribedEvents: string[];
+  alerts: AlertDef[];
+  kindChance?: Record<string, number>;
+}
+
+interface StreamerBotMessage {
+  event?: { source?: string; type?: string };
+  data?: unknown;
+}
+
+function createSoundElement(id: string, src: string): HTMLAudioElement {
   const el = document.createElement("audio");
   el.id = id;
   el.src = src;
@@ -12,14 +41,14 @@ function createSoundElement(id, src) {
   return el;
 }
 
-function checkSoundAvailable(el) {
+function checkSoundAvailable(el: HTMLAudioElement): void {
   const controller = new AbortController();
   const timeoutId = setTimeout(
     () => controller.abort(),
     OVERLAY_CONFIG.SOUND_CHECK_TIMEOUT_MS,
   );
 
-  fetch(el.dataset.relSrc, { method: "HEAD", signal: controller.signal })
+  fetch(el.dataset.relSrc!, { method: "HEAD", signal: controller.signal })
     .then((res) => {
       clearTimeout(timeoutId);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -31,7 +60,7 @@ function checkSoundAvailable(el) {
     });
 }
 
-function handleSoundCheckFailure(el, reason) {
+function handleSoundCheckFailure(el: HTMLAudioElement, reason: string): void {
   const retries = Number(el.dataset.retries);
   const relPath = el.dataset.relSrc;
   if (retries < OVERLAY_CONFIG.SOUND_RETRY_MAX) {
@@ -53,11 +82,14 @@ function handleSoundCheckFailure(el, reason) {
   }
 }
 
-function createAlertOverlay(opts) {
+function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   const { name, subscribedEvents, alerts, kindChance = {} } = opts;
 
-  const alertsByKind = new Map();
-  const ownSounds = [];
+  const alertsByKind = new Map<
+    string,
+    { soundEl: HTMLAudioElement; headline: (item: AlertItem) => string }
+  >();
+  const ownSounds: HTMLAudioElement[] = [];
   alerts.forEach((alert) => {
     const soundEl = createSoundElement(
       `alert-sound-${alert.kind}`,
@@ -77,12 +109,12 @@ function createAlertOverlay(opts) {
   );
 
   const allSounds = ownSounds.concat([soundErrorEl, soundUnknownEl]);
-  let pendingMessage = null;
-  let onSpeechDone = null;
-  let activeSoundEl = null;
-  let activeFinish = null;
+  let pendingMessage: string | null = null;
+  let onSpeechDone: (() => void) | null = null;
+  let activeSoundEl: HTMLAudioElement | null = null;
+  let activeFinish: ((delayMs?: number) => void) | null = null;
 
-  function onSoundEnded() {
+  function onSoundEnded(): void {
     if (pendingMessage) {
       const text = pendingMessage;
       pendingMessage = null;
@@ -114,7 +146,9 @@ function createAlertOverlay(opts) {
     });
   });
 
-  function getAlertDisplay(item) {
+  function getAlertDisplay(
+    item: AlertItem,
+  ): { headline: string; soundEl: HTMLAudioElement } | null {
     const alertConfig = alertsByKind.get(item.kind);
     if (!alertConfig) return null;
     return {
@@ -123,24 +157,24 @@ function createAlertOverlay(opts) {
     };
   }
 
-  const alertBox = document.querySelector(".alert-box");
-  const userEl = document.querySelector(".alert-box__username");
-  const msgEl = document.querySelector(".alert-box__message");
-  const headlineText = document.querySelector(".alert-box__headline-text");
+  const alertBox = document.querySelector(".alert-box")!;
+  const userEl = document.querySelector(".alert-box__username")!;
+  const msgEl = document.querySelector(".alert-box__message")!;
+  const headlineText = document.querySelector(".alert-box__headline-text")!;
 
-  let queue = [];
+  let queue: AlertItem[] = [];
   let playing = false;
 
   // no parent to broker a lock with — just show immediately in that case.
   const isEmbedded = window.parent !== window;
 
-  function requestLockThenShow(item) {
+  function requestLockThenShow(item: AlertItem): void {
     log.debug("lock requested for", item.kind);
     if (!isEmbedded) {
       showAlert(item);
       return;
     }
-    function checkLockGrant(evt) {
+    function checkLockGrant(evt: MessageEvent): void {
       if (
         evt.source === window.parent &&
         evt.data &&
@@ -155,7 +189,7 @@ function createAlertOverlay(opts) {
     window.parent.postMessage({ type: "alert-lock-request", name }, "*");
   }
 
-  function connect() {
+  function connect(): void {
     if (!OVERLAY_CONFIG.WS_PORT) {
       fatalOverlayError(`no WS_PORT configured, refusing to connect`);
       return;
@@ -175,30 +209,38 @@ function createAlertOverlay(opts) {
       );
     };
 
-    ws.onmessage = (evt) => {
-      let msg;
+    ws.onmessage = (evt: MessageEvent) => {
+      let msg: StreamerBotMessage | undefined;
       try {
         msg = JSON.parse(evt.data);
       } catch (e) {
-        log.warn("Failed to parse WebSocket message:", evt.data, e.message);
+        log.warn(
+          "Failed to parse WebSocket message:",
+          evt.data,
+          (e as Error).message,
+        );
+        return;
       }
       if (
+        !msg ||
         !msg.event ||
         msg.event.source !== "General" ||
         msg.event.type !== "Custom"
       ) {
-        log.debug("Ignoring non 'Custom'/'General' event:", msg.event);
+        log.debug("Ignoring non 'Custom'/'General' event:", msg?.event);
         return;
       }
-      let payload;
+      let payload: AlertItem | undefined;
       try {
         payload =
-          typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+          typeof msg.data === "string"
+            ? JSON.parse(msg.data)
+            : (msg.data as AlertItem);
       } catch (e) {
         log.warn(
           "Failed to parse WebSocket message data:",
           msg.data,
-          e.message,
+          (e as Error).message,
         );
         return;
       }
@@ -237,8 +279,8 @@ function createAlertOverlay(opts) {
       processQueue();
     };
 
-    ws.onclose = (evt) => {
-      let dur = 3000;
+    ws.onclose = (evt: CloseEvent) => {
+      const dur = 3000;
       log.info("WebSocket closed with code", evt.code, "reason", evt.reason);
       log.info("Trying reconnect in " + dur + "ms...");
       setTimeout(connect, dur);
@@ -247,10 +289,10 @@ function createAlertOverlay(opts) {
     ws.onerror = () => ws.close();
   }
 
-  function processQueue() {
+  function processQueue(): void {
     if (playing || queue.length === 0) return;
     playing = true;
-    const item = queue.shift();
+    const item = queue.shift()!;
     log.debug(
       `Processing alert:`,
       { kind: item.kind, event: item.event },
@@ -260,7 +302,7 @@ function createAlertOverlay(opts) {
     requestLockThenShow(item);
   }
 
-  function skipCurrentAlert() {
+  function skipCurrentAlert(): void {
     if (!playing || !activeFinish) return;
     log.info("Skip requested, stopping current alert");
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -275,14 +317,15 @@ function createAlertOverlay(opts) {
 
   window.skipCurrentAlert = skipCurrentAlert;
 
-  function showAlert(item) {
-    userEl.textContent = item.user || "Some guy or gal (this shouldn't show)";
+  function showAlert(item: AlertItem): void {
+    userEl.textContent =
+      item.user || "Some guy or gal (this shouldn't show, xd)";
     msgEl.textContent = item.message || "";
 
-    const display = getAlertDisplay(item) || {};
+    const display = getAlertDisplay(item);
     headlineText.textContent =
-      display.headline || "triggered an alert I've improperly coded XD";
-    let soundEl = display.soundEl || soundUnknownEl;
+      display?.headline || "triggered an alert I've improperly coded XD";
+    let soundEl = display?.soundEl || soundUnknownEl;
 
     alertBox.classList.add("alert-box--show");
 
@@ -309,7 +352,7 @@ function createAlertOverlay(opts) {
     let minTimeElapsed = false;
     let hidden = false;
 
-    function finish(delayMs) {
+    function finish(delayMs?: number): void {
       if (hidden) return;
       hidden = true;
       activeSoundEl = null;
@@ -325,7 +368,7 @@ function createAlertOverlay(opts) {
       }, delayMs ?? 700);
     }
 
-    function maybeHide() {
+    function maybeHide(): void {
       if (!ttsDone || !minTimeElapsed) return;
       finish();
     }
@@ -343,7 +386,7 @@ function createAlertOverlay(opts) {
     }, OVERLAY_CONFIG.ALERT_BASE_DISPLAY_MS);
   }
 
-  function speak(text) {
+  function speak(text: string): void {
     if (!("speechSynthesis" in window)) {
       if (onSpeechDone) {
         const done = onSpeechDone;

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "legacy",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "noEmitOnError": true,
+    "sourceMap": true,
+    "typeRoots": ["./types"]
+  },
+  "include": ["**/*.ts"]
+}

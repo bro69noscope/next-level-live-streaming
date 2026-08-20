@@ -1,8 +1,8 @@
-function ts() {
+function ts(): string {
   return performance.now().toFixed(0) + "ms";
 }
 
-function fatalOverlayError(message) {
+function fatalOverlayError(message: string): never {
   log.error("FATAL:", message);
   const banner = document.createElement("div");
   banner.textContent = "OVERLAY ERROR: " + message;
@@ -14,12 +14,18 @@ function fatalOverlayError(message) {
 }
 
 class Log {
+  moduleName: string;
+
   constructor() {
-    const scriptSrc = document.currentScript?.src || "unknown";
-    this.moduleName = scriptSrc.split("/").pop().replace(".js", "");
+    const scriptSrc =
+      (document.currentScript as HTMLScriptElement | null)?.src || "unknown";
+    this.moduleName = (scriptSrc.split("/").pop() ?? scriptSrc).replace(
+      ".js",
+      "",
+    );
   }
 
-  debug(message, ...args) {
+  debug(message: unknown, ...args: unknown[]): void {
     if (!(
       window.debug?.[this.moduleName] === true || window.debug?.all === true
     ))
@@ -27,21 +33,21 @@ class Log {
     console.debug(`[${this.moduleName}] ${ts()} ${message}`, ...args);
   }
 
-  log(message, ...args) {
+  log(message: unknown, ...args: unknown[]): void {
     console.log(`[${this.moduleName}] ${ts()} ${message}`, ...args);
   }
 
-  info(message, ...args) {
+  info(message: unknown, ...args: unknown[]): void {
     console.info(`[${this.moduleName}] ${ts()} ${message}`, ...args);
   }
 
-  warn(message, ...args) {
+  warn(message: unknown, ...args: unknown[]): void {
     console.warn(`[${this.moduleName}] ${ts()} ${message}`, ...args);
   }
 
-  error(message, ...args) {
+  error(message: unknown, ...args: unknown[]): void {
     console.error(`[${this.moduleName}] ${ts()} ${message}`, ...args);
   }
 }
 
-log = new Log();
+const log = new Log();

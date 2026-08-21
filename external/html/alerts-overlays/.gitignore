@@ -1,18 +1,38 @@
-# Compiled output for files that now have a .ts source (see tsconfig.json).
-# Add an entry here each time a .js file is converted to .ts.
-_shared/alerts-constants.js
-_shared/alerts-constants.js.map
-_shared/alerts-debug-config.js
-_shared/alerts-debug-config.js.map
-_shared/alerts-utils.js
-_shared/alerts-utils.js.map
-_shared/alerts-env-config.js
-_shared/alerts-env-config.js.map
-_shared/alerts-overlay-lock.js
-_shared/alerts-overlay-lock.js.map
-_shared/alerts-common.js
-_shared/alerts-common.js.map
-common/twitch/twitch-alerts-init.js
-common/twitch/twitch-alerts-init.js.map
-common/kofi/kofi-alerts-init.js
-common/kofi/kofi-alerts-init.js.map
+# Build output
+bin/
+obj/
+artifacts/
+/**/*.js
+/**/*.js.map
+*.tsbuildinfo
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# C# generated files
+*.pdb
+*.cache
+
+# Downloaded files
+

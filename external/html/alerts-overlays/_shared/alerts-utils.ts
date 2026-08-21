@@ -21,39 +21,47 @@ function fatalOverlayError(message: string): never {
 }
 
 class Log {
-  moduleName: string;
+  private getCallerModule(): string {
+    const stack = new Error().stack;
+    if (!stack) return "unknown, no stack trace";
+    const lines = stack.split("\n");
+    for (const line of lines) {
+      const match = line.match(/([\w.-]+)\.js:\d+:\d+/);
+      if (match && match[1] !== "alerts-utils") {
+        return match[1];
+      }
+    }
+    return "unknown";
+  }
 
-  constructor() {
-    const scriptSrc =
-      (document.currentScript as HTMLScriptElement | null)?.src || "unknown";
-    this.moduleName = (scriptSrc.split("/").pop() ?? scriptSrc).replace(
-      ".js",
-      "",
-    );
+  private shouldDebug(moduleName: string): boolean {
+    return window.debug?.[moduleName] === true || window.debug?.all === true;
   }
 
   debug(message: unknown, ...args: unknown[]): void {
-    if (!(
-      window.debug?.[this.moduleName] === true || window.debug?.all === true
-    ))
-      return;
-    console.debug(`[${this.moduleName}] ${ts()} ${message}`, ...args);
+    const mod = this.getCallerModule();
+    if (!this.shouldDebug(mod)) return;
+    console.debug(`[${mod}] ${ts()} ${message}`, ...args);
   }
 
   log(message: unknown, ...args: unknown[]): void {
-    console.log(`[${this.moduleName}] ${ts()} ${message}`, ...args);
+    const mod = this.getCallerModule();
+    console.log(`[${mod}] ${ts()} ${message}`, ...args);
   }
 
   info(message: unknown, ...args: unknown[]): void {
-    console.info(`[${this.moduleName}] ${ts()} ${message}`, ...args);
+    const mod = this.getCallerModule();
+    console.info(`[${mod}] ${ts()} ${message}`, ...args);
   }
 
   warn(message: unknown, ...args: unknown[]): void {
-    console.warn(`[${this.moduleName}] ${ts()} ${message}`, ...args);
+    const mod = this.getCallerModule();
+    console.warn(`[${mod}] ${ts()} ${message}`, ...args);
   }
 
   error(message: unknown, ...args: unknown[]): void {
-    console.error(`[${this.moduleName}] ${ts()} ${message}`, ...args);
+    const mod = this.getCallerModule();
+    console.error(`[${mod}] ${ts()} ${message}`, ...args);
   }
 }
 

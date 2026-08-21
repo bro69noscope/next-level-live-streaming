@@ -1,4 +1,4 @@
-function ts(): string {
+export function ts(): string {
   const totalMs = performance.now();
   const hours = Math.floor(totalMs / 3600000);
   const minutes = Math.floor((totalMs % 3600000) / 60000);
@@ -9,7 +9,7 @@ function ts(): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${millis.toFixed(3).padStart(7, "0")}`;
 }
 
-function fatalOverlayError(message: string): never {
+export function fatalOverlayError(message: string): never {
   log.error("FATAL:", message);
   const banner = document.createElement("div");
   banner.textContent = "OVERLAY ERROR: " + message;
@@ -20,10 +20,10 @@ function fatalOverlayError(message: string): never {
   throw new Error(message);
 }
 
-class Log {
+export class Log {
   private getCallerModule(): string {
     const stack = new Error().stack;
-    if (!stack) return "unknown, no stack trace";
+    if (!stack) return "unknown";
     const lines = stack.split("\n");
     for (const line of lines) {
       const match = line.match(/([\w.-]+)\.js:\d+:\d+/);
@@ -65,4 +65,4 @@ class Log {
   }
 }
 
-const log = new Log();
+export const log = new Log();

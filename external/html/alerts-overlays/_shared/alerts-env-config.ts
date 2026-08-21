@@ -1,4 +1,7 @@
-async function loadEnvOverrides(): Promise<void> {
+import { OVERLAY_CONFIG } from "./alerts-constants.js";
+import { fatalOverlayError } from "./alerts-utils.js";
+
+export async function loadEnvOverrides(): Promise<void> {
   const env = new URLSearchParams(window.location.search).get("env");
   if (!env) {
     const msg =

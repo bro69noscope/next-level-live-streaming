@@ -1,3 +1,6 @@
+import { OVERLAY_CONFIG } from "./alerts-constants.js";
+import { log, fatalOverlayError } from "./alerts-utils.js";
+
 interface AlertItem {
   kind: string;
   event: string;
@@ -82,7 +85,7 @@ function handleSoundCheckFailure(el: HTMLAudioElement, reason: string): void {
   }
 }
 
-function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
+export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   const { name, subscribedEvents, alerts, kindChance = {} } = opts;
 
   const alertsByKind = new Map<
@@ -192,7 +195,6 @@ function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   function connect(): void {
     if (!OVERLAY_CONFIG.WS_PORT) {
       fatalOverlayError(`no WS_PORT configured, refusing to connect`);
-      return;
     }
     const ws = new WebSocket(
       `ws://${OVERLAY_CONFIG.WS_HOST}:${OVERLAY_CONFIG.WS_PORT}${OVERLAY_CONFIG.WS_ENDPOINT}`,

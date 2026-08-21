@@ -1,8 +1,8 @@
-interface OverlayConfig {
+export interface OverlayConfig {
   WS_HOST: string;
   WS_PORT: number | null;
   WS_ENDPOINT: string;
-  ALERT_BASE_DISPLAY_MS: number; // non-TTS part of the alert
+  ALERT_BASE_DISPLAY_MS: number;
   TTS_VOLUME: number;
   TTS_RATE: number;
   SOUND_VOLUME: number;
@@ -20,7 +20,7 @@ interface OverlayConfig {
   };
 }
 
-const OVERLAY_CONFIG: OverlayConfig = {
+export const OVERLAY_CONFIG: OverlayConfig = {
   WS_HOST: "127.0.0.1",
   WS_PORT: null,
   WS_ENDPOINT: "/",

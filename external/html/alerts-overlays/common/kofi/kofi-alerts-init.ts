@@ -1,3 +1,8 @@
+import "../../_shared/alerts-debug-config.js";
+import { log } from "../../_shared/alerts-utils.js";
+import { loadEnvOverrides } from "../../_shared/alerts-env-config.js";
+import { createAlertOverlay } from "../../_shared/alerts-common.js";
+
 (async () => {
   try {
     await loadEnvOverrides();

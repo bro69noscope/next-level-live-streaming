@@ -149,11 +149,8 @@ namespace StreamFeedApp
         {
             Directory.CreateDirectory(_logDir);
             var logPath = Path.Combine(_logDir, "unverified-events.log");
-            var replayPayloadJson = payload.GetRawText();
-            File.AppendAllText(
-                logPath,
-                $"{DateTime.Now:O}\t{replayPayloadJson}{Environment.NewLine}"
-            );
+            var payloadJson = payload.GetRawText();
+            File.AppendAllText(logPath, $"{DateTime.Now:O}\t{payloadJson}{Environment.NewLine}");
         }
 
         private void HandleRequestHistory()

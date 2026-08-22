@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "paths": {
+      "mounted_js_helpers/*": ["../../common/helpers/js/dist/*"]
+    },
     "target": "ES2020",
     "module": "esnext",
     "moduleResolution": "bundler",

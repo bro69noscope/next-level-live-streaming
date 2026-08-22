@@ -1,6 +1,8 @@
 import { OVERLAY_CONFIG } from "./alerts-constants.js";
 import { fatalOverlayError } from "./alerts-utils.js";
 
+const { getPortConfigValue } = await import("mounted_js_helpers/get-ports.js");
+
 export async function loadEnvOverrides(): Promise<void> {
   const env = new URLSearchParams(window.location.search).get("env");
   if (!env) {
@@ -8,11 +10,6 @@ export async function loadEnvOverrides(): Promise<void> {
       "no ?env= param on this overlay's URL — refusing to guess a WS port";
     fatalOverlayError(msg);
   }
-
-  const importGetPorts = () =>
-    // @ts-expect-error TS2307
-    import("/js_helpers/dist/get-ports.js") as Promise<GetPortsModule>;
-  const { getPortConfigValue } = await importGetPorts();
 
   const { value: wsPort, error } = await getPortConfigValue(
     OVERLAY_CONFIG.SITE_ROOT,

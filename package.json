@@ -1,9 +1,14 @@
 {
   "devDependencies": {
     "@prettier/plugin-xml": "^3.4.2",
+    "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
   },
   "dependencies": {
     "json5": "^2.2.3"
+  },
+  "scripts": {
+    "build:js-helpers": "node external/common/helpers/js/build-js-helpers.mjs",
+    "build:all": "npm run build:js-helpers"
   }
 }

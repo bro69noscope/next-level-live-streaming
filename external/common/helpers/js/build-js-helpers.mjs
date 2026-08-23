@@ -6,8 +6,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const entries = [
   {
-    entry: join(__dirname, "get-ports.ts"),
-    outfile: join(__dirname, "dist/get-ports.js"),
+    entry: join(__dirname, "get-ports/get-ports.ts"),
+    outfile: join(__dirname, "dist/get-ports/get-ports.js"),
   },
 ];
 

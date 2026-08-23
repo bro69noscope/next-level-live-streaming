@@ -1,7 +1,8 @@
 import { OVERLAY_CONFIG } from "./alerts-constants.js";
 import { fatalOverlayError } from "./alerts-utils.js";
 
-const { getPortConfigValue } = await import("/mounted_js_helpers/get-ports.js");
+const { getPortConfigValue } =
+  await import("/mounted_js_helpers/get-ports/get-ports.js");
 
 export async function loadEnvOverrides(): Promise<void> {
   const env = new URLSearchParams(window.location.search).get("env");

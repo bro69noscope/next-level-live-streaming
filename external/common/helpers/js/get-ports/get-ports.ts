@@ -1,9 +1,10 @@
 import JSON5 from "json5";
+import type { PortsConfig } from "./get-ports.types.ts";
 
 export type PortLookupResult<T> =
   { value: T; error: null } | { value: null; error: string };
 
-let _portsConfigCache: unknown | null = null;
+let _portsConfigCache: PortsConfig | null = null;
 
 async function loadPortsConfig(portsConfigUrl: string): Promise<unknown> {
   if (_portsConfigCache) return _portsConfigCache;

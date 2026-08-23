@@ -1,31 +1,3 @@
-"""Builds per-consumer scoped mapping JSON files from a single ports.json5.
-
-ports.json5 leaf shapes supported:
-
-1. Simple leaf (one value, one token):
-    {
-      "port": 51000,
-      "token": "{{OBS_PRODUCTION_PORT}}",
-      "scope_keys": {"obs": "server_port", "default": "port"}   # optional
-    }
-
-2. Multi-field leaf (several values on one object, each with its own token):
-    {
-      "port": 50000,
-      "url": "ws://localhost:50000",
-      "tokens": {
-        "url":  {"token": "{{REPOSITORY_PYTHON_WS}}"},
-        "port": {"token": "{{REPOSITORY_PYTHON_PORT}}",
-                 "scope_keys": {"default": "port"}}   # optional
-      }
-    }
-
-For each recognized (field_name, value, token, scope_keys) tuple found
-anywhere in the tree, one scoped-rule entry is produced per configured
-consumer, resolving the JSON key each consumer's target files actually use
-via: scope_keys.get(consumer) -> scope_keys.get("default") -> field_name.
-"""
-
 import json
 import sys
 from pathlib import Path
@@ -42,8 +14,6 @@ from src.streaming_config.types import (
 
 PORTS_SOURCE = PROJECT_ROOT_PATH / "config" / "ports.json5"
 
-# Each consumer's generated scoped mapping file gets written here.
-# Add/remove entries as new templater modules are added.
 CONSUMER_OUTPUTS: dict[str, Path] = {
     "obs": PROJECT_ROOT_PATH / "config" / "ports_generated.obs.json",
     "streamdeck": PROJECT_ROOT_PATH / "config" / "ports_generated.streamdeck.json",
@@ -82,7 +52,7 @@ def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
             if field_name not in node:
                 print(
                     f"Warning: tokens.{field_name} has no matching "
-                    f"'{field_name}' field on parent object — skipping",
+                    f"'{field_name}' field on parent object {node} — skipping",
                     file=sys.stderr,
                 )
                 continue

@@ -1,10 +1,13 @@
+"""Docstring  placeholder."""
+
 import json
 import sys
 from pathlib import Path
-from typing import cast
+from typing import cast, get_args
 
 from src.config.settings import PROJECT_ROOT_PATH
 from src.streaming_config.types import (
+    Consumer,
     JsonValue,
     Rule,
     ScopedEntry,
@@ -14,11 +17,24 @@ from src.streaming_config.types import (
 
 PORTS_SOURCE = PROJECT_ROOT_PATH / "config" / "ports.json5"
 
-CONSUMER_OUTPUTS: dict[str, Path] = {
+CONSUMER_OUTPUTS: dict[Consumer, Path] = {
     "obs": PROJECT_ROOT_PATH / "config" / "ports_generated.obs.json",
     "streamdeck": PROJECT_ROOT_PATH / "config" / "ports_generated.streamdeck.json",
     "streamerbot": PROJECT_ROOT_PATH / "config" / "ports_generated.streamerbot.json",
 }
+
+VALID_SCOPE_KEYS = frozenset(get_args(Consumer)) | {"default"}
+
+
+def validate_scope_keys(scope_keys: ScopeKeys, context: str) -> None:
+    """Raise if scope_keys contains an unrecognized consumer/default key."""
+    bad_keys = scope_keys.keys() - VALID_SCOPE_KEYS
+    if bad_keys:
+        err = (
+            f"{context} has invalid scope_keys {sorted(bad_keys)}; "
+            f"expected one of {sorted(VALID_SCOPE_KEYS)}"
+        )
+        raise ValueError(err)
 
 
 def resolve_key(field_name: str, scope_keys: ScopeKeys, consumer: str) -> str:
@@ -38,12 +54,16 @@ def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
         return
 
     if "token" in node and "port" in node:
+        token = cast("str", node["token"])
+        scope_keys = cast("ScopeKeys", node.get("scope_keys", {}))
+        validate_scope_keys(scope_keys, context=f"node {node}")
+
         rules.append(
             Rule(
                 field_name="port",
                 value=str(node["port"]),
-                token=cast("str", node["token"]),
-                scope_keys=cast("ScopeKeys", node.get("scope_keys", {})),
+                token=token,
+                scope_keys=scope_keys,
             )
         )
 
@@ -66,6 +86,7 @@ def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
 
             token = cast("str", token_spec["token"])
             scope_keys = cast("ScopeKeys", token_spec.get("scope_keys", {}))
+            validate_scope_keys(scope_keys, context=f"node {node}")
 
             rules.append(
                 Rule(

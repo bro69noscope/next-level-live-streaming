@@ -1,12 +1,13 @@
 """Type definitions shared across the streaming_config domain package."""
 
-from typing import NamedTuple, TypedDict
+from typing import Literal, NamedTuple, TypedDict
 
 # Recursive shape of a parsed ports.json5 tree.
 type JsonValue = JsonTree | str | int | float | bool | None
 type JsonTree = dict[str, JsonValue]
 
-ScopeKeys = dict[str, str]
+Consumer = Literal["obs", "streamdeck", "streamerbot"]
+ScopeKeys = dict[Consumer | Literal["default"], str]
 
 
 class Rule(NamedTuple):

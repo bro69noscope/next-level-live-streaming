@@ -1,16 +1,14 @@
 """Thin CLI for generating per-consumer scoped mapping JSON files from ports.json5.
 
-See src.streaming_config.scoped_mappings for the supported ports.json5 leaf
-shapes and the rule-collection/resolution logic.
-
 Usage:
-    python -m src.scripts.generate_scoped_mappings
+    python generate_scoped_mappings.py
 """
 
 import sys
 from typing import TYPE_CHECKING, cast
 
 import json5
+
 from src.streaming_config.scoped_mappings import (
     PORTS_SOURCE,
     collect_rules,

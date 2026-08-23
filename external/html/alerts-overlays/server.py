@@ -11,7 +11,7 @@ from src.connection.constants import ALERTS_OVERLAYS_STATIC
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 EXTERNAL_MOUNTS: dict[str, Path] = {
-    "mounted_root_config": PROJECT_ROOT_PATH / "config",
+    "mounted_config": PROJECT_ROOT_PATH / "config",
     "mounted_node_modules": PROJECT_ROOT_PATH / "node_modules",
     "mounted_js_helpers": PROJECT_ROOT_PATH
     / "external"

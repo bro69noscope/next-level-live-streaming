@@ -12,7 +12,7 @@ export async function loadEnvOverrides(): Promise<void> {
   }
 
   const { value: wsPort, error } = await getPortConfigValue(
-    OVERLAY_CONFIG.SITE_ROOT,
+    "/mounted_config/ports.json5",
     `streamerbot.${env}.streamerbot_ws.port`,
   );
   if (error) {

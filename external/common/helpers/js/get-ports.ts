@@ -5,9 +5,9 @@ export type PortLookupResult<T> =
 
 let _portsConfigCache: unknown | null = null;
 
-async function loadPortsConfig(repoRoot: string): Promise<unknown> {
+async function loadPortsConfig(portsConfigUrl: string): Promise<unknown> {
   if (_portsConfigCache) return _portsConfigCache;
-  const res = await fetch(repoRoot + "config/ports.json5");
+  const res = await fetch(portsConfigUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status} loading ports.json5`);
   const raw = await res.text();
   _portsConfigCache = JSON5.parse(raw);
@@ -15,12 +15,12 @@ async function loadPortsConfig(repoRoot: string): Promise<unknown> {
 }
 
 export async function getPortConfigValue(
-  repoRoot: string,
+  portsConfigUrl: string,
   path: string,
 ): Promise<PortLookupResult<unknown>> {
   let ports: unknown;
   try {
-    ports = await loadPortsConfig(repoRoot);
+    ports = await loadPortsConfig(portsConfigUrl);
   } catch (err) {
     return {
       value: null,

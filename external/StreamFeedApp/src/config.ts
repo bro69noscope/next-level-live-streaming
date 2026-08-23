@@ -8,8 +8,6 @@ export interface StreamerbotInstance {
 
 export let STREAMERBOT_INSTANCES: StreamerbotInstance[] = [];
 
-const REPO_ROOT = "https://repo.local/";
-
 export async function loadStreamerbotInstances(): Promise<
   StreamerbotInstance[]
 > {
@@ -18,7 +16,7 @@ export async function loadStreamerbotInstances(): Promise<
 
   for (const envKey of envKeys) {
     const { value: port, error } = await getPortConfigValue(
-      REPO_ROOT,
+      "https://repo.local/config/ports.json5",
       `streamerbot.${envKey}.streamerbot_ws.port`,
     );
 

@@ -1,4 +1,4 @@
-import { getPortConfigValue } from "../../common/helpers/js/dist/get-ports.js";
+import { getPortConfigValue } from "https://repo.local/external/common/helpers/js/dist/get-ports.js";
 
 export interface StreamerbotInstance {
   name: string;

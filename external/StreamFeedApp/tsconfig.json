@@ -1,5 +1,10 @@
 {
   "compilerOptions": {
+    "paths": {
+      "https://repo.local/external/common/helpers/js/*": [
+        "../common/helpers/js/*"
+      ]
+    },
     "target": "ES2024",
     "lib": ["ES2024", "DOM"],
     "module": "ESNext",

@@ -10,6 +10,9 @@
         base_url: {
           token: "{{REPOSITORY_PYTHON_WS_BASE_URL}}",
           scope_keys: {
+            // the name of the key that actually appears in the consumer's config file.
+            // Keys can be: obs, streamdeck, streamerbot or default (meaning all the other
+            // consumers that weren't specified).
             obs: "url",
             default: "url",
           },

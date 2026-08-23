@@ -3,12 +3,22 @@
     {
       "key": "url",
       "value": "ws://localhost:50000",
-      "token": "{{REPOSITORY_PYTHON_WS_URL}}"
+      "token": "{{REPOSITORY_PYTHON_WS_BASE_URL}}"
     },
     {
       "key": "port",
       "value": "50000",
       "token": "{{REPOSITORY_PYTHON_PORT}}"
+    },
+    {
+      "key": "url",
+      "value": "http://localhost:50001",
+      "token": "{{ALERTS_OVERLAYS_STATIC_BASE_URL}}"
+    },
+    {
+      "key": "port",
+      "value": "50001",
+      "token": "{{ALERTS_OVERLAYS_STATIC_PORT}}"
     },
     {
       "key": "port",

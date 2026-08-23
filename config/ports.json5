@@ -5,10 +5,10 @@
       host: "127.0.0.1",
       port: 50000,
       protocol: "websocket",
-      url: "ws://localhost:50000",
+      base_url: "ws://localhost:50000",
       tokens: {
-        url: {
-          token: "{{REPOSITORY_PYTHON_WS_URL}}",
+        base_url: {
+          token: "{{REPOSITORY_PYTHON_WS_BASE_URL}}",
           scope_keys: {
             obs: "url",
             default: "url",
@@ -23,14 +23,18 @@
       host: "127.0.0.1",
       port: 50001,
       protocol: "http",
-      url: "http://localhost:50001",
+      base_url: "http://localhost:50001",
       served_paths: {
         ftp: "ftp/alerts-overlay.ftp.html",
         production: "production/alerts-overlay.production.html",
       },
       tokens: {
-        url: {
-          token: "{{ALERTS_OVERLAYS_STATIC_URL}}",
+        base_url: {
+          token: "{{ALERTS_OVERLAYS_STATIC_BASE_URL}}",
+          scope_keys: {
+            obs: "url",
+            default: "url",
+          },
         },
         port: {
           token: "{{ALERTS_OVERLAYS_STATIC_PORT}}",

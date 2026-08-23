@@ -26,8 +26,7 @@ CONSUMER_OUTPUTS: dict[Consumer, Path] = {
 VALID_SCOPE_KEYS = frozenset(get_args(Consumer)) | {"default"}
 
 
-def validate_scope_keys(scope_keys: ScopeKeys, context: str) -> None:
-    """Raise if scope_keys contains an unrecognized consumer/default key."""
+def _validate_scope_keys(scope_keys: ScopeKeys, context: str) -> None:
     bad_keys = scope_keys.keys() - VALID_SCOPE_KEYS
     if bad_keys:
         err = (
@@ -37,8 +36,7 @@ def validate_scope_keys(scope_keys: ScopeKeys, context: str) -> None:
         raise ValueError(err)
 
 
-def resolve_key(field_name: str, scope_keys: ScopeKeys, consumer: str) -> str:
-    """Resolve the JSON key each consumer actually use."""
+def _resolve_key(field_name: str, scope_keys: ScopeKeys, consumer: str) -> str:
     if not scope_keys:
         return field_name
     if consumer in scope_keys:
@@ -48,15 +46,23 @@ def resolve_key(field_name: str, scope_keys: ScopeKeys, consumer: str) -> str:
     return field_name
 
 
+def _build_scoped_entries(rules: list[Rule], consumer: str) -> list[ScopedEntry]:
+    entries: list[ScopedEntry] = []
+    for field_name, value, token, scope_keys in rules:
+        key = _resolve_key(field_name, scope_keys, consumer)
+        entries.append({"key": key, "value": value, "token": token})
+    return entries
+
+
 def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
-    """Recursively walk the parsed json5 tree."""
+    """Recursively walk the parsed json5 tree and collect rules."""
     if not isinstance(node, dict):
         return
 
     if "token" in node and "port" in node:
         token = cast("str", node["token"])
         scope_keys = cast("ScopeKeys", node.get("scope_keys", {}))
-        validate_scope_keys(scope_keys, context=f"node {node}")
+        _validate_scope_keys(scope_keys, context=f"node {node}")
 
         rules.append(
             Rule(
@@ -86,7 +92,7 @@ def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
 
             token = cast("str", token_spec["token"])
             scope_keys = cast("ScopeKeys", token_spec.get("scope_keys", {}))
-            validate_scope_keys(scope_keys, context=f"node {node}")
+            _validate_scope_keys(scope_keys, context=f"node {node}")
 
             rules.append(
                 Rule(
@@ -102,15 +108,6 @@ def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
             collect_rules(value, rules)
 
 
-def build_scoped_entries(rules: list[Rule], consumer: str) -> list[ScopedEntry]:
-    """Build a list of scoped entries for a given consumer."""
-    entries: list[ScopedEntry] = []
-    for field_name, value, token, scope_keys in rules:
-        key = resolve_key(field_name, scope_keys, consumer)
-        entries.append({"key": key, "value": value, "token": token})
-    return entries
-
-
 def write_consumer_files(rules: list[Rule]) -> list[tuple[str, Path, int]]:
     """Write each consumer's scoped mapping file.
 
@@ -119,7 +116,7 @@ def write_consumer_files(rules: list[Rule]) -> list[tuple[str, Path, int]]:
     """
     written: list[tuple[str, Path, int]] = []
     for consumer, out_path in CONSUMER_OUTPUTS.items():
-        entries = build_scoped_entries(rules, consumer)
+        entries = _build_scoped_entries(rules, consumer)
         mapping: ScopedMapping = {"scoped": entries}
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w", encoding="utf-8") as f:

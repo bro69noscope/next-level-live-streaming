@@ -40,7 +40,7 @@ def _build_urls() -> dict[str, str]:
     base = f"http://localhost:{ALERTS_OVERLAYS_STATIC['port']}"
     return {
         env: f"{base}/{rel_path}?env={env}"
-        for env, rel_path in ALERTS_OVERLAYS_STATIC["paths"].items()
+        for env, rel_path in ALERTS_OVERLAYS_STATIC["served_paths"].items()
     }
 
 

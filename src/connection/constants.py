@@ -33,7 +33,7 @@ class RepositoryStaticEntry(TypedDict):
 
     host: str
     port: int
-    paths: dict[str, str]
+    served_paths: dict[str, str]
 
 
 class RepositoryConfig(TypedDict):

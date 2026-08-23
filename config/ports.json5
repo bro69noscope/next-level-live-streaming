@@ -24,7 +24,7 @@
       port: 50001,
       protocol: "http",
       url: "http://localhost:50001",
-      paths: {
+      served_paths: {
         ftp: "ftp/alerts-overlay.ftp.html",
         production: "production/alerts-overlay.production.html",
       },

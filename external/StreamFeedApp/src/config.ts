@@ -29,7 +29,8 @@ export async function loadStreamerbotInstances(): Promise<
 
     if (typeof port !== "number" && typeof port !== "string") {
       console.error(
-        `StreamFeedApp: expected port for ${envKey} to be a number or string, got ${typeof port} (value: ${JSON.stringify(port)})`,
+        `StreamFeedApp: expected port for ${envKey} to be a number or string,` +
+          `got ${typeof port} (value: ${JSON.stringify(port)})`,
       );
       continue;
     }
@@ -38,7 +39,8 @@ export async function loadStreamerbotInstances(): Promise<
 
     if (Number.isNaN(portNum)) {
       console.error(
-        `StreamFeedApp: port for ${envKey} could not be parsed as a number (raw value: ${JSON.stringify(port)})`,
+        `StreamFeedApp: port for ${envKey} could not be parsed as a number` +
+          `(raw value: ${JSON.stringify(port)})`,
       );
       continue;
     }

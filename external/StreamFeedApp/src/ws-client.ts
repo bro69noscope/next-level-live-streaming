@@ -1,4 +1,7 @@
-import { StreamerbotInstance, TWITCH_STREAMERBOT_EVENTS } from "./config.js";
+import {
+  StreamerbotInstance,
+  BUILTIN_STREAMERBOT_TWITCH_EVENTS,
+} from "./config.js";
 import { state, renderStatus, clearFeed, addEntry } from "./render.js";
 
 const connections: Record<string, WebSocket> = {};
@@ -17,7 +20,10 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
       JSON.stringify({
         request: "Subscribe",
         id: `activity-feed-${inst.name}`,
-        events: { Twitch: TWITCH_STREAMERBOT_EVENTS, General: ["Custom"] },
+        events: {
+          Twitch: BUILTIN_STREAMERBOT_TWITCH_EVENTS,
+          General: ["Custom"],
+        },
       }),
     );
   };
@@ -55,7 +61,7 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
     // only for source of truth documentation purposes
     if (parsed.event.source !== "Twitch") return;
     const eventType = parsed.event.type;
-    if (!TWITCH_STREAMERBOT_EVENTS.includes(eventType)) return;
+    if (!BUILTIN_STREAMERBOT_TWITCH_EVENTS.includes(eventType)) return;
 
     console.debug(
       `[${inst.name}] native Twitch.${eventType} (logged only):`,

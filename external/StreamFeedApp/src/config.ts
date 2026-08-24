@@ -1,4 +1,12 @@
-import { getPortConfigValue } from "https://repo.local/external/common/helpers/js/dist/get-ports/get-ports.js";
+import { getPortsConfig } from "https://repo.local/external/common/helpers/js/dist/get-ports/get-ports.js";
+
+export const BUILTIN_STREAMERBOT_TWITCH_EVENTS = [
+  "Follow",
+  "Sub",
+  "ReSub",
+  "GiftSub",
+  "GiftBomb",
+];
 
 export interface StreamerbotInstance {
   name: string;
@@ -11,49 +19,31 @@ export let STREAMERBOT_INSTANCES: StreamerbotInstance[] = [];
 export async function loadStreamerbotInstances(): Promise<
   StreamerbotInstance[]
 > {
-  const envKeys = ["production", "ftp"];
+  const envKeys = ["production", "ftp"] as const;
   const instances: StreamerbotInstance[] = [];
 
-  for (const envKey of envKeys) {
-    const { value: port, error } = await getPortConfigValue(
-      "https://repo.local/config/ports.json5",
-      `streamerbot.${envKey}.streamerbot_ws.port`,
+  let config;
+  try {
+    config = await getPortsConfig("https://repo.local/config/ports.json5");
+  } catch (err) {
+    console.error(
+      `StreamFeedApp: failed to load ports.json5: ${(err as Error).message}`,
     );
-
-    if (error || port === null) {
-      console.error(
-        `StreamFeedApp: failed to load port for ${envKey}: ${error}`,
-      );
-      continue;
-    }
-
-    if (typeof port !== "number" && typeof port !== "string") {
-      console.error(
-        `StreamFeedApp: expected port for ${envKey} to be a number or string,` +
-          `got ${typeof port} (value: ${JSON.stringify(port)})`,
-      );
-      continue;
-    }
-
-    const portNum = typeof port === "string" ? Number(port) : port;
-
-    if (Number.isNaN(portNum)) {
-      console.error(
-        `StreamFeedApp: port for ${envKey} could not be parsed as a number` +
-          `(raw value: ${JSON.stringify(port)})`,
-      );
-      continue;
-    }
-
-    instances.push({ name: envKey, host: "127.0.0.1", port: portNum });
+    return instances;
   }
+
+  for (const envKey of envKeys) {
+    const envConfig = config.streamerbot[envKey];
+    if (!envConfig) {
+      console.error(`StreamFeedApp: no streamerbot config found for ${envKey}`);
+      continue;
+    }
+    instances.push({
+      name: envKey,
+      host: envConfig.streamerbot_ws.host,
+      port: envConfig.streamerbot_ws.port,
+    });
+  }
+
   return instances;
 }
-
-export const TWITCH_STREAMERBOT_EVENTS = [
-  "Follow",
-  "Sub",
-  "ReSub",
-  "GiftSub",
-  "GiftBomb",
-];

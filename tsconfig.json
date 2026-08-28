@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./external/common/helpers/js" },
+    { "path": "./external/html/alerts-overlays" },
+    { "path": "./external/StreamFeedApp" }
+  ]
+}

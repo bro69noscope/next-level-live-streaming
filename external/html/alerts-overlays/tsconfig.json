@@ -13,5 +13,6 @@
     "sourceMap": true,
     "typeRoots": ["./types"]
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  "references": [{ "path": "../../common/helpers/js" }]
 }

@@ -158,8 +158,8 @@ Write-Host "  ConvertFrom-StreamerbotTemplate 'folder'                          
 Export-ModuleMember -Function ConvertTo-StreamerbotTemplate, ConvertFrom-StreamerbotTemplate
 Write-Host "Healthcheck:" -ForegroundColor Cyan
 @(
-  "$Script:SbotProductionPath\dlls\BroStreamerTools.dll"
-  "$Script:SbotFtpPath\dlls\BroStreamerTools.dll"
+  "$script:SbotProductionPath\dlls\BroStreamerTools.dll"
+  "$script:SbotFtpPath\dlls\BroStreamerTools.dll"
 ) | Test-StreamerbotDllSymlinks
 
 Write-Host ""

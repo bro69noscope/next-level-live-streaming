@@ -1,7 +1,7 @@
 . "$PSScriptRoot\dotsource-common-paths.ps1"
 
 function Import-StreamingTemplatesModules {
-  $repo = $Script:repoPath.TrimEnd('\')
+  $repo = $script:RepoPath.TrimEnd('\')
   $modules = [ordered]@{
     OBS = Join-Path $repo `
       "external\obs\version-control\obs-templater.psm1"

@@ -2,8 +2,8 @@
 
 function Assert-HelpersPaths {
   $helperPaths = @(
-    $Script:repoPath
-    $Script:PrettierPath
+    $script:RepoPath
+    $script:PrettierPath
   )
   foreach ($path in $helperPaths) {
     if (-not (Test-Path $path)) {
@@ -18,7 +18,7 @@ function Assert-HelpersPaths {
 function ConvertFrom-Json5 {
   param([string]$Path)
 
-  $json5Path = (Join-Path $repoPath "node_modules\json5") -replace '\\', '/'
+  $json5Path = (Join-Path $RepoPath "node_modules\json5") -replace '\\', '/'
 
   # Escape backslashes so the path survives as a JS string literal
   $safePath = $Path -replace '\\', '/'

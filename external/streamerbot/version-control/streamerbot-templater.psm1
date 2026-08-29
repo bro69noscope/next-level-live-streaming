@@ -16,7 +16,7 @@ $script:streamerbotRoots = @(
 )
 
 $mappings = Read-ReplacementMappings `
-  -CommonMappingsPath $script:CommonMappingsPath `
+  -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SbotMappingsPath `
   -ScopedMappingsPaths @($script:SbotPortsPath)
 

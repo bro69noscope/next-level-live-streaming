@@ -7,11 +7,11 @@ Get-ChildItem "$PSScriptRoot\common-vcs-paths*.ps1" |
     . $_.FullName
   }
 
-$script:CommonOverrideMappings = Get-ChildItem (Join-Path (
-    Split-Path $script:CommonMappingsPath) "common-vcs-mappings*.json5") |
+$script:CommonUserMappingsOverride = Get-ChildItem (Join-Path (
+    Split-Path $script:CommonUserMappingsPath) "common-vcs-mappings*.json5") |
   Where-Object { $_.Name -ne "common-vcs-mappings.bro.json5" } |
   Select-Object -First 1
 
-if ($CommonOverrideMappings) {
-  $script:CommonMappingsPath = $CommonOverrideMappings.FullName
+if ($CommonUserMappingsOverride) {
+  $script:CommonUserMappingsPath = $CommonUserMappingsOverride.FullName
 }

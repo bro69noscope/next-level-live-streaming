@@ -6,7 +6,7 @@ Import-Module $VcsHelpersModulePath -Force
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
 $mappings = Read-ReplacementMappings `
-  -CommonMappingsPath $script:CommonMappingsPath `
+  -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SdeckMappingsPath `
   -ScopedMappingsPaths @($script:PortsPath)
 

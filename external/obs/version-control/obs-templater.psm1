@@ -19,7 +19,7 @@ $obsRoots = @(
 )
 
 $mappings = Read-ReplacementMappings `
-  -CommonMappingsPath $script:CommonMappingsPath `
+  -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:ObsMappingsPath `
   -ScopedMappingsPaths @($script:ObsPortsPath)
 

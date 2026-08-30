@@ -1,5 +1,3 @@
-Import-Module $Global:Ps1HelpersModulePath 
-
 try {
   . "$PSScriptRoot\dotsource-common-paths.ps1"
 } catch {
@@ -17,7 +15,9 @@ function Assert-HelpersPaths {
     if (-not (Test-Path $path)) {
       Write-Host "Required path not found for file: '$(Split-Path $path -Leaf)'" `
         -ForegroundColor Red
-      if ($path -ne $RepoPath) {
+      if ($path -eq $Global:RepoPath) {
+        Write-Host "Global:RepoPath is not set correctly" -ForegroundColor Red
+      } else {
         Write-Host "check $CommonVcsPaths" -ForegroundColor Red
       }
       Write-ThrowContext

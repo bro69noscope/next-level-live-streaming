@@ -19,8 +19,6 @@ if (-not $Global:RepoPath) {
   $Global:RepoPath = Find-RepoRoot
 }
 
-Import-Module "$RepoPath\external\common\helpers\ps1\helpers.psm1" -Force
-
 $script:StreamDeckDir = Join-Path $RepoPath "external\streamdeck\version-control"
 $script:ObsDir = Join-Path $RepoPath "external\obs\version-control"
 $script:StreamerbotDir = Join-Path $RepoPath "external\streamerbot\version-control"

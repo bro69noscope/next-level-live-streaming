@@ -7,11 +7,11 @@ function Write-ThrowContext {
   [CmdletBinding()]
   param()
 
-  Write-Host "Error thrown from: $PSCommandPath" -ForegroundColor Red
-  Write-Host "Call stack:" -ForegroundColor Red
+  Write-Host "  Error thrown from: $PSCommandPath" -ForegroundColor Red
+  Write-Host "  Call stack:" -ForegroundColor Red
   Get-PSCallStack | ForEach-Object {
-    Write-Host "  at $($_.FunctionName) in $($_.ScriptName):$($_.ScriptLineNumber)" `
-      -ForegroundColor DarkYellow
+    Write-Host "    at $($_.FunctionName) in $($_.ScriptName):$($_.ScriptLineNumber)" `
+      -ForegroundColor Red
   }
 }
 

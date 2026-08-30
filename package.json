@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build:js-helpers": "node external/common/helpers/js/build-js-helpers.mjs",
-    "build:all": "npm run build:js-helpers"
+    "build:all": "npm run build:js-helpers && npm run setup:ps1",
+    "postinstall": "npm run setup:ps1",
+    "setup:ps1": "pwsh -File ./external/common/local-packages/ps1/install-all.ps1"
   }
 }

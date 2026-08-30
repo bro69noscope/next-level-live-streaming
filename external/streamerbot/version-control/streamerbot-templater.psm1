@@ -1,7 +1,17 @@
 # Used to create an editable template from a Streamer.bot "actions/settings.json" file.
-. "$PSScriptRoot\dotsource-streamerbot-paths.ps1"
+if (-not $Global:RepoPath) {
+  $Global:RepoPath = Find-RepoRoot
+}
 
-Import-Module $VcsHelpersModulePath -Force
+. "$RepoPath\external\common\streaming-software\version-control\init.ps1"
+
+try {
+  . "$PSScriptRoot\dotsource-streamerbot-paths.ps1"
+} catch {
+  Write-Host "Failed to load Streamer.bot paths: $($_.Exception.Message)" -ForegroundColor Red
+  throw
+}
+
 Import-Module "$PSScriptRoot\healthcheck.psm1" -Force
 
 $script:streamerbotRoots = @(

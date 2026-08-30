@@ -1,7 +1,16 @@
 # Used to create an editable template from an StreamDeck "scenes.json" file.
-. "$PSScriptRoot\dotsource-streamdeck-paths.ps1"
+if (-not $Global:RepoPath) {
+  $Global:RepoPath = Find-RepoRoot
+}
 
-Import-Module $VcsHelpersModulePath -Force
+. "$RepoPath\external\common\streaming-software\version-control\init.ps1"
+
+try {
+  . "$PSScriptRoot\dotsource-streamdeck-paths.ps1"
+} catch {
+  Write-Host "Failed to load StreamDeck paths: $($_.Exception.Message)" -ForegroundColor Red
+  throw
+}
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 

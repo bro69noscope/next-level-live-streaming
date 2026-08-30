@@ -1,14 +1,25 @@
-. "$PSScriptRoot\dotsource-common-paths.ps1"
+Import-Module $Global:Ps1HelpersModulePath 
+
+try {
+  . "$PSScriptRoot\dotsource-common-paths.ps1"
+} catch {
+  Write-Host "Failed to load common paths module: $($_.Exception.Message)" -ForegroundColor Red
+  throw
+}
+
 
 function Assert-HelpersPaths {
   $helperPaths = @(
-    $script:RepoPath
+    $Global:RepoPath
     $script:PrettierPath
   )
   foreach ($path in $helperPaths) {
     if (-not (Test-Path $path)) {
-      Write-Host "Required path not found: '$path'" -ForegroundColor Red
-      Write-Host "Check $PSScriptRoot\helpers-paths.*.ps1" -ForegroundColor Red
+      Write-Host "Required path not found for file: '$(Split-Path $path -Leaf)'" `
+        -ForegroundColor Red
+      if ($path -ne $RepoPath) {
+        Write-Host "check $CommonVcsPaths" -ForegroundColor Red
+      }
       Write-ThrowContext
       throw "Required path not found: $path"
     }
@@ -111,7 +122,7 @@ function Read-ReplacementMappings {
   if (-not $ScopedMappingsPaths -or $ScopedMappingsPaths.Count -eq 0) {
     Write-ThrowContext
     throw "Read-ReplacementMappings requires at least one -ScopedMappingsPaths entry `
-    (e.g. a ports file)."
+        (e.g. a ports file)."
   }
 
   $rules = @()
@@ -141,7 +152,7 @@ function Format-JsonWithPrettier {
 
   if (-not (Test-Path $script:PrettierPath)) {
     Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping
-    formatting." -ForegroundColor Yellow
+        formatting." -ForegroundColor Yellow
     return
   }
 

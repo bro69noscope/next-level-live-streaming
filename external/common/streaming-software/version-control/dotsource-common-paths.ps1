@@ -1,17 +1,27 @@
-. "$PSScriptRoot\common-vcs-paths.bro.ps1"
-Import-Module "$script:RepoPath\external\common\helpers\ps1\helpers.psm1"
+$script:CommonVcsPaths = "$PSScriptRoot\common-vcs-paths.bro.ps1"
 
-Get-ChildItem "$PSScriptRoot\common-vcs-paths.*.ps1" |
+$Script:CommonVcsPathsOverride = Get-ChildItem "$PSScriptRoot\common-vcs-paths.*.ps1" |
   Where-Object { $_.Name -ne "common-vcs-paths.bro.ps1" } |
-  ForEach-Object {
-    . $_.FullName
-  }
+  Select-Object -First 1
+
+if ($CommonVcsPathsOverride) {
+  $CommonVcsPaths = $CommonVcsPathsOverride.FullName
+}
+
+if (-not (Test-Path $CommonVcsPaths)) {
+  Write-ThrowContext
+  throw "Common VCS paths file not found at: $CommonVcsPaths"
+}
+
+. $CommonVcsPaths
+
+$script:CommonUserMappingsPath = "$PSScriptRoot\common-vcs-mappings.bro.json5"
 
 $script:CommonUserMappingsOverride = Get-ChildItem (Join-Path (
-    Split-Path $script:CommonUserMappingsPath) "common-vcs-mappings*.json5") |
+    Split-Path $CommonUserMappingsPath) "common-vcs-mappings*.json5") |
   Where-Object { $_.Name -ne "common-vcs-mappings.bro.json5" } |
   Select-Object -First 1
 
 if ($CommonUserMappingsOverride) {
-  $script:CommonUserMappingsPath = $CommonUserMappingsOverride.FullName
+  $CommonUserMappingsPath = $CommonUserMappingsOverride.FullName
 }

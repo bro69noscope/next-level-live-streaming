@@ -8,15 +8,24 @@
 #   Invoke-VcsTemplating -Direction To
 #   Invoke-VcsTemplating -Direction From -Backup
 
-. "$PSScriptRoot\dotsource-common-paths.ps1"
-Import-Module "$script:RepoPath\external\common\helpers\ps1\helpers.psm1" -Force
+try {
+  . "$PSScriptRoot\dotsource-common-paths.ps1"
+} catch {
+  Write-Host "Failed to load common paths module: $($_.Exception.Message)" -ForegroundColor Red
+  throw
+}
 
-$script:StreamDeckDir = Join-Path $script:RepoPath "external\streamdeck\version-control"
-$script:ObsDir = Join-Path $script:RepoPath "external\obs\version-control"
-$script:StreamerbotDir = Join-Path $script:RepoPath "external\streamerbot\version-control"
-$script:CommonDir = Join-Path $script:RepoPath "external\common\streaming-software\version-control"
+if (-not $Global:RepoPath) {
+  $Global:RepoPath = Find-RepoRoot
+}
 
-$script:PortsGeneratorPath = Join-Path $script:RepoPath "src\scripts\generate_scoped_mappings.py"
+Import-Module "$RepoPath\external\common\helpers\ps1\helpers.psm1" -Force
+
+$script:StreamDeckDir = Join-Path $RepoPath "external\streamdeck\version-control"
+$script:ObsDir = Join-Path $RepoPath "external\obs\version-control"
+$script:StreamerbotDir = Join-Path $RepoPath "external\streamerbot\version-control"
+$script:CommonDir = Join-Path $RepoPath "external\common\streaming-software\version-control"
+$script:PortsGeneratorPath = Join-Path $RepoPath "src\scripts\generate_scoped_mappings.py"
 
 function Invoke-PortsGeneration {
   param([string]$PythonExe = "py")

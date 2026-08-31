@@ -1,6 +1,6 @@
 # Used to create an editable template from an OBS "scenes.json" file.
 if (-not $Global:RepoPath) {
-  $Global:RepoPath = Find-RepoRoot
+  $Global:RepoPath = Find-RepoRoot -StartPath $PSScriptRoot
 }
 
 . "$RepoPath\external\common\streaming-software\version-control\init.ps1"

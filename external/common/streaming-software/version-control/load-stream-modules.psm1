@@ -4,7 +4,7 @@ function Import-StreamingTemplatesModules {
 
   try {
     if (-not $Global:RepoPath) {
-      $Global:RepoPath = Find-RepoRoot
+      $Global:RepoPath = Find-RepoRoot -StartPath $PSScriptRoot
     }
 
     $repo = $RepoPath.TrimEnd('\')

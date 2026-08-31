@@ -16,7 +16,7 @@ try {
 }
 
 if (-not $Global:RepoPath) {
-  $Global:RepoPath = Find-RepoRoot
+  $Global:RepoPath = Find-RepoRoot -StartPath $PSScriptRoot
 }
 
 $script:StreamDeckDir = Join-Path $RepoPath "external\streamdeck\version-control"

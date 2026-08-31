@@ -1,5 +1,5 @@
 if (-not $Global:RepoPath) {
-  $Global:RepoPath = Find-RepoRoot
+  $Global:RepoPath = Find-RepoRoot -StartPath $PSScriptRoot
 }
 
 $Script:VcsHelpersModulePath = "$PSScriptRoot\vcs-helpers.psm1"

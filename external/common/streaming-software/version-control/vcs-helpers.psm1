@@ -15,11 +15,27 @@ function Assert-HelpersPaths {
     if (-not (Test-Path $path)) {
       Write-Host "Required path not found for file: '$(Split-Path $path -Leaf)'" `
         -ForegroundColor Red
-      if ($path -eq $Global:RepoPath) {
+
+      if ($path -eq $RepoPath) {
         Write-Host "Global:RepoPath is not set correctly" -ForegroundColor Red
-      } else {
-        Write-Host "check $CommonVcsPaths" -ForegroundColor Red
+        Write-ThrowContext
+        throw "Required path not found: $path"
       }
+
+      if ($path -eq $PrettierPath) {
+        Write-Host "Prettier is not installed or not found at the expected path: $path" `
+          -ForegroundColor Yellow
+        $response = Read-Host "Continue without Prettier formatting? (y/N)"
+        if ($response -eq 'y') {
+          $script:PrettierPath = $null
+          continue
+        }
+        Write-Host "check $CommonVcsPaths" -ForegroundColor Red
+        Write-ThrowContext
+        throw "Required path not found: $path"
+      }
+
+      Write-Host "check $CommonVcsPaths" -ForegroundColor Red
       Write-ThrowContext
       throw "Required path not found: $path"
     }
@@ -152,9 +168,14 @@ function Read-ReplacementMappings {
 function Format-JsonWithPrettier {
   param([string]$FilePath)
 
+  if (-not $Script:PrettierPath) {
+    Write-Host "Warning: Prettier path is not set. Skipping formatting." -ForegroundColor Yellow
+    return
+  }
+
   if (-not (Test-Path $script:PrettierPath)) {
-    Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping
-        formatting." -ForegroundColor Yellow
+    Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping formatting." `
+      -ForegroundColor Yellow
     return
   }
 

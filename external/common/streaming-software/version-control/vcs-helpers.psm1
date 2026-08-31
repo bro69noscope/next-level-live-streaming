@@ -119,12 +119,22 @@ function Read-ReplacementMappings {
 
   $rules = @()
 
-  if ($CommonMappingsPath -and (Test-Path $CommonMappingsPath)) {
-    $rules += Read-MappingsFile $CommonMappingsPath
+  if ($CommonMappingsPath) {
+    if (Test-Path $CommonMappingsPath) {
+      $rules += Read-MappingsFile $CommonMappingsPath
+    } else {
+      Write-Warning "CommonMappingsPath was specified but not found: $CommonMappingsPath"
+    }
   }
-  if ($MappingsPath -and (Test-Path $MappingsPath)) {
-    $rules += Read-MappingsFile $MappingsPath
+
+  if ($MappingsPath) {
+    if (Test-Path $MappingsPath) {
+      $rules += Read-MappingsFile $MappingsPath
+    } else {
+      Write-Warning "MappingsPath was specified but not found: $MappingsPath"
+    }
   }
+
   foreach ($path in $ScopedMappingsPaths) {
     $rules += Read-ScopedMappingsFile $path
   }

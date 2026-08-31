@@ -72,16 +72,16 @@ function ConvertFrom-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [switch]$Backup
   )
 
-  $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath -Path $InputFilePath -Roots $streamDeckRoots
+  $InputPath = (Resolve-Path $InputFilePath).Path
+  Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
 
-  if (Test-Path $InputFilePath -PathType Container) {
-    $templates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.vcs-template.json"
+  if (Test-Path $InputPath -PathType Container) {
+    $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json"
     if (-not $templates) {
-      Write-Host "No *.vcs-template.json files found under: $InputFilePath" -ForegroundColor Yellow
+      Write-Host "No *.vcs-template.json files found under: $InputPath" -ForegroundColor Yellow
       return
     }
-    Write-Host "Found $($templates.Count) *.vcs-template.json file(s) under: $InputFilePath" -ForegroundColor Cyan
+    Write-Host "Found $($templates.Count) *.vcs-template.json file(s) under: $InputPath" -ForegroundColor Cyan
     foreach ($template in $templates) {
       Write-Host ""
       try {
@@ -96,9 +96,9 @@ function ConvertFrom-StreamDeckTemplate {
     return
   }
 
-  Assert-StreamDeckPath -Path (Split-Path $InputFilePath -Parent)
+  Assert-StreamDeckPath -Path (Split-Path $InputPath -Parent)
   ConvertFrom-VcsTemplateFile `
-    -InputFilePath $InputFilePath `
+    -InputFilePath $InputPath `
     -Rules $mappings `
     -Backup:$Backup
 }

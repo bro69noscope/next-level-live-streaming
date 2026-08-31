@@ -88,23 +88,23 @@ function ConvertTo-ObsTemplate {
     [string]$InputFilePath
   )
 
-  $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath $InputFilePath -Roots $obsRoots
+  $InputPath = (Resolve-Path $InputFilePath).Path
+  Assert-InputPath $InputPath -Roots $obsRoots
 
-  if (Test-Path $InputFilePath -PathType Container) {
-    $candidates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.json" |
+  if (Test-Path $InputPath -PathType Container) {
+    $candidates = Get-ChildItem $InputPath -Recurse -File -Filter "*.json" |
       Where-Object {
         $_.Name -notmatch '\.vcs-template\.json$' -and
         (Test-ObsMarkerPath -Path $_.FullName)
       }
 
     if (-not $candidates) {
-      Write-Host "No matching .json files found under: $InputFilePath" -ForegroundColor Yellow
+      Write-Host "No matching .json files found under: $InputPath" -ForegroundColor Yellow
       Write-Host "  (must live under one of: $($script:ObsMarkers -join ', '))" -ForegroundColor Yellow
       return
     }
 
-    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputFilePath"
+    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputPath"
     foreach ($candidate in $candidates) {
       Write-Host ""
       try {
@@ -118,7 +118,7 @@ function ConvertTo-ObsTemplate {
   }
 
   $VcsRelativePath = Get-VcsRelativePath `
-    -InputFilePath $InputFilePath `
+    -InputFilePath $InputPath `
     -Roots $obsRoots `
     -Markers $script:ObsMarkers `
     -AppName "OBS"
@@ -127,7 +127,7 @@ function ConvertTo-ObsTemplate {
   $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
 
   ConvertTo-VcsTemplateFile `
-    -InputFilePath $InputFilePath `
+    -InputFilePath $InputPath `
     -VcsOutDirPath $vcsOutDirPath `
     -Rules $mappings
 }
@@ -140,19 +140,19 @@ function ConvertFrom-ObsTemplate {
     [switch]$Backup
   )
 
-  $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath $InputFilePath -Roots $obsRoots
+  $InputPath = (Resolve-Path $InputFilePath).Path
+  Assert-InputPath $InputPath -Roots $obsRoots
 
-  if (Test-Path $InputFilePath -PathType Container) {
-    $templates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.vcs-template.json" |
+  if (Test-Path $InputPath -PathType Container) {
+    $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json" |
       Where-Object { Test-ObsMarkerPath -Path $_.FullName }
 
     if (-not $templates) {
-      Write-Host "No matching *.vcs-template.json files found under: $InputFilePath" -ForegroundColor Yellow
+      Write-Host "No matching *.vcs-template.json files found under: $InputPath" -ForegroundColor Yellow
       return
     }
 
-    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputFilePath"
+    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputPath"
     foreach ($template in $templates) {
       Write-Host ""
       try {
@@ -168,7 +168,7 @@ function ConvertFrom-ObsTemplate {
   }
 
   ConvertFrom-VcsTemplateFile `
-    -InputFilePath $InputFilePath `
+    -InputFilePath $InputPath `
     -Rules $mappings `
     -Backup:$Backup
 }

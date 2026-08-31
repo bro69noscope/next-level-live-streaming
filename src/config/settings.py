@@ -14,14 +14,18 @@ def get_env_var(var_name: str, default_value: str = "MISSING_ENV_VAR") -> str:
 
 
 def find_project_root() -> Path:
-    """Find the root directory of the project by looking for root markers."""
-    current = Path(__file__).parent
+    """Find the root directory of the project by looking for root marker."""
+    root_marker = ".project-root"
+    start = Path(__file__).parent
+    current = start
     while current != current.parent:
-        if (current / "pyproject.toml").exists() or (current / ".git").exists():
+        if (current / root_marker).exists():
             return current
         current = current.parent
-
-    msg = "Project root not found. Ensure script is run from within project directory."
+    msg = (
+        f"Could not find project root marker '{root_marker}' in any parent "
+        f"directory of {start}."
+    )
     raise FileNotFoundError(msg)
 
 

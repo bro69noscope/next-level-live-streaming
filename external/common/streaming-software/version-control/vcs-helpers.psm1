@@ -42,7 +42,7 @@ function ConvertFrom-Json5 {
     ));
   "
 
-  return $json | ConvertFrom-Json
+  return $json | ConvertFrom-Json -AsHashtable
 }
 
 function Read-MappingsFile {
@@ -56,12 +56,12 @@ function Read-MappingsFile {
   $raw = ConvertFrom-Json5 $Path
   $rules = @()
 
-  foreach ($category in $raw.PSObject.Properties) {
-    foreach ($prop in $category.Value.PSObject.Properties) {
+  foreach ($category in $raw.Keys) {
+    foreach ($token in $raw[$category].Keys) {
       $rules += [PSCustomObject]@{
         Key   = $null
-        Value = [string]$prop.Value
-        Token = $prop.Name
+        Value = [string]$raw[$category][$token]
+        Token = $token
       }
     }
   }
@@ -79,7 +79,7 @@ function Read-ScopedMappingsFile {
 
   $raw = ConvertFrom-Json5 $Path
 
-  if (-not $raw.PSObject.Properties.Name -contains "scoped") {
+  if (-not $raw.ContainsKey("scoped")) {
     Write-ThrowContext
     throw "Scoped mappings file is missing a top-level 'scoped' array: $Path"
   }

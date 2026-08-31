@@ -176,14 +176,14 @@ function ConvertFrom-ObsTemplate {
 Write-Host ""
 Write-Host "OBS Templater: " -ForegroundColor Yellow
 
-Write-Host "Mappings:" -ForegroundColor Cyan
+Write-Verbose "Mappings:" 
 $mappings | ForEach-Object {
   $scope = if ($_.Key) {
     "[$($_.Key)] "
   } else {
     ""
   }
-  Write-Host "  $scope$($_.Token) => $($_.Value)"
+  Write-Verbose "  $scope$($_.Token) => $($_.Value)"
 }
 
 Write-Host "Script location:" -ForegroundColor Cyan

@@ -1,4 +1,7 @@
 function Import-StreamingTemplatesModules {
+  [CmdletBinding()]
+  param()
+
   try {
     if (-not $Global:RepoPath) {
       $Global:RepoPath = Find-RepoRoot
@@ -40,7 +43,6 @@ function Import-StreamingTemplatesModules {
       -ForegroundColor Red
     throw
   }
-  Write-Host "Streaming tools loaded!" -ForegroundColor Green
 }
 
 Export-ModuleMember -Function Import-StreamingTemplatesModules

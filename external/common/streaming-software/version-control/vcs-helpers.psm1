@@ -111,14 +111,6 @@ function Read-ReplacementMappings {
     [Parameter(Mandatory=$true)] [string[]]$ScopedMappingsPaths
   )
 
-  if ($MappingsPath) {
-    if (Test-Path $MappingsPath) {
-      $rules += Read-MappingsFile $MappingsPath
-    } else {
-      Write-Warning "MappingsPath was specified but not found: $MappingsPath"
-    }
-  }
-
   if (-not $ScopedMappingsPaths -or $ScopedMappingsPaths.Count -eq 0) {
     Write-ThrowContext
     throw "Read-ReplacementMappings requires at least one -ScopedMappingsPaths entry `

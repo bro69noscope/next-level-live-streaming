@@ -14,19 +14,17 @@ try {
 
 $script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
 
+$streamDeckRoots = @(
+  @{
+    Path = $script:SdeckBasePath;
+    Name = "StreamDeck"
+  }
+)
+
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SdeckMappingsPath `
   -ScopedMappingsPaths @($script:PortsPath)
-
-function Assert-StreamDeckPath {
-  param([Parameter(Mandatory=$true)][string]$Path)
-
-  if (-not $Path.StartsWith($script:SdeckBasePath, [System.StringComparison]::OrdinalIgnoreCase)) {
-    Write-ThrowContext
-    throw "This function must target files under: $($script:SdeckBasePath)`nCurrent target: $Path"
-  }
-}
 
 function ConvertTo-StreamDeckTemplate {
   param(
@@ -35,7 +33,7 @@ function ConvertTo-StreamDeckTemplate {
   )
 
   $InputPath = (Resolve-Path $InputFilePath).Path
-  Assert-StreamDeckPath -Path $InputPath
+  Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
 
   if (Test-Path $InputPath -PathType Container) {
     $manifests = Get-ChildItem $InputPath -Recurse -File -Filter "manifest.json"
@@ -75,7 +73,7 @@ function ConvertFrom-StreamDeckTemplate {
   )
 
   $InputFilePath = (Resolve-Path $InputFilePath).Path
-  Assert-StreamDeckPath -Path $InputFilePath
+  Assert-InputPath -Path $InputFilePath -Roots $streamDeckRoots
 
   if (Test-Path $InputFilePath -PathType Container) {
     $templates = Get-ChildItem $InputFilePath -Recurse -File -Filter "*.vcs-template.json"

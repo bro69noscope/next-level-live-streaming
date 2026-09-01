@@ -99,7 +99,10 @@ function Get-VcsTargets {
 
 function Invoke-VcsTemplating {
   param(
-    [Parameter(Mandatory=$true)] [ValidateSet("To", "From")] [string]$Direction,
+    [Parameter(Mandatory=$true, HelpMessage="Enter 'To' or 'From'")]
+    [ValidateSet("To", "From")]
+    [string]$Direction,
+
     [Parameter(Mandatory=$false)] [switch]$Backup,
     [Parameter(Mandatory=$false)] [switch]$SkipPortsGeneration
   )

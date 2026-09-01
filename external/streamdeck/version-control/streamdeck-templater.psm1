@@ -27,7 +27,29 @@ $mappings = Read-ReplacementMappings `
   -ScopedMappingsPaths @($script:PortsPath)
 
 $Script:manifestStr = "manifest.json"
-$Script:mdMarkerStr = "*-marker.md"
+$Script:jsonMarkerStr = "*-marker.json"
+
+function Initialize-StreamDeckMarkerFile {
+  param([Parameter(Mandatory=$true)][string]$InputFilePath)
+
+  $emptyMarkerPath = (Resolve-Path $InputFilePath).Path
+  $rawContent = Get-Content $emptyMarkerPath -Raw
+
+  if (-not [string]::IsNullOrWhiteSpace($rawContent)) {
+    return $false
+  }
+
+  $template = [ordered]@{
+    "vcs-flag" = ""
+    "name"     = ""
+    "desc"     = ""
+    "type"     = "dir|profile|home"
+  }
+
+  $template | ConvertTo-Json -Depth 5 | Set-Content $emptyMarkerPath -Encoding UTF8
+  Write-Host "  Seeded empty marker template: $emptyMarkerPath" -ForegroundColor Cyan
+  return $true
+}
 
 
 function Get-StreamDeckVcsOutDirPath {
@@ -56,10 +78,10 @@ function ConvertTo-StreamDeckTemplate {
 
   if (Test-Path $InputPath -PathType Container) {
     $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
-    $mdMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $mdMarkerStr
+    $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
 
-    if (-not $manifests -and -not $mdMarkerFiles) {
-      Write-Host "No $manifestStr or $mdMarkerStr files found under: $InputPath" `
+    if (-not $manifests -and -not $jsonMarkerFiles) {
+      Write-Host "No $manifestStr or $jsonMarkerStr files found under: $InputPath" `
         -ForegroundColor Yellow
       return
     }
@@ -79,19 +101,30 @@ function ConvertTo-StreamDeckTemplate {
       }
     }
 
-    if ($mdMarkerFiles) {
-      Write-Host "Found $($mdMarkerFiles.Count) $mdMarkerStr file(s) under: $InputPath" `
-        -ForegroundColor Cyan
-      foreach ($mdMarkerFile in $mdMarkerFiles) {
+    $seededPaths = @()
+
+    if ($jsonMarkerFiles) {
+      Write-Host "Found $($jsonMarkerFiles.Count) $jsonMarkerStr file(s) under: $InputPath" -ForegroundColor Cyan
+      foreach ($mdMarkerFile in $jsonMarkerFiles) {
         Write-Host ""
         try {
-          Copy-StreamDeckMarkerFile -InputFilePath $mdMarkerFile.FullName `
-            -RelativeOutPath $RelativeOutPath
+          $wasSeeded = Initialize-StreamDeckMarkerFile -InputFilePath $mdMarkerFile.FullName
+          if ($wasSeeded) {
+            $seededPaths += $mdMarkerFile.FullName
+            continue
+          }
+          Copy-StreamDeckMarkerFile -InputFilePath $mdMarkerFile.FullName -RelativeOutPath $RelativeOutPath
         } catch {
           Write-Host "  Failed: $($mdMarkerFile.FullName)" -ForegroundColor Red
           Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
         }
       }
+    }
+
+    if ($seededPaths.Count -gt 0) {
+      Write-Host ""
+      Write-Host "Seeded $($seededPaths.Count) new marker template(s) — fill in name/desc/type, then rerun." -ForegroundColor Yellow
+      $seededPaths | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
     }
 
     return
@@ -113,6 +146,38 @@ function Copy-StreamDeckMarkerFile {
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
 
+  $rawContent = Get-Content $InputPath -Raw
+  if ($null -eq $rawContent){
+    Write-Warning "Marker file is empty: $InputPath"
+    $rawContent = ""
+  }
+
+  try {
+    $marker = $rawContent | ConvertFrom-Json -AsHashtable
+  } catch {
+    Write-ThrowContext
+    throw "Marker file is not valid JSON: $InputPath`n$($_.Exception.Message)"
+  }
+
+  foreach ($field in @("name", "type")) {
+    if (-not $marker.ContainsKey($field) -or -not $marker[$field]) {
+      throw "Marker file has missing/empty required '$field' field: $InputPath"
+    }
+  }
+
+  $invalidChars = [System.IO.Path]::GetInvalidFileNameChars()
+  foreach ($field in @("name", "type")) {
+    $value = [string]$marker[$field]
+    $badChars = $value.ToCharArray() | Where-Object { $invalidChars -contains $_ }
+    if ($badChars) {
+      Write-ThrowContext
+      throw "Marker field '$field' contains invalid filename character(s) " +
+      "('$($badChars -join "', '")'): $InputPath"
+    }
+  }
+
+  $marker["vcs-flag"] = [guid]::NewGuid().ToString("N").Substring(0, 8)
+
   $vcsOutDirPath = Get-StreamDeckVcsOutDirPath -InputFilePath $InputPath `
     -RelativeOutPath $RelativeOutPath
 
@@ -120,25 +185,11 @@ function Copy-StreamDeckMarkerFile {
     New-Item -ItemType Directory -Path $vcsOutDirPath -Force | Out-Null
   }
 
-  $fileName = Split-Path $InputPath -Leaf
-  $destPath = Join-Path $vcsOutDirPath $fileName
+  $destFileName = "$($marker['name'])--$($marker['type'])-marker.json"
+  $destPath = Join-Path $vcsOutDirPath $destFileName
 
-  $content = Get-Content $InputPath -Raw
-  if ($null -eq $content) {
-    $content = "" # cannot use -match on null
-  }
-
-  $randomHash = [guid]::NewGuid().ToString("N").Substring(0, 8)
-  $bumpPattern = '(?m)^vcs-flag-hash:\S+\s*$'
-
-  if ($content -match $bumpPattern) {
-    $content = [regex]::Replace($content, $bumpPattern, "vcs-flag-hash:$randomHash")
-  } else {
-    $content = $content.TrimEnd() + "`nvcs-flag-hash:$randomHash`n"
-  }
-
-  $content | Set-Content $destPath -Encoding UTF8 -NoNewline
-  Write-Host "  Marker copied (vcs-flag-hash:$randomHash): $destPath" -ForegroundColor Green
+  $marker | ConvertTo-Json -Depth 5 | Set-Content $destPath -Encoding UTF8
+  Write-Host "  Marker copied (vcs-flag:$($marker['vcs-flag'])): $destPath" -ForegroundColor Green
 }
 
 function ConvertFrom-StreamDeckTemplate {

@@ -29,6 +29,22 @@ $mappings = Read-ReplacementMappings `
 $Script:manifestStr = "manifest.json"
 $Script:mdMarkerStr = "*-marker.md"
 
+
+function Get-StreamDeckVcsOutDirPath {
+  param(
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
+    [Parameter(Mandatory=$false)] [string]$RelativeOutPath
+  )
+
+  $inputDirectory = Split-Path $InputFilePath -Parent
+  $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
+
+  if ($RelativeOutPath) {
+    return Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
+  }
+  return Join-Path $script:DefaultVcsOutPath $relativeDeckPath
+}
+
 function ConvertTo-StreamDeckTemplate {
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
@@ -43,16 +59,19 @@ function ConvertTo-StreamDeckTemplate {
     $mdMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $mdMarkerStr
 
     if (-not $manifests -and -not $mdMarkerFiles) {
-      Write-Host "No $manifestStr or $mdMarkerStr files found under: $InputPath" -ForegroundColor Yellow
+      Write-Host "No $manifestStr or $mdMarkerStr files found under: $InputPath" `
+        -ForegroundColor Yellow
       return
     }
 
     if ($manifests) {
-      Write-Host "Found $($manifests.Count) $manifestStr file(s) under: $InputPath" -ForegroundColor Cyan
+      Write-Host "Found $($manifests.Count) $manifestStr file(s) under: $InputPath" `
+        -ForegroundColor Cyan
       foreach ($manifest in $manifests) {
         Write-Host ""
         try {
-          ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName -RelativeOutPath $RelativeOutPath
+          ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
+            -RelativeOutPath $RelativeOutPath
         } catch {
           Write-Host "  Failed: $($manifest.FullName)" -ForegroundColor Red
           Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
@@ -61,11 +80,13 @@ function ConvertTo-StreamDeckTemplate {
     }
 
     if ($mdMarkerFiles) {
-      Write-Host "Found $($mdMarkerFiles.Count) $mdMarkerStr file(s) under: $InputPath" -ForegroundColor Cyan
+      Write-Host "Found $($mdMarkerFiles.Count) $mdMarkerStr file(s) under: $InputPath" `
+        -ForegroundColor Cyan
       foreach ($mdMarkerFile in $mdMarkerFiles) {
         Write-Host ""
         try {
-          Copy-StreamDeckMarkerFile -InputFilePath $mdMarkerFile.FullName -RelativeOutPath $RelativeOutPath
+          Copy-StreamDeckMarkerFile -InputFilePath $mdMarkerFile.FullName `
+            -RelativeOutPath $RelativeOutPath
         } catch {
           Write-Host "  Failed: $($mdMarkerFile.FullName)" -ForegroundColor Red
           Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
@@ -76,16 +97,11 @@ function ConvertTo-StreamDeckTemplate {
     return
   }
 
-  $inputDirectory = Split-Path $InputPath -Parent
-  $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
+  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath -InputFilePath $InputPath `
+    -RelativeOutPath $RelativeOutPath
 
-  $vcsOutDirPath = if ($RelativeOutPath) {
-    Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
-  } else {
-    Join-Path $script:DefaultVcsOutPath $relativeDeckPath
-  }
-
-  ConvertTo-VcsTemplateFile -InputFilePath $InputPath -VcsOutDirPath $vcsOutDirPath -Rules $mappings
+  ConvertTo-VcsTemplateFile -InputFilePath $InputPath -VcsOutDirPath $vcsOutDirPath `
+    -Rules $mappings
 }
 
 function Copy-StreamDeckMarkerFile {
@@ -97,14 +113,8 @@ function Copy-StreamDeckMarkerFile {
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
 
-  $inputDirectory = Split-Path $InputPath -Parent
-  $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
-
-  $vcsOutDirPath = if ($RelativeOutPath) {
-    Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
-  } else {
-    Join-Path $script:DefaultVcsOutPath $relativeDeckPath
-  }
+  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath -InputFilePath $InputPath `
+    -RelativeOutPath $RelativeOutPath
 
   if (-not (Test-Path $vcsOutDirPath)) {
     New-Item -ItemType Directory -Path $vcsOutDirPath -Force | Out-Null
@@ -146,7 +156,8 @@ function ConvertFrom-StreamDeckTemplate {
       Write-Host "No *.vcs-template.json files found under: $InputPath" -ForegroundColor Yellow
       return
     }
-    Write-Host "Found $($templates.Count) *.vcs-template.json file(s) under: $InputPath" -ForegroundColor Cyan
+    Write-Host "Found $($templates.Count) *.vcs-template.json file(s) under: $InputPath" `
+      -ForegroundColor Cyan
     foreach ($template in $templates) {
       Write-Host ""
       try {

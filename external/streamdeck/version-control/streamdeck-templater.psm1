@@ -355,7 +355,7 @@ function Initialize-StreamDeckMarkerFile {
     }
   }
 
-  return @{ WasSeeded = $wasSeeded; Path = $markerPath }
+  return @{ WasSeeded = $wasSeeded; Path = $markerPath; IsUnexpected = ($marker["name"] -eq "unexpected") }
 }
 
 function Get-StreamDeckVcsOutDirPath {
@@ -493,6 +493,8 @@ function ConvertTo-StreamDeckTemplate {
       return
     }
 
+    $unexpectedPaths = @()
+
     if (-not $SkipSeeding) {
       $seededPaths = @()
       New-MissingStreamDeckMarkers -Manifests $manifests | Out-Null
@@ -504,6 +506,9 @@ function ConvertTo-StreamDeckTemplate {
           $initResult = Initialize-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName
           if ($initResult.WasSeeded) {
             $seededPaths += $initResult.Path
+          }
+          if ($initResult.IsUnexpected) {
+            $unexpectedPaths += $initResult.Path
           }
         } catch {
           Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
@@ -521,6 +526,11 @@ function ConvertTo-StreamDeckTemplate {
         Write-Host "Seeded $($seededPaths.Count) new marker template(s) — add desc if needed." `
           -ForegroundColor Yellow
         $seededPaths | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+
+        if ($unexpectedPaths.Count -gt 0) {
+          Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
+          $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
+        }
         return
       }
     }
@@ -545,6 +555,11 @@ function ConvertTo-StreamDeckTemplate {
         Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
         Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
       }
+    }
+
+    if ($unexpectedPaths.Count -gt 0) {
+      Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
+      $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
     }
 
     return

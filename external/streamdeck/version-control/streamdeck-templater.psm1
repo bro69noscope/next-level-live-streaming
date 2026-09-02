@@ -43,90 +43,6 @@ function Find-StreamDeckDeviceRoot {
   return $StartDirectory
 }
 
-function Get-StreamDeckAncestorChain {
-  param(
-    [Parameter(Mandatory=$true)][string]$MarkerDirectory
-  )
-
-  $deviceRoot = Find-StreamDeckDeviceRoot -StartDirectory $MarkerDirectory
-  $allManifests = Get-ChildItem $deviceRoot -Recurse -File -Filter $manifestStr
-
-  $chain = @()
-  $currentGuid = Split-Path $MarkerDirectory -Leaf
-  $parentDirectory = Split-Path $MarkerDirectory -Parent
-
-  while ($true) {
-    $foundParentGuid = $null
-
-    foreach ($candidate in $allManifests) {
-      $manifest = Get-Content $candidate.FullName -Raw | ConvertFrom-Json -AsHashtable
-      if (-not $manifest.ContainsKey("Controllers")) {
-        continue
-      }
-
-      foreach ($controller in $manifest["Controllers"]) {
-        if (-not $controller.ContainsKey("Actions") -or $null -eq $controller["Actions"]) {
-          continue
-        }
-        foreach ($actionKey in $controller["Actions"].Keys) {
-          $action = $controller["Actions"][$actionKey]
-          $settings = $action["Settings"]
-
-          if ($settings `
-              -and $settings.ContainsKey("ProfileUUID") `
-              -and $settings["ProfileUUID"] -eq $currentGuid) {
-            $foundParentGuid = Split-Path (Split-Path $candidate.FullName -Parent) -Leaf
-          }
-        }
-      }
-
-      if ($foundParentGuid) {
-        break
-      }
-    }
-
-    if (-not $foundParentGuid) {
-      break
-    }
-
-    $parentFolder = Join-Path $parentDirectory $foundParentGuid
-    $parentResolved = Resolve-StreamDeckMarkerName -MarkerDirectory $parentFolder
-
-    if (-not $parentResolved -or -not $parentResolved.Name) {
-      break
-    }
-
-    if ($parentResolved.Type -eq "home" -or $parentResolved.Type -eq "profile-page") {
-      break
-    }
-
-    $chain += $parentResolved.Name
-    $currentGuid = $foundParentGuid
-  }
-
-  return $chain
-}
-
-function New-MissingStreamDeckMarkers {
-  param([Parameter(Mandatory=$true)][array]$Manifests)
-
-  $createdPaths = @()
-
-  foreach ($manifestFile in $Manifests) {
-    $folder = Split-Path $manifestFile.FullName -Parent
-    $existingMarkers = Get-ChildItem $folder -File -Filter $jsonMarkerStr
-
-    if (-not $existingMarkers) {
-      $newMarkerPath = Join-Path $folder "-marker.json"
-      New-Item -ItemType File -Path $newMarkerPath -Force | Out-Null
-      Write-Verbose "  Created missing marker: $newMarkerPath"
-      $createdPaths += $newMarkerPath
-    }
-  }
-
-  return $createdPaths
-}
-
 function Find-StreamDeckHomeManifest {
   param([Parameter(Mandatory=$true)][string]$StartDirectory)
 
@@ -245,6 +161,70 @@ function Resolve-StreamDeckMarkerName {
   return $null
 }
 
+function Get-StreamDeckAncestorChain {
+  param(
+    [Parameter(Mandatory=$true)][string]$MarkerDirectory
+  )
+
+  $deviceRoot = Find-StreamDeckDeviceRoot -StartDirectory $MarkerDirectory
+  $allManifests = Get-ChildItem $deviceRoot -Recurse -File -Filter $manifestStr
+
+  $chain = @()
+  $currentGuid = Split-Path $MarkerDirectory -Leaf
+  $parentDirectory = Split-Path $MarkerDirectory -Parent
+
+  while ($true) {
+    $foundParentGuid = $null
+
+    foreach ($candidate in $allManifests) {
+      $manifest = Get-Content $candidate.FullName -Raw | ConvertFrom-Json -AsHashtable
+      if (-not $manifest.ContainsKey("Controllers")) {
+        continue
+      }
+
+      foreach ($controller in $manifest["Controllers"]) {
+        if (-not $controller.ContainsKey("Actions") -or $null -eq $controller["Actions"]) {
+          continue
+        }
+        foreach ($actionKey in $controller["Actions"].Keys) {
+          $action = $controller["Actions"][$actionKey]
+          $settings = $action["Settings"]
+
+          if ($settings `
+              -and $settings.ContainsKey("ProfileUUID") `
+              -and $settings["ProfileUUID"] -eq $currentGuid) {
+            $foundParentGuid = Split-Path (Split-Path $candidate.FullName -Parent) -Leaf
+          }
+        }
+      }
+
+      if ($foundParentGuid) {
+        break
+      }
+    }
+
+    if (-not $foundParentGuid) {
+      break
+    }
+
+    $parentFolder = Join-Path $parentDirectory $foundParentGuid
+    $parentResolved = Resolve-StreamDeckMarkerName -MarkerDirectory $parentFolder
+
+    if (-not $parentResolved -or -not $parentResolved.Name) {
+      break
+    }
+
+    if ($parentResolved.Type -eq "home" -or $parentResolved.Type -eq "profile-page") {
+      break
+    }
+
+    $chain += $parentResolved.Name
+    $currentGuid = $foundParentGuid
+  }
+
+  return $chain
+}
+
 function Get-StreamDeckMarkerFileName {
   param(
     [Parameter(Mandatory=$true)][string]$Name,
@@ -265,6 +245,26 @@ function Get-StreamDeckMarkerFileName {
   }
 
   return "$Name--$Type-marker.json"
+}
+
+function New-MissingStreamDeckMarkers {
+  param([Parameter(Mandatory=$true)][array]$Manifests)
+
+  $createdPaths = @()
+
+  foreach ($manifestFile in $Manifests) {
+    $folder = Split-Path $manifestFile.FullName -Parent
+    $existingMarkers = Get-ChildItem $folder -File -Filter $jsonMarkerStr
+
+    if (-not $existingMarkers) {
+      $newMarkerPath = Join-Path $folder "-marker.json"
+      New-Item -ItemType File -Path $newMarkerPath -Force | Out-Null
+      Write-Verbose "  Created missing marker: $newMarkerPath"
+      $createdPaths += $newMarkerPath
+    }
+  }
+
+  return $createdPaths
 }
 
 function Initialize-StreamDeckMarkerFile {
@@ -358,7 +358,6 @@ function Initialize-StreamDeckMarkerFile {
   return @{ WasSeeded = $wasSeeded; Path = $markerPath }
 }
 
-
 function Get-StreamDeckVcsOutDirPath {
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
@@ -372,89 +371,6 @@ function Get-StreamDeckVcsOutDirPath {
     return Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
   }
   return Join-Path $script:DefaultVcsOutPath $relativeDeckPath
-}
-
-function ConvertTo-StreamDeckTemplate {
-  [CmdletBinding()]
-  param(
-    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
-    [Parameter(Mandatory=$false)] [string]$RelativeOutPath,
-    [Parameter(Mandatory=$false)] [switch]$SkipSeeding
-  )
-
-  $InputPath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
-
-  if (Test-Path $InputPath -PathType Container) {
-    $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
-
-    if (-not $manifests) {
-      Write-Host "No $manifestStr files found under: $InputPath" -ForegroundColor Yellow
-      return
-    }
-
-    if (-not $SkipSeeding) {
-      $seededPaths = @()
-      New-MissingStreamDeckMarkers -Manifests $manifests | Out-Null
-      $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
-
-      Write-Verbose "Found $($jsonMarkerFiles.Count) $jsonMarkerStr file(s) under: $InputPath"
-      foreach ($jsonMarkerFile in $jsonMarkerFiles) {
-        try {
-          $initResult = Initialize-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName
-          if ($initResult.WasSeeded) {
-            $seededPaths += $initResult.Path
-          }
-        } catch {
-          Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
-          Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
-        }
-      }
-
-      if ($seededPaths.Count -gt 0) {
-        ConvertTo-StreamDeckTemplate `
-          -InputFilePath $InputPath `
-          -RelativeOutPath $RelativeOutPath `
-          -SkipSeeding
-
-        Write-Host ""
-        Write-Host "Seeded $($seededPaths.Count) new marker template(s) — add desc if needed." `
-          -ForegroundColor Yellow
-        $seededPaths | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
-        return
-      }
-    }
-
-    Write-Verbose "Found $($manifests.Count) $manifestStr file(s) under: $InputPath"
-    foreach ($manifest in $manifests) {
-      try {
-        ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
-          -RelativeOutPath $RelativeOutPath
-      } catch {
-        Write-Host "  Failed: $($manifest.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
-      }
-    }
-
-    $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
-    foreach ($jsonMarkerFile in $jsonMarkerFiles) {
-      try {
-        Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
-          -RelativeOutPath $RelativeOutPath
-      } catch {
-        Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
-      }
-    }
-
-    return
-  }
-
-  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath -InputFilePath $InputPath `
-    -RelativeOutPath $RelativeOutPath
-
-  ConvertTo-VcsTemplateFile -InputFilePath $InputPath -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings
 }
 
 function Copy-StreamDeckMarkerFile {
@@ -556,6 +472,89 @@ function Copy-StreamDeckMarkerFile {
   } else {
     Write-Verbose "  Marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
   }
+}
+
+function ConvertTo-StreamDeckTemplate {
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory=$true)]  [string]$InputFilePath,
+    [Parameter(Mandatory=$false)] [string]$RelativeOutPath,
+    [Parameter(Mandatory=$false)] [switch]$SkipSeeding
+  )
+
+  $InputPath = (Resolve-Path $InputFilePath).Path
+  Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
+
+  if (Test-Path $InputPath -PathType Container) {
+    $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
+
+    if (-not $manifests) {
+      Write-Host "No $manifestStr files found under: $InputPath" -ForegroundColor Yellow
+      return
+    }
+
+    if (-not $SkipSeeding) {
+      $seededPaths = @()
+      New-MissingStreamDeckMarkers -Manifests $manifests | Out-Null
+      $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
+
+      Write-Verbose "Found $($jsonMarkerFiles.Count) $jsonMarkerStr file(s) under: $InputPath"
+      foreach ($jsonMarkerFile in $jsonMarkerFiles) {
+        try {
+          $initResult = Initialize-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName
+          if ($initResult.WasSeeded) {
+            $seededPaths += $initResult.Path
+          }
+        } catch {
+          Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
+          Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        }
+      }
+
+      if ($seededPaths.Count -gt 0) {
+        ConvertTo-StreamDeckTemplate `
+          -InputFilePath $InputPath `
+          -RelativeOutPath $RelativeOutPath `
+          -SkipSeeding
+
+        Write-Host ""
+        Write-Host "Seeded $($seededPaths.Count) new marker template(s) — add desc if needed." `
+          -ForegroundColor Yellow
+        $seededPaths | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+        return
+      }
+    }
+
+    Write-Verbose "Found $($manifests.Count) $manifestStr file(s) under: $InputPath"
+    foreach ($manifest in $manifests) {
+      try {
+        ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
+          -RelativeOutPath $RelativeOutPath
+      } catch {
+        Write-Host "  Failed: $($manifest.FullName)" -ForegroundColor Red
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+      }
+    }
+
+    $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
+    foreach ($jsonMarkerFile in $jsonMarkerFiles) {
+      try {
+        Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
+          -RelativeOutPath $RelativeOutPath
+      } catch {
+        Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+      }
+    }
+
+    return
+  }
+
+  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath -InputFilePath $InputPath `
+    -RelativeOutPath $RelativeOutPath
+
+  ConvertTo-VcsTemplateFile -InputFilePath $InputPath -VcsOutDirPath $vcsOutDirPath `
+    -Rules $mappings
 }
 
 function ConvertFrom-StreamDeckTemplate {

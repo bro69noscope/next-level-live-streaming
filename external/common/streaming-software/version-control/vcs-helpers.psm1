@@ -5,6 +5,95 @@ try {
   throw
 }
 
+$script:VcsLogDirPath = $null
+$script:VcsMaxLogSizeBytes = 2MB
+$script:VcsVerboseEnabled = $false
+$Script:LogPrefix = "vcs-templater_"
+
+function Set-VcsVerbose {
+  param([switch]$Enabled)
+  $script:VcsVerboseEnabled = [bool]$Enabled
+}
+
+function Set-VcsLogDirPath {
+  param(
+    [Parameter(Mandatory=$true)][string]$LogDirPath
+  )
+  if ([string]::IsNullOrWhiteSpace($LogDirPath)) {
+    throw "LogDirPath cannot be null or empty."
+  }
+  if (-not [System.IO.Path]::IsPathRooted($LogDirPath)) {
+    throw "LogDirPath must be an absolute path, got: '$LogDirPath'"
+  }
+  try {
+    $resolved = [System.IO.Path]::GetFullPath($LogDirPath)
+  } catch {
+    throw "LogDirPath is not a valid path: '$LogDirPath'"
+  }
+
+  if (-not (Test-Path $resolved)) {
+    New-Item -ItemType Directory -Path $resolved -Force | Out-Null
+  }
+
+  $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+  $newLogFilePath = Join-Path $resolved "$LogPrefix$timestamp.log"
+
+  $existing = Get-ChildItem -Path $resolved -Filter "$LogPrefix*.log" `
+    -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+
+  if ($existing) {
+    Move-Item -Path $existing[0].FullName -Destination $newLogFilePath -Force
+    $existing | Select-Object -Skip 1 | Remove-Item -Force
+  }
+
+  if ((Test-Path $newLogFilePath) -and
+    (Get-Item $newLogFilePath).Length -gt $script:VcsMaxLogSizeBytes) {
+    $lines = Get-Content $newLogFilePath
+    $keepFrom = [Math]::Floor($lines.Count / 2)
+    $lines | Select-Object -Skip $keepFrom | Set-Content $newLogFilePath -Encoding UTF8
+  }
+
+  $script:VcsLogDirPath  = $resolved
+  $script:VcsLogFilePath = $newLogFilePath
+}
+
+function Remove-VcsOldLogFiles {
+  if (-not $script:VcsLogDirPath -or -not (Test-Path $script:VcsLogDirPath)) {
+    return
+  }
+  $logs = Get-ChildItem -Path $script:VcsLogDirPath -Filter "$LogPrefix*.log" |
+    Sort-Object LastWriteTime -Descending
+  if ($logs.Count -gt $script:VcsMaxLogFiles) {
+    $logs | Select-Object -Skip $script:VcsMaxLogFiles | Remove-Item -Force
+  }
+}
+
+function Write-VcsMessage {
+  param(
+    [Parameter(Mandatory=$true)] [AllowEmptyString()] [string]$Message,
+    [string]$Color,
+    [switch]$AsVerbose,
+    [switch]$NoLog
+  )
+  if ($AsVerbose) {
+    if ($script:VcsVerboseEnabled) {
+      Write-Host $Message -ForegroundColor DarkGray
+    }
+  } elseif ($Color) {
+    Write-Host $Message -ForegroundColor $Color
+  } else {
+    Write-Host $Message
+  }
+  if ($script:VcsLogFilePath -and -not $NoLog) {
+    try {
+      $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+      "[$timestamp] $Message" |
+        Add-Content -Path $script:VcsLogFilePath -Encoding UTF8
+    } catch {
+      Write-Warning "VCS logging failed: $_"
+    }
+  }
+}
 
 function Assert-HelpersPaths {
   $helperPaths = @(
@@ -169,13 +258,13 @@ function Format-JsonWithPrettier {
   param([string]$FilePath)
 
   if (-not $Script:PrettierPath) {
-    Write-Host "Warning: Prettier path is not set. Skipping formatting." -ForegroundColor Yellow
+    Write-VcsMessage -Message "Warning: Prettier path is not set. Skipping formatting." -Color Yellow
     return
   }
 
   if (-not (Test-Path $script:PrettierPath)) {
-    Write-Host "Warning: Prettier not found at $script:PrettierPath. Skipping formatting." `
-      -ForegroundColor Yellow
+    Write-VcsMessage -Message "Warning: Prettier not found at $script:PrettierPath. Skipping formatting." `
+      -Color Yellow
     return
   }
 
@@ -201,9 +290,9 @@ function Assert-InputPath {
   }
 
   if (-not $valid) {
-    Write-Host "This function must target files under:" -ForegroundColor Red
-    $Roots.Path | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-    Write-Host "Current target: $Path" -ForegroundColor Red
+    Write-VcsMessage -Message "This function must target files under:" -Color Red
+    $Roots.Path | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Red }
+    Write-VcsMessage -Message "Current target: $Path" -Color Red
     Write-ThrowContext
     throw "Invalid target path: $Path"
   }
@@ -267,9 +356,9 @@ function Get-VcsRelativePath {
     }
   }
 
-  Write-Host "Expected config locations:" -ForegroundColor Red
+  Write-VcsMessage -Message "Expected config locations:" -Color Red
   foreach ($marker in $Markers) {
-    Write-Host "  <root>\$marker\..." -ForegroundColor Red
+    Write-VcsMessage -Message "  <root>\$marker\..." -Color Red
   }
   throw (
     "Unexpected $AppName config location: $relative"
@@ -302,15 +391,17 @@ function Invoke-ScopedReplace {
           # Numeric rule values require an exact match even if the target
           # happens to be quoted — never a substring match on digits.
           if ($inner -eq $SearchValue) {
-            Write-Host "  Replaced ($Key): `"$SearchValue`" -> `"$Token`"" -ForegroundColor DarkCyan
+            Write-VcsMessage -Message "  Replaced ($Key): `"$SearchValue`" -> `"$Token`"" `
+              -Color DarkCyan
             return $prefix + "`"$Token`""
           }
         } elseif ($inner.Contains($SearchValue)) {
-          Write-Host "  Replaced ($Key): $SearchValue -> $Token in $val" -ForegroundColor DarkCyan
+          Write-VcsMessage -Message "  Replaced ($Key): $SearchValue -> $Token in $val" `
+            -Color DarkCyan
           return $prefix + "`"$($inner.Replace($SearchValue, $Token))`""
         }
       } elseif ($val -eq $SearchValue) {
-        Write-Host "  Replaced ($Key): $SearchValue -> `"$Token`"" -ForegroundColor DarkCyan
+        Write-VcsMessage -Message "  Replaced ($Key): $SearchValue -> `"$Token`"" -Color DarkCyan
         return $prefix + "`"$Token`""
       }
 
@@ -331,19 +422,18 @@ function Invoke-ScopedRestore {
     $quotedToken = "`"$Token`""
     if ($Content.Contains($quotedToken)) {
       $Content = $Content.Replace($quotedToken, $Value)
-      Write-Host "  Replaced: $quotedToken -> $Value" -ForegroundColor DarkCyan
+      Write-VcsMessage -Message "  Replaced: $quotedToken -> $Value" -Color DarkCyan
     }
   } elseif ($Content.Contains($Token)) {
     $escapedValue = ($Value | ConvertTo-Json -Compress).Trim('"')
     $Content = $Content.Replace($Token, $escapedValue)
-    Write-Host "  Replaced: $Token -> $Value" -ForegroundColor DarkCyan
+    Write-VcsMessage -Message "  Replaced: $Token -> $Value" -Color DarkCyan
   }
 
   return $Content
 }
 
 function ConvertTo-VcsTemplateFile {
-  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
     [Parameter(Mandatory=$true)] [string]$VcsOutDirPath,
@@ -361,13 +451,13 @@ function ConvertTo-VcsTemplateFile {
   $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
   $vcsOutFilePath   = Join-Path $VcsOutDirPath $templateFileName
 
-  Write-Verbose "Creating vcs template from real config..."
-  Write-Verbose "Input:  $InputFilePath"
-  Write-Verbose "Output: $vcsOutFilePath"
+  Write-VcsMessage -Message "Creating vcs template from real config..." -AsVerbose
+  Write-VcsMessage -Message "Input:  $InputFilePath" -AsVerbose
+  Write-VcsMessage -Message "Output: $vcsOutFilePath" -AsVerbose
 
   if (-not (Test-Path $VcsOutDirPath)) {
     New-Item -ItemType Directory -Path $VcsOutDirPath -Force | Out-Null
-    Write-Host "Created VCS directory: $VcsOutDirPath" -ForegroundColor Yellow
+    Write-VcsMessage -Message "Created VCS directory: $VcsOutDirPath" -Color Yellow
   }
 
   $symlinkPath = Join-Path $inputDirectory $templateFileName
@@ -393,7 +483,7 @@ function ConvertTo-VcsTemplateFile {
       foreach ($variant in $variants) {
         if ($content.Contains($variant)) {
           $content = $content.Replace($variant, $rule.Token)
-          Write-Host "  Replaced: $variant -> $($rule.Token)" -ForegroundColor DarkCyan
+          Write-VcsMessage -Message "  Replaced: $variant -> $($rule.Token)" -Color DarkCyan
         }
       }
     }
@@ -401,7 +491,7 @@ function ConvertTo-VcsTemplateFile {
 
   $content | Set-Content $vcsOutFilePath -Encoding UTF8
   Format-JsonWithPrettier -FilePath $vcsOutFilePath
-  Write-Verbose "Template saved: $vcsOutFilePath"
+  Write-VcsMessage -Message "Template saved: $vcsOutFilePath" -AsVerbose
 
   New-Item `
     -ItemType SymbolicLink `
@@ -410,7 +500,6 @@ function ConvertTo-VcsTemplateFile {
 }
 
 function ConvertFrom-VcsTemplateFile {
-  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$true)]  [array]$Rules,
@@ -426,14 +515,14 @@ function ConvertFrom-VcsTemplateFile {
 
   $outFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
 
-  Write-Verbose "Restoring real config from template..."
-  Write-Verbose "Input:  $InputFilePath"
-  Write-Verbose "Output: $outFilePath"
+  Write-VcsMessage -Message "Restoring real config from template..." -AsVerbose
+  Write-VcsMessage -Message "Input:  $InputFilePath" -AsVerbose
+  Write-VcsMessage -Message "Output: $outFilePath" -AsVerbose
 
   if ($Backup -and (Test-Path $outFilePath)) {
     $backupPath = "$outFilePath.bak"
     Copy-Item $outFilePath $backupPath -Force
-    Write-Host "Backup saved: $backupPath" -ForegroundColor Magenta
+    Write-VcsMessage -Message "Backup saved: $backupPath" -Color Magenta
   }
 
   $content = Get-Content $InputFilePath -Raw
@@ -445,13 +534,13 @@ function ConvertFrom-VcsTemplateFile {
   $unresolvedMatches = [regex]::Matches($content, '\{\{[A-Z0-9_]+\}\}') |
     Select-Object -ExpandProperty Value -Unique
   foreach ($unresolved in $unresolvedMatches) {
-    Write-Host "Warning: No mapping found for token $unresolved — left as-is" `
-      -ForegroundColor Yellow
+    Write-VcsMessage -Message "Warning: No mapping found for token $unresolved — left as-is" `
+      -Color Yellow
   }
 
   $content | Set-Content $outFilePath -Encoding UTF8
   Format-JsonWithPrettier -FilePath $outFilePath
-  Write-Verbose "Real config saved: $outFilePath"
+  Write-VcsMessage -Message "Real config saved: $outFilePath" -Verbose
 
   return $outFilePath
 }
@@ -462,7 +551,28 @@ $FunctionsToExport = @(
   "ConvertFrom-VcsTemplateFile"
   "Get-VcsRelativePath"
   "Assert-InputPath"
+  "Set-VcsLogDirPath"
+  "Write-VcsMessage"
+  "Set-VcsVerbose"
 )
 
 Assert-HelpersPaths
 Export-ModuleMember -Function $FunctionsToExport
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

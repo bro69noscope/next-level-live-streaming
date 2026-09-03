@@ -167,7 +167,13 @@ function Invoke-VcsTemplating {
 Write-Host ""
 Write-Host "VCS Orchestrator functions loaded" -ForegroundColor Green
 write-Host "Usage:" -ForegroundColor Cyan
-write-Host "  Invoke-VcsTemplating -Direction To [-SkipPortsGeneration]   # Regenerates ports and converts to vcs-template.json"
-write-Host "  Invoke-VcsTemplating -Direction From [-Backup]              # Converts from vcs-template.json to original files"
-Write-Host "  Invoke-PortsGeneration [-PythonExe <path>]                  # Regenerates scoped port mappings from ports.json5"
+Write-Host ("  Invoke-VcsTemplating -Direction To [-SkipPortsGeneration]   " `
+    + "# Regenerates ports and converts to vcs-template.json")
+
+Write-Host ("  Invoke-VcsTemplating -Direction From [-Backup]              " `
+    + "# Converts from vcs-template.json to original files")
+
+Write-Host ("  Invoke-PortsGeneration [-PythonExe <path>]                  " `
+    + "# Regenerates scoped port mappings from ports.json5")
+
 Export-ModuleMember -Function Invoke-VcsTemplating, Invoke-PortsGeneration

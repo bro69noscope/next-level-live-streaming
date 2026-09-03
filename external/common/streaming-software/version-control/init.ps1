@@ -9,7 +9,7 @@ if (-not (Test-Path $VcsHelpersModulePath)) {
 }
 
 try {
-  Import-Module $VcsHelpersModulePath -Force -ErrorAction Stop
+  Import-Module $VcsHelpersModulePath -Global -ErrorAction Stop
 } catch {
   Write-Host "Failed to load VCS helpers module: $($_.Exception.Message)" -ForegroundColor Red
   throw

@@ -8,7 +8,7 @@ if (-not $Global:RepoPath) {
 try {
   . "$PSScriptRoot\dotsource-obs-paths.ps1"
 } catch {
-  Write-Host "Failed to load OBS paths: $($_.Exception.Message)" -ForegroundColor Red
+  Write-VcsMessage -Message "Failed to load OBS paths: $($_.Exception.Message)" -Color Red
   throw
 }
 
@@ -89,7 +89,8 @@ function ConvertTo-ObsTemplate {
     [string]$InputFilePath
   )
 
-  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $obsRoots
@@ -102,19 +103,20 @@ function ConvertTo-ObsTemplate {
       }
 
     if (-not $candidates) {
-      Write-Host "No matching .json files found under: $InputPath" -ForegroundColor Yellow
-      Write-Host "  (must live under one of: $($script:ObsMarkers -join ', '))" -ForegroundColor Yellow
+      Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
+      Write-VcsMessage -Message "  (must live under one of: $($script:ObsMarkers -join ', '))" `
+        -Color Yellow
       return
     }
 
-    Write-Verbose "Found $($candidates.Count) matching .json file(s) under: $InputPath"
+    Write-VcsMessage -AsVerbose -Message ("Found $($candidates.Count) matching .json file(s) " `
+        + "under: $InputPath")
     foreach ($candidate in $candidates) {
-      Write-Host ""
       try {
         ConvertTo-ObsTemplate -InputFilePath $candidate.FullName
       } catch {
-        Write-Host "  Failed: $($candidate.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($candidate.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
     return
@@ -132,8 +134,7 @@ function ConvertTo-ObsTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputPath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings `
-    @verboseSplat
+    -Rules $mappings
 }
 
 function ConvertFrom-ObsTemplate {
@@ -145,7 +146,8 @@ function ConvertFrom-ObsTemplate {
     [switch]$Backup
   )
 
-  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $obsRoots
@@ -155,20 +157,21 @@ function ConvertFrom-ObsTemplate {
       Where-Object { Test-ObsMarkerPath -Path $_.FullName }
 
     if (-not $templates) {
-      Write-Host "No matching *.vcs-template.json files found under: $InputPath" -ForegroundColor Yellow
+      Write-VcsMessage -Message "No matching *.vcs-template.json files found under: $InputPath" `
+        -Color Yellow
       return
     }
 
-    Write-Verbose "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputPath"
+    Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) matching " `
+        + "*.vcs-template.json file(s) under: $InputPath")
     foreach ($template in $templates) {
-      Write-Host ""
       try {
         ConvertFrom-ObsTemplate `
           -InputFilePath $template.FullName `
           -Backup:$Backup
       } catch {
-        Write-Host "  Failed: $($template.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
     return
@@ -177,31 +180,42 @@ function ConvertFrom-ObsTemplate {
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `
-    -Backup:$Backup `
-    @verboseSplat
+    -Backup:$Backup
 }
 
-Write-Host ""
-Write-Host "OBS Templater: " -ForegroundColor Yellow
+Write-VcsMessage -NoLog -Message ""
+Write-VcsMessage -Message "OBS Templater:" -Color Yellow
 
-Write-Verbose "Mappings:" 
+Write-VcsMessage -AsVerbose -Message "Mappings:"
 $mappings | ForEach-Object {
   $scope = if ($_.Key) {
     "[$($_.Key)] "
   } else {
     ""
   }
-  Write-Verbose "  $scope$($_.Token) => $($_.Value)"
+  Write-VcsMessage -AsVerbose -Message "  $scope$($_.Token) => $($_.Value)"
 }
 
-Write-Host "Script location:" -ForegroundColor Cyan
-Write-Host "  $PSScriptRoot"
+Write-VcsMessage -NoLog -Message "Script location:" -Color Cyan
+Write-VcsMessage -NoLog -Message "  $PSScriptRoot"
 
-Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  All input files must be under:`n$($obsRoots.Path -join "`n")"
-Write-Host "  ConvertTo-ObsTemplate 'scenes.json'                # Creates vcs-template.json"
-Write-Host "  ConvertFrom-ObsTemplate 'scenes.vcs-template.json' # Creates scenes.json"
+Write-VcsMessage -NoLog -Message "Usage:" -Color Cyan
+Write-VcsMessage -NoLog -Message ("  All input files must be under:`n$(
+  $obsRoots.Path -join "`n"
+)")
+
+Write-VcsMessage -NoLog -Message ("  ConvertTo-ObsTemplate 'scenes.json'                         " `
+    + "       # Creates vcs-template.json")
+
+Write-VcsMessage -NoLog -Message ("  ConvertTo-ObsTemplate 'folder' (or '.')                     " `
+    + "       # Recursively creates vcs-template.json for every matching .json under folder")
+
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-ObsTemplate 'scenes.vcs-template.json'          " `
+    + "       # Creates scenes.json")
+
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-ObsTemplate 'folder' (or '.')                   " `
+    + "       # Recursively restores every matching *.vcs-template.json under folder")
 
 Export-ModuleMember -Function ConvertTo-ObsTemplate, ConvertFrom-ObsTemplate
-Write-Host "OBS Templater functions loaded!" -ForegroundColor Green
+Write-VcsMessage -NoLog -Message "OBS Templater functions loaded!" -Color Green
 

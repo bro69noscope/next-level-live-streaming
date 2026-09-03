@@ -7,8 +7,11 @@ function Import-StreamingTemplatesModules {
       $Global:RepoPath = Find-RepoRoot -StartPath $PSScriptRoot
     }
 
-    $repo = $RepoPath.TrimEnd('\')
+    Import-Module (Join-Path $PSScriptRoot "vcs-helpers.psm1") -Force -Global -ErrorAction Stop
+    Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+    Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
+    $repo = $RepoPath.TrimEnd('\')
     $modules = [ordered]@{
       OBS = Join-Path $repo `
         "external\obs\version-control\obs-templater.psm1"

@@ -8,7 +8,7 @@ if (-not $Global:RepoPath) {
 try {
   . "$PSScriptRoot\dotsource-streamdeck-paths.ps1"
 } catch {
-  Write-Host "Failed to load StreamDeck paths: $($_.Exception.Message)" -ForegroundColor Red
+  Write-VcsMessage -Message "Failed to load StreamDeck paths: $($_.Exception.Message)" -Color Red
   throw
 }
 
@@ -259,7 +259,7 @@ function New-MissingStreamDeckMarkers {
     if (-not $existingMarkers) {
       $newMarkerPath = Join-Path $folder "-marker.json"
       New-Item -ItemType File -Path $newMarkerPath -Force | Out-Null
-      Write-Verbose "  Created missing marker: $newMarkerPath"
+      Write-VcsMessage -AsVerbose -Message "  Created missing marker: $newMarkerPath"
       $createdPaths += $newMarkerPath
     }
   }
@@ -329,9 +329,9 @@ function Initialize-StreamDeckMarkerFile {
   $marker | ConvertTo-Json | Set-Content $markerPath -Encoding UTF8
 
   if ($wasSeeded) {
-    Write-Verbose "  Seeded marker template: $markerPath"
+    Write-VcsMessage -AsVerbose -Message "  Seeded marker template: $markerPath"
   } else {
-    Write-Verbose "  Updated marker fields: $markerPath"
+    Write-VcsMessage -AsVerbose -Message "  Updated marker fields: $markerPath"
   }
 
   if ($marker["name"] -and $marker["type"]) {
@@ -341,21 +341,25 @@ function Initialize-StreamDeckMarkerFile {
 
       if ($expectedPath -ne $markerPath) {
         if (Test-Path $expectedPath) {
-          Write-Host "  Cannot rename marker — target already exists: $expectedPath" `
-            -ForegroundColor Red
+          Write-VcsMessage -Message "  Cannot rename marker — target already exists: $expectedPath" `
+            -Color Red
         } else {
           Rename-Item -Path $markerPath -NewName $expectedFileName
-          Write-Host "  Renamed marker to: $expectedPath" -ForegroundColor Cyan
+          Write-VcsMessage -Message "  Renamed marker to: $expectedPath" -Color Cyan
           $markerPath = $expectedPath
         }
       }
     } catch {
-      Write-Host "  Could not rename marker file: $($_.Exception.Message)" `
-        -ForegroundColor Red
+      Write-VcsMessage -Message "  Could not rename marker file: $($_.Exception.Message)" `
+        -Color Red
     }
   }
 
-  return @{ WasSeeded = $wasSeeded; Path = $markerPath; IsUnexpected = ($marker["name"] -eq "unexpected") }
+  return @{
+    WasSeeded = $wasSeeded;
+    Path = $markerPath;
+    IsUnexpected = ($marker["name"] -eq ` "unexpected")
+  }
 }
 
 function Get-StreamDeckVcsOutDirPath {
@@ -456,21 +460,22 @@ function Copy-StreamDeckMarkerFile {
   $truncatedFlag = $newFlag.Substring(0, 6) + "..."
 
   if ($isHome) {
-    Write-Host "  Marker copied, new vcs-flag ($truncatedFlag, home marker):" `
-      "$destPath" -ForegroundColor Magenta
+    Write-VcsMessage -Message ("  Marker copied, new vcs-flag ($truncatedFlag, home marker): " `
+        + "$destPath") -Color Magenta
   } elseif ($existingFlag -ne $newFlag) {
     $reason = if ($existingFlag) {
       "manifest changed"
     } else {
       "no previous flag"
     }
-    Write-Host "  Marker copied, new vcs-flag ($truncatedFlag, $reason): $destPath" `
-      -ForegroundColor Green
+    Write-VcsMessage -Message "  Marker copied, new vcs-flag ($truncatedFlag, $reason): $destPath" `
+      -Color Green
   } elseif ($metadataChanged) {
-    Write-Host "  Marker metadata updated, vcs-flag kept ($truncatedFlag): $destPath" `
-      -ForegroundColor Magenta
+    Write-VcsMessage -Message ("  Marker metadata updated, vcs-flag kept ($truncatedFlag): " `
+        + "$destPath") -Color Magenta
   } else {
-    Write-Verbose "  Marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
+    Write-VcsMessage -AsVerbose `
+      -Message "  Marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
   }
 }
 
@@ -482,7 +487,8 @@ function ConvertTo-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [switch]$SkipSeeding
   )
 
-  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
@@ -491,7 +497,7 @@ function ConvertTo-StreamDeckTemplate {
     $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
 
     if (-not $manifests) {
-      Write-Host "No $manifestStr files found under: $InputPath" -ForegroundColor Yellow
+      Write-VcsMessage -Message "No $manifestStr files found under: $InputPath" -Color Yellow
       return
     }
 
@@ -502,7 +508,8 @@ function ConvertTo-StreamDeckTemplate {
       New-MissingStreamDeckMarkers -Manifests $manifests | Out-Null
       $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
 
-      Write-Verbose "Found $($jsonMarkerFiles.Count) $jsonMarkerStr file(s) under: $InputPath"
+      Write-VcsMessage -AsVerbose -Message ("Found $($jsonMarkerFiles.Count) $jsonMarkerStr " `
+          + "file(s) under: $InputPath")
       foreach ($jsonMarkerFile in $jsonMarkerFiles) {
         try {
           $initResult = Initialize-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName
@@ -513,8 +520,8 @@ function ConvertTo-StreamDeckTemplate {
             $unexpectedPaths += $initResult.Path
           }
         } catch {
-          Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
-          Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+          Write-VcsMessage -Message "  Failed: $($jsonMarkerFile.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
         }
       }
 
@@ -524,10 +531,10 @@ function ConvertTo-StreamDeckTemplate {
           -RelativeOutPath $RelativeOutPath `
           -SkipSeeding
 
-        Write-Host ""
-        Write-Host "Seeded $($seededPaths.Count) new marker template(s) — add desc if needed." `
-          -ForegroundColor Yellow
-        $seededPaths | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+        Write-VcsMessage -Message ""
+        Write-VcsMessage -Message ("Seeded $($seededPaths.Count) new marker template(s) — " `
+            + "add desc if needed.") -Color Yellow
+        $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
 
         if ($unexpectedPaths.Count -gt 0) {
           Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
@@ -537,14 +544,16 @@ function ConvertTo-StreamDeckTemplate {
       }
     }
 
-    Write-Verbose "Found $($manifests.Count) $manifestStr file(s) under: $InputPath"
+    Write-VcsMessage -AsVerbose `
+      -Message "Found $($manifests.Count) $manifestStr file(s) under: $InputPath"
+
     foreach ($manifest in $manifests) {
       try {
         ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
           -RelativeOutPath $RelativeOutPath
       } catch {
-        Write-Host "  Failed: $($manifest.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($manifest.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
 
@@ -554,8 +563,8 @@ function ConvertTo-StreamDeckTemplate {
         Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
           -RelativeOutPath $RelativeOutPath
       } catch {
-        Write-Host "  Failed: $($jsonMarkerFile.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($jsonMarkerFile.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
 
@@ -574,8 +583,7 @@ function ConvertTo-StreamDeckTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputPath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings `
-    @verboseSplat
+    -Rules $mappings
 }
 
 function ConvertFrom-StreamDeckTemplate {
@@ -585,7 +593,8 @@ function ConvertFrom-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [switch]$Backup
   )
 
-  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
@@ -593,19 +602,20 @@ function ConvertFrom-StreamDeckTemplate {
   if (Test-Path $InputPath -PathType Container) {
     $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json"
     if (-not $templates) {
-      Write-Host "No *.vcs-template.json files found under: $InputPath" -ForegroundColor Yellow
+      Write-VcsMessage -Message "No *.vcs-template.json files found under: $InputPath" `
+        -Color Yellow
       return
     }
-    Write-Verbose "Found $($templates.Count) *.vcs-template.json file(s) under: $InputPath"
+    Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) *.vcs-template.json " `
+        + "file(s) under: $InputPath")
     foreach ($template in $templates) {
       try {
         ConvertFrom-StreamDeckTemplate `
           -InputFilePath $template.FullName `
-          -Backup:$Backup `
-          @verboseSplat
+          -Backup:$Backup
       } catch {
-        Write-Host "  Failed: $($template.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
     return
@@ -615,35 +625,43 @@ function ConvertFrom-StreamDeckTemplate {
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `
-    -Backup:$Backup `
-    @verboseSplat
+    -Backup:$Backup
 }
 
-Write-Host ""
-Write-Host "StreamDeck Templater:" -ForegroundColor Yellow
+Write-VcsMessage -NoLog -Message ""
+Write-VcsMessage -Message "StreamDeck Templater:" -Color Yellow
 
-Write-Verbose "Mappings:"
+Write-VcsMessage -AsVerbose -Message "Mappings:"
 $mappings | ForEach-Object {
   $scope = if ($_.Key) {
     "[$($_.Key)] "
   } else {
     ""
   }
-  Write-Verbose "  $scope$($_.Token) => $($_.Value)"
+  Write-VcsMessage -AsVerbose -Message "  $scope$($_.Token) => $($_.Value)"
 }
 
-Write-Host "Script location:" -ForegroundColor Cyan
-Write-Host "  $PSScriptRoot"
+Write-VcsMessage -NoLog -Message "Script location:" -Color Cyan
+Write-VcsMessage -NoLog -Message "  $PSScriptRoot"
 
-Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  All input files must be under: $script:SdeckBasePath"
-Write-Host "  Default VCS outPath: $script:DefaultVcsOutPath"
-Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json'                     # Creates vcs-template.json"
-Write-Host "  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'       # Uses custom out path relative to this script location"
-Write-Host "  ConvertTo-StreamDeckTemplate 'folder'                            # Recursively creates vcs-template.json for every manifest.json under folder"
-Write-Host "  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json'      # Creates manifest.json"
-Write-Host "  ConvertFrom-StreamDeckTemplate 'folder'                          # Recursively restores every *.vcs-template.json under folder"
+Write-VcsMessage -NoLog -Message "Usage:" -Color Cyan
+Write-VcsMessage -NoLog -Message "  All input files must be under: $script:SdeckBasePath"
+
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'manifest.json'                " `
+    + "       # Creates vcs-template.json")
+
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'  " `
+    + "       # Uses custom out path relative to this script location")
+
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'folder' (or '.')              " `
+    + "       # Recursively creates vcs-template.json for every manifest.json under folder")
+
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json' " `
+    + "       # Creates manifest.json")
+
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamDeckTemplate 'folder' (or '.')            " `
+    + "       # Recursively restores every *.vcs-template.json under folder")
 
 Export-ModuleMember -Function ConvertTo-StreamDeckTemplate, ConvertFrom-StreamDeckTemplate
-Write-Host "StreamDeck Templater functions loaded!" -ForegroundColor Green
+Write-VcsMessage -NoLog -Message "StreamDeck Templater functions loaded!" -Color Green
 

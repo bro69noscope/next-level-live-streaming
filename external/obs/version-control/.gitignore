@@ -2,3 +2,4 @@ obs-vcs-mappings*.jsonc
 !obs-vcs-mappings.bro.jsonc
 obs-vcs-paths*.ps1
 !obs-vcs-paths.bro.ps1
+log/

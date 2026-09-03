@@ -1,5 +1,4 @@
 function Test-StreamerbotDllSymlinks {
-  [CmdletBinding()]
   param(
     [Parameter(Mandatory = $true, ValueFromPipeline)]
     [string[]]$Path

@@ -8,7 +8,7 @@ if (-not $Global:RepoPath) {
 try {
   . "$PSScriptRoot\dotsource-streamerbot-paths.ps1"
 } catch {
-  Write-Host "Failed to load Streamer.bot paths: $($_.Exception.Message)" -ForegroundColor Red
+  Write-VcsMessage -Message "Failed to load Streamer.bot paths: $($_.Exception.Message)" -Color Red
   throw
 }
 
@@ -56,7 +56,8 @@ function ConvertTo-StreamerbotTemplate {
     [Parameter(Mandatory=$true)]  [string]$InputFilePath
   )
 
-  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $streamerbotRoots
@@ -69,19 +70,20 @@ function ConvertTo-StreamerbotTemplate {
       }
 
     if (-not $candidates) {
-      Write-Host "No matching .json files found under: $InputPath" -ForegroundColor Yellow
-      Write-Host "  (must live under one of: $($script:SbotMarkers -join ', '))" -ForegroundColor Yellow
+      Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
+      Write-VcsMessage -Message "  (must live under one of: $($script:SbotMarkers -join ', '))" `
+        -Color Yellow
       return
     }
 
-    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputPath"
+    Write-VcsMessage -Message "Found $($candidates.Count) matching .json file(s) under: $InputPath"
     foreach ($candidate in $candidates) {
-      Write-Host ""
+      Write-VcsMessage -Message ""
       try {
         ConvertTo-StreamerbotTemplate -InputFilePath $candidate.FullName
       } catch {
-        Write-Host "  Failed: $($candidate.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($candidate.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
     return
@@ -99,8 +101,7 @@ function ConvertTo-StreamerbotTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputPath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings `
-    @verboseSplat
+    -Rules $mappings
 }
 
 function ConvertFrom-StreamerbotTemplate {
@@ -112,7 +113,8 @@ function ConvertFrom-StreamerbotTemplate {
     [switch]$Backup
   )
 
-  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $streamerbotRoots
@@ -122,20 +124,22 @@ function ConvertFrom-StreamerbotTemplate {
       Where-Object { Test-StreamerbotMarkerPath -Path $_.FullName }
 
     if (-not $templates) {
-      Write-Host "No matching *.vcs-template.json files found under: $InputPath" -ForegroundColor Yellow
+      Write-VcsMessage -Message "No matching *.vcs-template.json files found under: $InputPath" `
+        -Color Yellow
       return
     }
 
-    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputPath"
+    Write-VcsMessage -Message ("Found $($templates.Count) matching *.vcs-template.json file(s) " `
+        + "under: $InputPath")
     foreach ($template in $templates) {
-      Write-Host ""
+      Write-VcsMessage -Message ""
       try {
         ConvertFrom-StreamerbotTemplate `
           -InputFilePath $template.FullName `
           -Backup:$Backup
       } catch {
-        Write-Host "  Failed: $($template.FullName)" -ForegroundColor Red
-        Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+        Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
+        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
       }
     }
     return
@@ -144,41 +148,47 @@ function ConvertFrom-StreamerbotTemplate {
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `
-    -Backup:$Backup `
-    @verboseSplat
+    -Backup:$Backup
 }
 
-Write-Host ""
-Write-Host "Streamer.bot Templater: " -ForegroundColor Yellow
+Write-VcsMessage -NoLog -Message ""
+Write-VcsMessage -Message "Streamer.bot Templater:" -Color Yellow
 
-Write-Verbose "Mappings:"
+Write-VcsMessage -AsVerbose -Message "Mappings:"
 $mappings | ForEach-Object {
   $scope = if ($_.Key) {
     "[$($_.Key)] "
   } else {
     ""
   }
-  Write-Verbose "  $scope$($_.Token) => $($_.Value)"
+  Write-VcsMessage -AsVerbose -Message "  $scope$($_.Token) => $($_.Value)"
 }
 
-Write-Host "Script location:" -ForegroundColor Cyan
-Write-Host "  $PSScriptRoot"
+Write-VcsMessage -NoLog -Message "Script location:" -Color Cyan
+Write-VcsMessage -NoLog -Message "  $PSScriptRoot"
 
-Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  All input files must be under:`n$(
+Write-VcsMessage -NoLog -Message "Usage:" -Color Cyan
+Write-VcsMessage -NoLog -Message ("  All input files must be under:`n$(
   $script:streamerbotRoots.Path -join "`n"
-)"
-Write-Host "  ConvertTo-StreamerbotTemplate 'actions.json'                        # Creates vcs-template.json"
-Write-Host "  ConvertTo-StreamerbotTemplate 'folder'                              # Recursively creates vcs-template.json for every matching .json under folder"
-Write-Host "  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json'         # Creates actions.json"
-Write-Host "  ConvertFrom-StreamerbotTemplate 'folder'                            # Recursively restores every matching *.vcs-template.json under folder"
+)")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamerbotTemplate 'actions.json'                " `
+    + "       # Creates vcs-template.json")
+
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamerbotTemplate 'folder' (or '.')             " `
+    + "       # Recursively creates vcs-template.json for every matching .json under folder")
+
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' " `
+    + "       # Creates actions.json")
+
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamerbotTemplate 'folder' (or '.')           " `
+    + "       # Recursively restores every matching *.vcs-template.json under folder")
 
 Export-ModuleMember -Function ConvertTo-StreamerbotTemplate, ConvertFrom-StreamerbotTemplate
-Write-Host "Healthcheck:" -ForegroundColor Cyan
+Write-VcsMessage -NoLog -Message "Healthcheck:" -Color Cyan
 @(
   "$script:SbotProductionPath\dlls\BroStreamerTools.dll"
   "$script:SbotFtpPath\dlls\BroStreamerTools.dll"
 ) | Test-StreamerbotDllSymlinks
 
-Write-Host ""
-Write-Host "Streamer.bot Templater functions loaded!" -ForegroundColor Green
+Write-VcsMessage -NoLog -Message ""
+Write-VcsMessage -NoLog -Message "Streamer.bot Templater functions loaded!" -Color Green

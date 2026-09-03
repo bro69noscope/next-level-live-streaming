@@ -482,6 +482,8 @@ function ConvertTo-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [switch]$SkipSeeding
   )
 
+  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
+
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
 
@@ -565,11 +567,15 @@ function ConvertTo-StreamDeckTemplate {
     return
   }
 
-  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath -InputFilePath $InputPath `
+  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath `
+    -InputFilePath $InputPath `
     -RelativeOutPath $RelativeOutPath
 
-  ConvertTo-VcsTemplateFile -InputFilePath $InputPath -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings
+  ConvertTo-VcsTemplateFile `
+    -InputFilePath $InputPath `
+    -VcsOutDirPath $vcsOutDirPath `
+    -Rules $mappings `
+    @verboseSplat
 }
 
 function ConvertFrom-StreamDeckTemplate {
@@ -578,6 +584,8 @@ function ConvertFrom-StreamDeckTemplate {
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
     [Parameter(Mandatory=$false)] [switch]$Backup
   )
+
+  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
@@ -593,7 +601,8 @@ function ConvertFrom-StreamDeckTemplate {
       try {
         ConvertFrom-StreamDeckTemplate `
           -InputFilePath $template.FullName `
-          -Backup:$Backup
+          -Backup:$Backup `
+          @verboseSplat
       } catch {
         Write-Host "  Failed: $($template.FullName)" -ForegroundColor Red
         Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
@@ -606,7 +615,8 @@ function ConvertFrom-StreamDeckTemplate {
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `
-    -Backup:$Backup
+    -Backup:$Backup `
+    @verboseSplat
 }
 
 Write-Host ""

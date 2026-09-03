@@ -51,9 +51,12 @@ function Test-StreamerbotMarkerPath {
 }
 
 function ConvertTo-StreamerbotTemplate {
+  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath
   )
+
+  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $streamerbotRoots
@@ -96,16 +99,20 @@ function ConvertTo-StreamerbotTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputPath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings
+    -Rules $mappings `
+    @verboseSplat
 }
 
 function ConvertFrom-StreamerbotTemplate {
+  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)]
     [string]$InputFilePath,
     [Parameter(Mandatory=$false)]
     [switch]$Backup
   )
+
+  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $streamerbotRoots
@@ -137,7 +144,8 @@ function ConvertFrom-StreamerbotTemplate {
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `
-    -Backup:$Backup
+    -Backup:$Backup `
+    @verboseSplat
 }
 
 Write-Host ""

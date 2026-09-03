@@ -343,6 +343,7 @@ function Invoke-ScopedRestore {
 }
 
 function ConvertTo-VcsTemplateFile {
+  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
     [Parameter(Mandatory=$true)] [string]$VcsOutDirPath,
@@ -360,9 +361,9 @@ function ConvertTo-VcsTemplateFile {
   $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
   $vcsOutFilePath   = Join-Path $VcsOutDirPath $templateFileName
 
-  Write-Host "Creating vcs template from real config..."
-  Write-Host "Input:  $InputFilePath"
-  Write-Host "Output: $vcsOutFilePath"
+  Write-Verbose "Creating vcs template from real config..."
+  Write-Verbose "Input:  $InputFilePath"
+  Write-Verbose "Output: $vcsOutFilePath"
 
   if (-not (Test-Path $VcsOutDirPath)) {
     New-Item -ItemType Directory -Path $VcsOutDirPath -Force | Out-Null
@@ -379,8 +380,11 @@ function ConvertTo-VcsTemplateFile {
 
   foreach ($rule in $sortedRules) {
     if ($rule.Key) {
-      $content = Invoke-ScopedReplace -Content $content -Key $rule.Key `
-        -SearchValue $rule.Value -Token $rule.Token
+      $content = Invoke-ScopedReplace `
+        -Content $content `
+        -Key $rule.Key `
+        -SearchValue $rule.Value `
+        -Token $rule.Token
     } else {
       $variants = @(
         $rule.Value,
@@ -397,12 +401,16 @@ function ConvertTo-VcsTemplateFile {
 
   $content | Set-Content $vcsOutFilePath -Encoding UTF8
   Format-JsonWithPrettier -FilePath $vcsOutFilePath
-  Write-Host "Template saved: $vcsOutFilePath" -ForegroundColor Green
+  Write-Verbose "Template saved: $vcsOutFilePath"
 
-  New-Item -ItemType SymbolicLink -Path $symlinkPath -Target $vcsOutFilePath | Out-Null
+  New-Item `
+    -ItemType SymbolicLink `
+    -Path $symlinkPath `
+    -Target $vcsOutFilePath | Out-Null
 }
 
 function ConvertFrom-VcsTemplateFile {
+  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$true)]  [array]$Rules,
@@ -418,9 +426,9 @@ function ConvertFrom-VcsTemplateFile {
 
   $outFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
 
-  Write-Host "Restoring real config from template..."
-  Write-Host "Input:  $InputFilePath"
-  Write-Host "Output: $outFilePath"
+  Write-Verbose "Restoring real config from template..."
+  Write-Verbose "Input:  $InputFilePath"
+  Write-Verbose "Output: $outFilePath"
 
   if ($Backup -and (Test-Path $outFilePath)) {
     $backupPath = "$outFilePath.bak"
@@ -443,7 +451,7 @@ function ConvertFrom-VcsTemplateFile {
 
   $content | Set-Content $outFilePath -Encoding UTF8
   Format-JsonWithPrettier -FilePath $outFilePath
-  Write-Host "Real config saved: $outFilePath" -ForegroundColor Green
+  Write-Verbose "Real config saved: $outFilePath"
 
   return $outFilePath
 }

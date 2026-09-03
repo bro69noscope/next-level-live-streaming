@@ -83,10 +83,13 @@ function Test-ObsMarkerPath {
 }
 
 function ConvertTo-ObsTemplate {
+  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)]
     [string]$InputFilePath
   )
+
+  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $obsRoots
@@ -104,7 +107,7 @@ function ConvertTo-ObsTemplate {
       return
     }
 
-    Write-Host "Found $($candidates.Count) matching .json file(s) under: $InputPath"
+    Write-Verbose "Found $($candidates.Count) matching .json file(s) under: $InputPath"
     foreach ($candidate in $candidates) {
       Write-Host ""
       try {
@@ -129,16 +132,20 @@ function ConvertTo-ObsTemplate {
   ConvertTo-VcsTemplateFile `
     -InputFilePath $InputPath `
     -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings
+    -Rules $mappings `
+    @verboseSplat
 }
 
 function ConvertFrom-ObsTemplate {
+  [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true)]
     [string]$InputFilePath,
     [Parameter(Mandatory=$false)]
     [switch]$Backup
   )
+
+  $verboseSplat = @{ Verbose = $PSBoundParameters['Verbose'] }
 
   $InputPath = (Resolve-Path $InputFilePath).Path
   Assert-InputPath $InputPath -Roots $obsRoots
@@ -152,7 +159,7 @@ function ConvertFrom-ObsTemplate {
       return
     }
 
-    Write-Host "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputPath"
+    Write-Verbose "Found $($templates.Count) matching *.vcs-template.json file(s) under: $InputPath"
     foreach ($template in $templates) {
       Write-Host ""
       try {
@@ -170,7 +177,8 @@ function ConvertFrom-ObsTemplate {
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `
-    -Backup:$Backup
+    -Backup:$Backup `
+    @verboseSplat
 }
 
 Write-Host ""

@@ -71,8 +71,6 @@ function Resolve-StreamDeckMarkerName {
     [Parameter(Mandatory=$true)][string]$MarkerDirectory
   )
 
-  # "home" case: this folder's own manifest.json IS the device-root manifest
-  # (no Controllers, has a top-level Name)
   $siblingManifestPath = Join-Path $MarkerDirectory "manifest.json"
   $siblingManifest = $null
   if (Test-Path $siblingManifestPath) {
@@ -84,8 +82,6 @@ function Resolve-StreamDeckMarkerName {
     }
   }
 
-  # "null" case: this folder's manifest has Controllers, but every
-  # controller's Actions is null/empty — an unconfigured page.
   $hasAnyActions = $false
   $isDir = $false
   if ($siblingManifest -and $siblingManifest.ContainsKey("Controllers")) {
@@ -111,8 +107,6 @@ function Resolve-StreamDeckMarkerName {
     }
   }
 
-  # search other manifests for a button whose Settings.ProfileUUID
-  # points at this folder's GUID
   if ($isDir) {
     $folderGuid = Split-Path $MarkerDirectory -Leaf
     $parentDirectory = Split-Path $MarkerDirectory -Parent
@@ -149,8 +143,6 @@ function Resolve-StreamDeckMarkerName {
     return $null
   }
 
-  # Not home, not null, not dir -> catch-all: a profile-page
-  # (any manifest with real Actions that isn't a sub-folder).
   if ($hasAnyActions) {
     $homeName = Find-StreamDeckHomeManifest -StartDirectory (Split-Path $MarkerDirectory -Parent)
     if ($homeName) {

@@ -560,15 +560,15 @@ function ConvertFrom-VcsTemplateFile {
 }
 
 $FunctionsToExport = @(
-  "Read-ReplacementMappings"
-  "ConvertTo-VcsTemplateFile"
-  "ConvertFrom-VcsTemplateFile"
-  "Get-VcsRelativePath"
   "Assert-InputPath"
+  "ConvertFrom-VcsTemplateFile"
+  "ConvertTo-VcsTemplateFile"
+  "Get-VcsRelativePath"
+  "Read-ReplacementMappings"
   "Set-VcsLogDirPath"
-  "Write-VcsMessage"
   "Set-VcsVerbose"
   "Write-VcsLogSeparator"
+  "Write-VcsMessage"
 )
 
 Assert-HelpersPaths

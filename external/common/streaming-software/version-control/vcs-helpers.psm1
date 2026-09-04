@@ -247,6 +247,10 @@ function Read-ReplacementMappings {
 }
 
 function Format-JsonWithPrettier {
+  # TODO: Maybe there is a way to collect the file paths and run prettier once on all of them,
+  # instead of one at a time. If not, compare files with vcs versions with -Compress to see which
+  # one actually need to be formatted.
+
   param([string]$FilePath)
 
   if (-not $Script:PrettierPath) {

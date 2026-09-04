@@ -359,14 +359,24 @@ function Get-StreamDeckVcsOutDirPath {
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$false)] [string]$RelativeOutPath
   )
+  try {
+    if (-not $script:VcsOutDirPath) {
+      Write-ThrowContext
+      throw "script:VcsOutDirPath is not set — cannot compute VCS output directory."
+    }
 
-  $inputDirectory = Split-Path $InputFilePath -Parent
-  $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
+    $inputDirectory = Split-Path $InputFilePath -Parent
+    $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
 
-  if ($RelativeOutPath) {
-    return Join-Path $VcsOutDirPath (Join-Path $RelativeOutPath $relativeDeckPath)
+    if ($RelativeOutPath) {
+      return Join-Path $script:VcsOutDirPath (Join-Path $RelativeOutPath $relativeDeckPath)
+    }
+    return Join-Path $script:VcsOutDirPath $relativeDeckPath
+
+  } catch {
+    Write-ThrowContext
+    throw "Failed to compute VCS output directory: $($_.Exception.Message)"
   }
-  return Join-Path $script:DefaultVcsOutPath $relativeDeckPath
 }
 
 function Copy-StreamDeckMarkerFile {

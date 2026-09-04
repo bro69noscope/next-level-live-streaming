@@ -60,17 +60,6 @@ function Set-VcsLogFilePath {
   $script:VcsLogFilePath = $logPath
 }
 
-function Remove-VcsOldLogFiles {
-  if (-not $script:VcsLogDirPath -or -not (Test-Path $script:VcsLogDirPath)) {
-    return
-  }
-  $logs = Get-ChildItem -Path $script:VcsLogDirPath -Filter "$LogPrefix*.log" |
-    Sort-Object LastWriteTime -Descending
-  if ($logs.Count -gt $script:VcsMaxLogFiles) {
-    $logs | Select-Object -Skip $script:VcsMaxLogFiles | Remove-Item -Force
-  }
-}
-
 function Write-VcsMessage {
   param(
     [Parameter(Mandatory=$true)] [AllowEmptyString()] [string]$Message,

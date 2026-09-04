@@ -8,7 +8,7 @@ try {
 $script:VcsLogDirPath = $null
 $script:VcsMaxLogSizeBytes = 2MB
 $script:VcsVerboseEnabled = $false
-$Script:LogPrefix = "vcs-templater_"
+$Script:LogPrefix = "vcs-templater-"
 
 function Write-VcsLogSeparator {
   param([int]$Lines = 5)
@@ -28,46 +28,36 @@ function Set-VcsVerbose {
   $script:VcsVerboseEnabled = [bool]$Enabled
 }
 
-function Set-VcsLogDirPath {
+function Set-VcsLogFilePath {
   param(
-    [Parameter(Mandatory=$true)][string]$LogDirPath
+    [Parameter(Mandatory=$true)][string]$LogDirPath,
+    [Parameter(Mandatory=$true)][string]$AppName
   )
-  if ([string]::IsNullOrWhiteSpace($LogDirPath)) {
-    throw "LogDirPath cannot be null or empty."
-  }
-  if (-not [System.IO.Path]::IsPathRooted($LogDirPath)) {
-    throw "LogDirPath must be an absolute path, got: '$LogDirPath'"
+  if ([string]::IsNullOrWhiteSpace($logDirPath)) {
+    throw "logDirPath cannot be null or empty."
   }
   try {
-    $resolved = [System.IO.Path]::GetFullPath($LogDirPath)
+    [System.IO.Path]::GetFullPath($LogDirPath)
   } catch {
     throw "LogDirPath is not a valid path: '$LogDirPath'"
   }
 
-  if (-not (Test-Path $resolved)) {
-    New-Item -ItemType Directory -Path $resolved -Force | Out-Null
+  $logPath = Join-Path $LogDirPath "$LogPrefix$AppName.log"
+
+  $resolvedDir = Split-Path $logPath -Parent
+  if (-not (Test-Path $resolvedDir)) {
+    New-Item -ItemType Directory -Path $resolvedDir -Force | Out-Null
   }
 
-  $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-  $newLogFilePath = Join-Path $resolved "$LogPrefix$timestamp.log"
-
-  $existing = Get-ChildItem -Path $resolved -Filter "$LogPrefix*.log" `
-    -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
-
-  if ($existing) {
-    Move-Item -Path $existing[0].FullName -Destination $newLogFilePath -Force
-    $existing | Select-Object -Skip 1 | Remove-Item -Force
-  }
-
-  if ((Test-Path $newLogFilePath) -and
-    (Get-Item $newLogFilePath).Length -gt $script:VcsMaxLogSizeBytes) {
-    $lines = Get-Content $newLogFilePath
+  if ((Test-Path $logPath) -and
+    (Get-Item $logPath).Length -gt $script:VcsMaxLogSizeBytes) {
+    $lines = Get-Content $logPath
     $keepFrom = [Math]::Floor($lines.Count / 2)
-    $lines | Select-Object -Skip $keepFrom | Set-Content $newLogFilePath -Encoding UTF8
+    $lines | Select-Object -Skip $keepFrom | Set-Content $logPath -Encoding UTF8
   }
 
-  $script:VcsLogDirPath  = $resolved
-  $script:VcsLogFilePath = $newLogFilePath
+  $script:VcsLogDirPath  = $resolvedDir
+  $script:VcsLogFilePath = $logPath
 }
 
 function Remove-VcsOldLogFiles {
@@ -564,7 +554,7 @@ $FunctionsToExport = @(
   "ConvertTo-VcsTemplateFile"
   "Get-VcsRelativePath"
   "Read-ReplacementMappings"
-  "Set-VcsLogDirPath"
+  "Set-VcsLogFilePath"
   "Set-VcsVerbose"
   "Write-VcsLogSeparator"
   "Write-VcsMessage"

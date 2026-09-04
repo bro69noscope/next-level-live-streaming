@@ -57,7 +57,7 @@ function ConvertTo-StreamerbotTemplate {
   )
 
   Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
   Write-VcsLogSeparator
 
   $InputPath = (Resolve-Path $InputFilePath).Path
@@ -115,7 +115,7 @@ function ConvertFrom-StreamerbotTemplate {
   )
 
   Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
   Write-VcsLogSeparator
 
   $InputPath = (Resolve-Path $InputFilePath).Path

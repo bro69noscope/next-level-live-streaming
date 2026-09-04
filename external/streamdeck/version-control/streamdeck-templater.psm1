@@ -511,7 +511,7 @@ function ConvertTo-StreamDeckTemplate {
   )
 
   Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
   Write-VcsLogSeparator
 
   $InputPath = (Resolve-Path $InputFilePath).Path
@@ -657,7 +657,7 @@ function ConvertFrom-StreamDeckTemplate {
   )
 
   Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
   Write-VcsLogSeparator
 
   $InputPath = (Resolve-Path $InputFilePath).Path

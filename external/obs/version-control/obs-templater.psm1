@@ -90,7 +90,7 @@ function ConvertTo-ObsTemplate {
   )
 
   Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "obs"
   Write-VcsLogSeparator
 
   $InputPath = (Resolve-Path $InputFilePath).Path
@@ -148,7 +148,7 @@ function ConvertFrom-ObsTemplate {
   )
 
   Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "obs"
   Write-VcsLogSeparator
 
   $InputPath = (Resolve-Path $InputFilePath).Path

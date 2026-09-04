@@ -382,7 +382,8 @@ function Get-StreamDeckVcsOutDirPath {
 function Copy-StreamDeckMarkerFile {
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
-    [Parameter(Mandatory=$false)] [string]$RelativeOutPath
+    [Parameter(Mandatory=$false)] [string]$RelativeOutPath,
+    [Parameter(Mandatory=$false)] [switch]$ChildChanged
   )
 
   $InputPath = (Resolve-Path $InputFilePath).Path
@@ -432,7 +433,11 @@ function Copy-StreamDeckMarkerFile {
   }
 
   if ($isHome) {
-    $newFlag = Get-Guid
+    $newFlag = if ($ChildChanged -or -not $existingFlag) {
+      Get-Guid
+    } else {
+      $existingFlag
+    }
   } elseif (Test-Path $manifestTemplatePath) {
     $bytes = [System.IO.File]::ReadAllBytes($manifestTemplatePath)
     $hash = [System.Security.Cryptography.SHA256]::HashData($bytes)
@@ -460,11 +465,23 @@ function Copy-StreamDeckMarkerFile {
   $marker["vcs-flag"] = $newFlag
   $marker | ConvertTo-Json | Set-Content $destPath -Encoding UTF8
   $truncatedFlag = $newFlag.Substring(0, 6) + "..."
+  $flagChanged = $existingFlag -ne $newFlag
 
   if ($isHome) {
-    Write-VcsMessage -Message ("  Marker copied, new vcs-flag ($truncatedFlag, home marker): " `
-        + "$destPath") -Color Magenta
-  } elseif ($existingFlag -ne $newFlag) {
+    if ($flagChanged) {
+      $reason = if ($ChildChanged) {
+        "child manifest changed"
+      } else {
+        "no previous flag"
+      }
+      Write-VcsMessage -Message ("  Marker copied, new vcs-flag ($truncatedFlag, home marker, " `
+          + "$reason): $destPath") -Color Magenta
+    } else {
+      Write-VcsMessage -AsVerbose `
+        -Message "  Home marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
+    }
+
+  } elseif ($flagChanged) {
     $reason = if ($existingFlag) {
       "manifest changed"
     } else {
@@ -472,13 +489,17 @@ function Copy-StreamDeckMarkerFile {
     }
     Write-VcsMessage -Message "  Marker copied, new vcs-flag ($truncatedFlag, $reason): $destPath" `
       -Color Green
+
   } elseif ($metadataChanged) {
     Write-VcsMessage -Message ("  Marker metadata updated, vcs-flag kept ($truncatedFlag): " `
         + "$destPath") -Color Magenta
+
   } else {
     Write-VcsMessage -AsVerbose `
       -Message "  Marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
   }
+
+  return $flagChanged
 }
 
 function ConvertTo-StreamDeckTemplate {
@@ -560,13 +581,44 @@ function ConvertTo-StreamDeckTemplate {
     }
 
     $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
-    foreach ($jsonMarkerFile in $jsonMarkerFiles) {
-      try {
-        Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
-          -RelativeOutPath $RelativeOutPath
-      } catch {
-        Write-VcsMessage -Message "  Failed: $($jsonMarkerFile.FullName)" -Color Red
-        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+    $markerGroups = $jsonMarkerFiles | Group-Object {
+      Find-StreamDeckDeviceRoot -StartDirectory (Split-Path $_.FullName -Parent)
+    }
+
+    foreach ($group in $markerGroups) {
+      $homeMarkerFiles = @()
+      $childChanged = $false
+
+      foreach ($jsonMarkerFile in $group.Group) {
+        $markerType = (Get-Content $jsonMarkerFile.FullName -Raw |
+            ConvertFrom-Json -AsHashtable)["type"]
+
+        if ($markerType -eq "home") {
+          $homeMarkerFiles += $jsonMarkerFile
+          continue
+        }
+
+        try {
+          $changed = Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
+            -RelativeOutPath $RelativeOutPath
+          if ($changed) {
+            $childChanged = $true
+          }
+        } catch {
+          Write-VcsMessage -Message "  Failed copying: $($jsonMarkerFile.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+        }
+      }
+
+      foreach ($homeMarkerFile in $homeMarkerFiles) {
+        try {
+          Copy-StreamDeckMarkerFile -InputFilePath $homeMarkerFile.FullName `
+            -RelativeOutPath $RelativeOutPath `
+            -ChildChanged:$childChanged | Out-Null
+        } catch {
+          Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+        }
       }
     }
 

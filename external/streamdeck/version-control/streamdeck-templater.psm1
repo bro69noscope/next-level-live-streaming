@@ -12,7 +12,7 @@ try {
   throw
 }
 
-$script:DefaultVcsOutPath = Join-Path $PSScriptRoot "vcdata"
+$script:VcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
 
 $streamDeckRoots = @(
   @{
@@ -372,7 +372,7 @@ function Get-StreamDeckVcsOutDirPath {
   $relativeDeckPath = $inputDirectory.Substring($script:SdeckBasePath.Length).TrimStart('\')
 
   if ($RelativeOutPath) {
-    return Join-Path $PSScriptRoot (Join-Path $RelativeOutPath $relativeDeckPath)
+    return Join-Path $VcsOutDirPath (Join-Path $RelativeOutPath $relativeDeckPath)
   }
   return Join-Path $script:DefaultVcsOutPath $relativeDeckPath
 }

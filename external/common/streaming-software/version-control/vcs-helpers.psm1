@@ -15,8 +15,7 @@ function Write-VcsLogSeparator {
   if ($script:VcsLogFilePath) {
     try {
       $blankLines = 1..$Lines | ForEach-Object { "" }
-      $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-      $blankLines + "[$timestamp] new_run_started" |
+      $blankLines + "new_run_started" |
         Add-Content -Path $script:VcsLogFilePath -Encoding UTF8
     } catch {
       Write-Warning "VCS logging failed: $_"

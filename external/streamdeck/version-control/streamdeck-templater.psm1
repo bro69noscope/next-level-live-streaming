@@ -543,8 +543,10 @@ function ConvertTo-StreamDeckTemplate {
             $unexpectedPaths += $initResult.Path
           }
         } catch {
-          Write-VcsMessage -Message "  Failed: $($jsonMarkerFile.FullName)" -Color Red
+          Write-VcsMessage -Message "  Failed to initialize: $($jsonMarkerFile.FullName)" -Color Red
           Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-ThrowContext
+          throw "Failed initializing marker file: $($jsonMarkerFile.FullName)"
         }
       }
 
@@ -575,8 +577,10 @@ function ConvertTo-StreamDeckTemplate {
         ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
           -RelativeOutPath $RelativeOutPath
       } catch {
-        Write-VcsMessage -Message "  Failed: $($manifest.FullName)" -Color Red
+        Write-VcsMessage -Message "  Failed to convert: $($manifest.FullName)" -Color Red
         Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+        Write-ThrowContext
+        throw "Failed converting manifest: $($manifest.FullName)"
       }
     }
 
@@ -607,6 +611,8 @@ function ConvertTo-StreamDeckTemplate {
         } catch {
           Write-VcsMessage -Message "  Failed copying: $($jsonMarkerFile.FullName)" -Color Red
           Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-ThrowContext
+          throw "Failed copying marker file: $($jsonMarkerFile.FullName)"
         }
       }
 
@@ -618,6 +624,8 @@ function ConvertTo-StreamDeckTemplate {
         } catch {
           Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)" -Color Red
           Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-ThrowContext
+          throw "Failed copying home marker file: $($homeMarkerFile.FullName)"
         }
       }
     }
@@ -668,8 +676,10 @@ function ConvertFrom-StreamDeckTemplate {
           -InputFilePath $template.FullName `
           -Backup:$Backup
       } catch {
-        Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
+        Write-VcsMessage -Message "  Failed to convert: $($template.FullName)" -Color Red
         Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+        Write-ThrowContext
+        throw "Failed converting from template: $($template.FullName)"
       }
     }
     return

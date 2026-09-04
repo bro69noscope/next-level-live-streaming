@@ -8,7 +8,7 @@ try {
 $script:VcsLogDirPath = $null
 $script:VcsMaxLogSizeBytes = 2MB
 $script:VcsVerboseEnabled = $false
-$Script:LogPrefix = "vcs-templater-"
+$Script:LogSuffix = "-vcs-templater.log"
 
 function Write-VcsLogSeparator {
   param([int]$Lines = 5)
@@ -42,7 +42,7 @@ function Set-VcsLogFilePath {
     throw "LogDirPath is not a valid path: '$LogDirPath'"
   }
 
-  $logPath = Join-Path $LogDirPath "$LogPrefix$AppName.log"
+  $logPath = Join-Path $LogDirPath "$AppName$LogSuffix"
 
   $resolvedDir = Split-Path $logPath -Parent
   if (-not (Test-Path $resolvedDir)) {

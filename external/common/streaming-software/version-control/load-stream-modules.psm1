@@ -10,6 +10,7 @@ function Import-StreamingTemplatesModules {
     Import-Module (Join-Path $PSScriptRoot "vcs-helpers.psm1") -Force -Global -ErrorAction Stop
     Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
     Set-VcsLogDirPath -LogDirPath (Join-Path $PSScriptRoot "log")
+    Write-VcsLogSeparator
 
     $repo = $RepoPath.TrimEnd('\')
     $modules = [ordered]@{

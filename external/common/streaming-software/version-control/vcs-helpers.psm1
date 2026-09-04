@@ -10,6 +10,20 @@ $script:VcsMaxLogSizeBytes = 2MB
 $script:VcsVerboseEnabled = $false
 $Script:LogPrefix = "vcs-templater_"
 
+function Write-VcsLogSeparator {
+  param([int]$Lines = 5)
+  if ($script:VcsLogFilePath) {
+    try {
+      $blankLines = 1..$Lines | ForEach-Object { "" }
+      $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+      $blankLines + "[$timestamp] new_run_started" |
+        Add-Content -Path $script:VcsLogFilePath -Encoding UTF8
+    } catch {
+      Write-Warning "VCS logging failed: $_"
+    }
+  }
+}
+
 function Set-VcsVerbose {
   param([switch]$Enabled)
   $script:VcsVerboseEnabled = [bool]$Enabled
@@ -554,6 +568,7 @@ $FunctionsToExport = @(
   "Set-VcsLogDirPath"
   "Write-VcsMessage"
   "Set-VcsVerbose"
+  "Write-VcsLogSeparator"
 )
 
 Assert-HelpersPaths

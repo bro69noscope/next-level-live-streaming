@@ -470,15 +470,15 @@ function Copy-StreamDeckMarkerFile {
   if ($isHome) {
     if ($flagChanged) {
       $reason = if ($ChildChanged) {
-        "child manifest changed"
+        "child manifest has changes"
       } else {
-        "no previous flag"
+        "had no previous flag"
       }
-      Write-VcsMessage -Message ("  Marker copied, new vcs-flag ($truncatedFlag, home marker, " `
-          + "$reason): $destPath") -Color Magenta
+      Write-VcsMessage -Message ("  Home marker copied, new vcs-flag ($truncatedFlag, " +
+        "$reason): $destFileName") -Color Magenta
     } else {
       Write-VcsMessage -AsVerbose `
-        -Message "  Home marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
+        -Message "  Home marker unchanged, vcs-flag kept ($truncatedFlag): $destFileName"
     }
 
   } elseif ($flagChanged) {
@@ -487,16 +487,16 @@ function Copy-StreamDeckMarkerFile {
     } else {
       "no previous flag"
     }
-    Write-VcsMessage -Message "  Marker copied, new vcs-flag ($truncatedFlag, $reason): $destPath" `
-      -Color Green
+    Write-VcsMessage -Message ("  Marker copied, set new vcs-flag ($truncatedFlag, $reason): " +
+      "$destFileName") -Color Green
 
   } elseif ($metadataChanged) {
     Write-VcsMessage -Message ("  Marker metadata updated, vcs-flag kept ($truncatedFlag): " `
-        + "$destPath") -Color Magenta
+        + "$destFileName") -Color Magenta
 
   } else {
     Write-VcsMessage -AsVerbose `
-      -Message "  Marker unchanged, vcs-flag kept ($truncatedFlag): $destPath"
+      -Message "  Marker unchanged, vcs-flag kept ($truncatedFlag): $destFileName"
   }
 
   return $flagChanged
@@ -697,16 +697,15 @@ function ConvertFrom-StreamDeckTemplate {
       if (Test-DanglingVcsSymlink -SymlinkFile $symlinkFile) {
         Write-VcsMessage -Message ("  This folder's manifest.json symlink no longer resolves to a" +
           " valid path in the vcs repository:") -Color Yellow
+        $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
+        if ($markerFile) {
+          Write-VcsMessage -Message "  Marker file: $($markerFile.Name):" -Color Yellow
+        } else {
+          Write-VcsMessage -Message "  Marker file: none found:" -Color Yellow
+        }
         Write-VcsMessage -Message "    $inputDirectory" -Color Yellow
         Write-VcsMessage -Message ("  This may be due to intentional deletion of a no longer used" +
           " ressource.") -Color Yellow
-
-        $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
-        if ($markerFile) {
-          Write-VcsMessage -Message "    Marker file: $($markerFile.Name)" -Color Yellow
-        } else {
-          Write-VcsMessage -Message "    Marker file: none found" -Color Yellow
-        }
 
         $response = Read-Host "  Delete this local folder? (y/N)"
 

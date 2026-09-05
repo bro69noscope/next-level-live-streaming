@@ -459,9 +459,9 @@ function ConvertTo-VcsTemplateFile {
   $templateFileName = $inputFileName -replace "\.json$", ".vcs-template.json"
   $vcsOutFilePath   = Join-Path $VcsOutDirPath $templateFileName
 
-  Write-VcsMessage -Message "Creating vcs template from real config..." -AsVerbose
-  Write-VcsMessage -Message "Input:  $InputFilePath" -AsVerbose
-  Write-VcsMessage -Message "Output: $vcsOutFilePath" -AsVerbose
+  Write-VcsMessage -AsVerbose -Message "Creating vcs template from real config..."
+  Write-VcsMessage -AsVerbose -Message "Input:  $InputFilePath"
+  Write-VcsMessage -AsVerbose -Message "Output: $vcsOutFilePath"
 
   if (-not (Test-Path $VcsOutDirPath)) {
     New-Item -ItemType Directory -Path $VcsOutDirPath -Force | Out-Null
@@ -507,9 +507,9 @@ function ConvertTo-VcsTemplateFile {
 
   if ($needsWrite) {
     $content | Set-Content $vcsOutFilePath -Encoding UTF8
-    Write-VcsMessage -Message "Template saved: $vcsOutFilePath" -AsVerbose
+    Write-VcsMessage -AsVerbose -Message "Template saved: $vcsOutFilePath"
   } else {
-    Write-VcsMessage -Message "Unchanged content: $vcsOutFilePath" -AsVerbose
+    Write-VcsMessage -AsVerbose -Message "Unchanged content: $vcsOutFilePath"
   }
   $FormatQueue.Add($vcsOutFilePath)
 
@@ -535,9 +535,9 @@ function ConvertFrom-VcsTemplateFile {
 
   $outFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
 
-  Write-VcsMessage -Message "Restoring real config from template..." -AsVerbose
-  Write-VcsMessage -Message "Input:  $InputFilePath" -AsVerbose
-  Write-VcsMessage -Message "Output: $outFilePath" -AsVerbose
+  Write-VcsMessage -AsVerbose -Message "Restoring real config from template..."
+  Write-VcsMessage -AsVerbose -Message "Input:  $InputFilePath"
+  Write-VcsMessage -AsVerbose -Message "Output: $outFilePath"
 
   if ($Backup -and (Test-Path $outFilePath)) {
     $backupPath = "$outFilePath.bak"
@@ -560,7 +560,7 @@ function ConvertFrom-VcsTemplateFile {
 
   $content | Set-Content $outFilePath -Encoding UTF8
   Format-JsonWithPrettier -FilePaths $outFilePath
-  Write-VcsMessage -Message "Real config saved: $outFilePath" -Verbose
+  Write-VcsMessage -AsVerbose -Message "Real config saved: $outFilePath"
 
   return $outFilePath
 }

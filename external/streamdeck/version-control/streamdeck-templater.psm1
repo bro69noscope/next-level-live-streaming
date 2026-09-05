@@ -704,7 +704,6 @@ function ConvertFrom-StreamDeckTemplate {
     return
   }
 
-  Assert-StreamDeckPath -Path (Split-Path $InputPath -Parent)
   ConvertFrom-VcsTemplateFile `
     -InputFilePath $InputPath `
     -Rules $mappings `

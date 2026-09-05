@@ -15,6 +15,18 @@ function Get-VcsMarkerFile {
   return Get-ChildItem $DirectoryPath -File -Filter "*-marker.json" | Select-Object -First 1
 }
 
+function Test-DanglingVcsSymlink {
+  param([Parameter(Mandatory=$true)] [System.IO.FileInfo]$SymlinkFile)
+  if (-not $SymlinkFile.LinkType) {
+    return $false
+  }
+  $target = $SymlinkFile.LinkTarget
+  if (-not $target) {
+    return $true
+  }
+  return -not (Test-Path $target)
+}
+
 function Write-VcsLogSeparator {
   param([int]$Lines = 5)
   if ($script:VcsLogFilePath) {
@@ -594,6 +606,7 @@ $FunctionsToExport = @(
   "Read-ReplacementMappings"
   "Set-VcsLogFilePath"
   "Set-VcsVerbose"
+  "Test-DanglingVcsSymlink"
   "Write-VcsLogSeparator"
   "Write-VcsMessage"
 )

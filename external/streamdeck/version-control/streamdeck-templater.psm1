@@ -689,7 +689,36 @@ function ConvertFrom-StreamDeckTemplate {
     }
     Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) *.vcs-template.json " `
         + "file(s) under: $InputPath")
+
     foreach ($template in $templates) {
+      $inputDirectory = Split-Path $template.FullName -Parent
+      $symlinkFile = Get-Item $template.FullName -Force
+
+      if (Test-DanglingVcsSymlink -SymlinkFile $symlinkFile) {
+        Write-VcsMessage -Message ("  This folder's manifest.json symlink no longer resolves to a" +
+          " valid path in the vcs repository:") -Color Yellow
+        Write-VcsMessage -Message "    $inputDirectory" -Color Yellow
+        Write-VcsMessage -Message ("  This may be due to intentional deletion of a no longer used" +
+          " ressource.") -Color Yellow
+
+        $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
+        if ($markerFile) {
+          Write-VcsMessage -Message "    Marker file: $($markerFile.Name)" -Color Yellow
+        } else {
+          Write-VcsMessage -Message "    Marker file: none found" -Color Yellow
+        }
+
+        $response = Read-Host "  Delete this local folder? (y/N)"
+
+        if ($response -eq 'y') {
+          Remove-Item $inputDirectory -Recurse -Force
+          Write-VcsMessage -Message "  Deleted: $inputDirectory" -Color Yellow
+        } else {
+          Write-VcsMessage -Message "  Skipped: $inputDirectory" -Color DarkGray
+        }
+        continue
+      }
+
       try {
         ConvertFrom-StreamDeckTemplate `
           -InputFilePath $template.FullName `

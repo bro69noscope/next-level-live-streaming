@@ -26,7 +26,12 @@ $script:CommonDir = Join-Path $RepoPath "external\common\streaming-software\vers
 $script:PortsGeneratorPath = Join-Path $RepoPath "src\scripts\generate_scoped_mappings.py"
 
 function Invoke-PortsGeneration {
-  param([string]$PythonExe = "py")
+  param([string]$PythonExe = (Join-Path $Global:RepoPath ".venv\Scripts\python.exe"))
+
+  if (-not (Test-Path $PythonExe)) {
+    Write-ThrowContext
+    throw "Python interpreter not found at: $PythonExe"
+  }
 
   if (-not (Test-Path $script:PortsGeneratorPath)) {
     Write-ThrowContext
@@ -34,10 +39,24 @@ function Invoke-PortsGeneration {
   }
 
   Write-Host "Regenerating scoped port mappings..." -ForegroundColor Cyan
-  & $PythonExe $script:PortsGeneratorPath
-  if ($LASTEXITCODE -ne 0) {
-    Write-ThrowContext
-    throw "generate_scoped_mappings.py failed with exit code $LASTEXITCODE"
+  $prevPythonPath = $env:PYTHONPATH
+  $env:PYTHONPATH = if ($prevPythonPath) {
+    "$Global:RepoPath;$prevPythonPath"
+  } else {
+    $Global:RepoPath
+  }
+  try {
+    & $PythonExe $script:PortsGeneratorPath
+    if ($LASTEXITCODE -ne 0) {
+      Write-ThrowContext
+      throw "generate_scoped_mappings.py failed with exit code $LASTEXITCODE"
+    }
+  } finally {
+    if ($null -eq $prevPythonPath) {
+      Remove-Item Env:\PYTHONPATH -ErrorAction SilentlyContinue
+    } else {
+      $env:PYTHONPATH = $prevPythonPath
+    }
   }
 }
 

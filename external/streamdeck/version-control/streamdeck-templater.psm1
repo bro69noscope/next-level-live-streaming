@@ -510,143 +510,160 @@ function ConvertTo-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [switch]$SkipSeeding
   )
 
-  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
-  Write-VcsLogSeparator
+  try {
 
-  $InputPath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
+    $isRootCall = ($null -eq $vcsFormatQueue)
+    if ($isRootCall) {
+      $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
+      Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
+      Write-VcsLogSeparator
+    }
 
-  if (Test-Path $InputPath -PathType Container) {
-    $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
+    $InputPath = (Resolve-Path $InputFilePath).Path
+    Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
 
-    if (-not $manifests) {
-      Write-VcsMessage -Message "No $manifestStr files found under: $InputPath" -Color Yellow
+    if (Test-Path $InputPath -PathType Container) {
+      $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
+
+      if (-not $manifests) {
+        Write-VcsMessage -Message "No $manifestStr files found under: $InputPath" -Color Yellow
+        return
+      }
+
+      $unexpectedPaths = @()
+
+      if (-not $SkipSeeding) {
+        $seededPaths = @()
+        New-MissingStreamDeckMarkers -Manifests $manifests | Out-Null
+        $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
+
+        Write-VcsMessage -AsVerbose -Message ("Found $($jsonMarkerFiles.Count) $jsonMarkerStr " `
+            + "file(s) under: $InputPath")
+        foreach ($jsonMarkerFile in $jsonMarkerFiles) {
+          try {
+            $initResult = Initialize-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName
+            if ($initResult.WasSeeded) {
+              $seededPaths += $initResult.Path
+            }
+            if ($initResult.IsUnexpected) {
+              $unexpectedPaths += $initResult.Path
+            }
+          } catch {
+            Write-VcsMessage -Message "  Failed to initialize: $($jsonMarkerFile.FullName)" `
+              -Color Red
+            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+            Write-ThrowContext
+            throw "Failed initializing marker file: $($jsonMarkerFile.FullName)"
+          }
+        }
+
+        if ($seededPaths.Count -gt 0) {
+          ConvertTo-StreamDeckTemplate `
+            -InputFilePath $InputPath `
+            -RelativeOutPath $RelativeOutPath `
+            -SkipSeeding
+
+          Write-VcsMessage -Message ""
+          Write-VcsMessage -Message ("Seeded $($seededPaths.Count) new marker template(s) — " `
+              + "add desc if needed.") -Color Yellow
+          $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
+
+          if ($unexpectedPaths.Count -gt 0) {
+            Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
+            $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
+          }
+          return
+        }
+      }
+
+      Write-VcsMessage -AsVerbose `
+        -Message "Found $($manifests.Count) $manifestStr file(s) under: $InputPath"
+
+      foreach ($manifest in $manifests) {
+        try {
+          ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
+            -RelativeOutPath $RelativeOutPath
+        } catch {
+          Write-VcsMessage -Message "  Failed to convert: $($manifest.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-ThrowContext
+          throw "Failed converting manifest: $($manifest.FullName)"
+        }
+      }
+
+      $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
+      $markerGroups = $jsonMarkerFiles | Group-Object {
+        Find-StreamDeckDeviceRoot -StartDirectory (Split-Path $_.FullName -Parent)
+      }
+
+      foreach ($group in $markerGroups) {
+        $homeMarkerFiles = @()
+        $childChanged = $false
+
+        foreach ($jsonMarkerFile in $group.Group) {
+          $markerType = (Get-Content $jsonMarkerFile.FullName -Raw |
+              ConvertFrom-Json -AsHashtable)["type"]
+
+          if ($markerType -eq "home") {
+            $homeMarkerFiles += $jsonMarkerFile
+            continue
+          }
+
+          try {
+            $changed = Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
+              -RelativeOutPath $RelativeOutPath
+            if ($changed) {
+              $childChanged = $true
+            }
+          } catch {
+            Write-VcsMessage -Message "  Failed copying: $($jsonMarkerFile.FullName)" -Color Red
+            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+            Write-ThrowContext
+            throw "Failed copying marker file: $($jsonMarkerFile.FullName)"
+          }
+        }
+
+        foreach ($homeMarkerFile in $homeMarkerFiles) {
+          try {
+            Copy-StreamDeckMarkerFile -InputFilePath $homeMarkerFile.FullName `
+              -RelativeOutPath $RelativeOutPath `
+              -ChildChanged:$childChanged | Out-Null
+          } catch {
+            Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)" -Color Red
+            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+            Write-ThrowContext
+            throw "Failed copying home marker file: $($homeMarkerFile.FullName)"
+          }
+        }
+      }
+
+      if ($unexpectedPaths.Count -gt 0) {
+        Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
+        $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
+      }
+
       return
     }
 
-    $unexpectedPaths = @()
+    $vcsOutDirPath = Get-StreamDeckVcsOutDirPath `
+      -InputFilePath $InputPath `
+      -RelativeOutPath $RelativeOutPath
 
-    if (-not $SkipSeeding) {
-      $seededPaths = @()
-      New-MissingStreamDeckMarkers -Manifests $manifests | Out-Null
-      $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
+    ConvertTo-VcsTemplateFile `
+      -InputFilePath $InputPath `
+      -VcsOutDirPath $vcsOutDirPath `
+      -Rules $mappings `
+      -FormatQueue:$vcsFormatQueue
 
-      Write-VcsMessage -AsVerbose -Message ("Found $($jsonMarkerFiles.Count) $jsonMarkerStr " `
-          + "file(s) under: $InputPath")
-      foreach ($jsonMarkerFile in $jsonMarkerFiles) {
-        try {
-          $initResult = Initialize-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName
-          if ($initResult.WasSeeded) {
-            $seededPaths += $initResult.Path
-          }
-          if ($initResult.IsUnexpected) {
-            $unexpectedPaths += $initResult.Path
-          }
-        } catch {
-          Write-VcsMessage -Message "  Failed to initialize: $($jsonMarkerFile.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
-          Write-ThrowContext
-          throw "Failed initializing marker file: $($jsonMarkerFile.FullName)"
-        }
+  } finally {
+    if ($isRootCall) {
+      if ($vcsFormatQueue.Count -gt 0) {
+        Format-JsonWithPrettier -FilePaths $vcsFormatQueue
       }
-
-      if ($seededPaths.Count -gt 0) {
-        ConvertTo-StreamDeckTemplate `
-          -InputFilePath $InputPath `
-          -RelativeOutPath $RelativeOutPath `
-          -SkipSeeding
-
-        Write-VcsMessage -Message ""
-        Write-VcsMessage -Message ("Seeded $($seededPaths.Count) new marker template(s) — " `
-            + "add desc if needed.") -Color Yellow
-        $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
-
-        if ($unexpectedPaths.Count -gt 0) {
-          Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
-          $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
-        }
-        return
-      }
+      $vcsFormatQueue = $null
     }
-
-    Write-VcsMessage -AsVerbose `
-      -Message "Found $($manifests.Count) $manifestStr file(s) under: $InputPath"
-
-    foreach ($manifest in $manifests) {
-      try {
-        ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
-          -RelativeOutPath $RelativeOutPath
-      } catch {
-        Write-VcsMessage -Message "  Failed to convert: $($manifest.FullName)" -Color Red
-        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
-        Write-ThrowContext
-        throw "Failed converting manifest: $($manifest.FullName)"
-      }
-    }
-
-    $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
-    $markerGroups = $jsonMarkerFiles | Group-Object {
-      Find-StreamDeckDeviceRoot -StartDirectory (Split-Path $_.FullName -Parent)
-    }
-
-    foreach ($group in $markerGroups) {
-      $homeMarkerFiles = @()
-      $childChanged = $false
-
-      foreach ($jsonMarkerFile in $group.Group) {
-        $markerType = (Get-Content $jsonMarkerFile.FullName -Raw |
-            ConvertFrom-Json -AsHashtable)["type"]
-
-        if ($markerType -eq "home") {
-          $homeMarkerFiles += $jsonMarkerFile
-          continue
-        }
-
-        try {
-          $changed = Copy-StreamDeckMarkerFile -InputFilePath $jsonMarkerFile.FullName `
-            -RelativeOutPath $RelativeOutPath
-          if ($changed) {
-            $childChanged = $true
-          }
-        } catch {
-          Write-VcsMessage -Message "  Failed copying: $($jsonMarkerFile.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
-          Write-ThrowContext
-          throw "Failed copying marker file: $($jsonMarkerFile.FullName)"
-        }
-      }
-
-      foreach ($homeMarkerFile in $homeMarkerFiles) {
-        try {
-          Copy-StreamDeckMarkerFile -InputFilePath $homeMarkerFile.FullName `
-            -RelativeOutPath $RelativeOutPath `
-            -ChildChanged:$childChanged | Out-Null
-        } catch {
-          Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
-          Write-ThrowContext
-          throw "Failed copying home marker file: $($homeMarkerFile.FullName)"
-        }
-      }
-    }
-
-    if ($unexpectedPaths.Count -gt 0) {
-      Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
-      $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
-    }
-
-    return
   }
-
-  $vcsOutDirPath = Get-StreamDeckVcsOutDirPath `
-    -InputFilePath $InputPath `
-    -RelativeOutPath $RelativeOutPath
-
-  ConvertTo-VcsTemplateFile `
-    -InputFilePath $InputPath `
-    -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings
 }
 
 function ConvertFrom-StreamDeckTemplate {

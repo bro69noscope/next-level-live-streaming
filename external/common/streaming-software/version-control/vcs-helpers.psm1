@@ -247,11 +247,7 @@ function Read-ReplacementMappings {
 }
 
 function Format-JsonWithPrettier {
-  # TODO: Maybe there is a way to collect the file paths and run prettier once on all of them,
-  # instead of one at a time. If not, compare files with vcs versions with -Compress to see which
-  # one actually need to be formatted.
-
-  param([string]$FilePath)
+  param([string[]]$FilePaths)
 
   if (-not $Script:PrettierPath) {
     Write-VcsMessage -Message "Warning: Prettier path is not set. Skipping formatting." -Color Yellow
@@ -264,7 +260,20 @@ function Format-JsonWithPrettier {
     return
   }
 
-  & $script:PrettierPath --write $FilePath --no-config
+  Write-VcsMessage -AsVerbose -Message "Formatting $($FilePaths.Count) file(s) with Prettier..."
+
+  $output = & $script:PrettierPath --write $FilePaths --no-config 2>&1
+  foreach ($line in $output) {
+    if ($line -is [System.Management.Automation.ErrorRecord]) {
+      Write-VcsMessage -Message "  $line" -Color Red
+    } else {
+      Write-VcsMessage -AsVerbose -Message "  $line"
+    }
+  }
+  if ($LASTEXITCODE -ne 0) {
+    Write-VcsMessage -Message "Warning: Prettier exited with code $LASTEXITCODE" -Color Red
+    $output | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Red }
+  }
 }
 
 function Assert-InputPath {
@@ -433,7 +442,10 @@ function ConvertTo-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
     [Parameter(Mandatory=$true)] [string]$VcsOutDirPath,
-    [Parameter(Mandatory=$true)] [array]$Rules
+    [Parameter(Mandatory=$true)] [array]$Rules,
+    [Parameter(Mandatory=$true)]
+    [AllowEmptyCollection()]
+    [System.Collections.Generic.List[string]]$FormatQueue
   )
 
   $inputFileName  = Split-Path $InputFilePath -Leaf
@@ -485,9 +497,21 @@ function ConvertTo-VcsTemplateFile {
     }
   }
 
-  $content | Set-Content $vcsOutFilePath -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $vcsOutFilePath
-  Write-VcsMessage -Message "Template saved: $vcsOutFilePath" -AsVerbose
+  $needsWrite = $true
+  if (Test-Path $vcsOutFilePath) {
+    $existingCanonical = (Get-Content $vcsOutFilePath -Raw |
+        ConvertFrom-Json -AsHashtable | ConvertTo-Json -Compress -Depth 100)
+    $newCanonical = ($content | ConvertFrom-Json -AsHashtable | ConvertTo-Json -Compress -Depth 100)
+    $needsWrite = $existingCanonical -ne $newCanonical
+  }
+
+  if ($needsWrite) {
+    $content | Set-Content $vcsOutFilePath -Encoding UTF8
+    Write-VcsMessage -Message "Template saved: $vcsOutFilePath" -AsVerbose
+  } else {
+    Write-VcsMessage -Message "Unchanged content: $vcsOutFilePath" -AsVerbose
+  }
+  $FormatQueue.Add($vcsOutFilePath)
 
   New-Item `
     -ItemType SymbolicLink `
@@ -535,7 +559,7 @@ function ConvertFrom-VcsTemplateFile {
   }
 
   $content | Set-Content $outFilePath -Encoding UTF8
-  Format-JsonWithPrettier -FilePath $outFilePath
+  Format-JsonWithPrettier -FilePaths $outFilePath
   Write-VcsMessage -Message "Real config saved: $outFilePath" -Verbose
 
   return $outFilePath
@@ -545,6 +569,7 @@ $FunctionsToExport = @(
   "Assert-InputPath"
   "ConvertFrom-VcsTemplateFile"
   "ConvertTo-VcsTemplateFile"
+  "Format-JsonWithPrettier"
   "Get-VcsRelativePath"
   "Read-ReplacementMappings"
   "Set-VcsLogFilePath"

@@ -56,53 +56,67 @@ function ConvertTo-StreamerbotTemplate {
     [Parameter(Mandatory=$true)]  [string]$InputFilePath
   )
 
-  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
-  Write-VcsLogSeparator
+  $isRootCall = ($null -eq $script:VcsFormatQueue)
 
-  $InputPath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath $InputPath -Roots $streamerbotRoots
+  try {
+    if ($isRootCall) {
+      $script:VcsFormatQueue = [System.Collections.Generic.List[string]]::new()
+      Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
+      Write-VcsLogSeparator
+    }
 
-  if (Test-Path $InputPath -PathType Container) {
-    $candidates = Get-ChildItem $InputPath -Recurse -File -Filter "*.json" |
-      Where-Object {
-        $_.Name -notmatch '\.vcs-template\.json$' -and
-        (Test-StreamerbotMarkerPath -Path $_.FullName)
+    $InputPath = (Resolve-Path $InputFilePath).Path
+    Assert-InputPath $InputPath -Roots $streamerbotRoots
+
+    if (Test-Path $InputPath -PathType Container) {
+      $candidates = Get-ChildItem $InputPath -Recurse -File -Filter "*.json" |
+        Where-Object {
+          $_.Name -notmatch '\.vcs-template\.json$' -and
+          (Test-StreamerbotMarkerPath -Path $_.FullName)
+        }
+      if (-not $candidates) {
+        Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
+        Write-VcsMessage -Message "  (must live under one of: $($script:SbotMarkers -join ', '))" `
+          -Color Yellow
+        return
       }
-
-    if (-not $candidates) {
-      Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
-      Write-VcsMessage -Message "  (must live under one of: $($script:SbotMarkers -join ', '))" `
-        -Color Yellow
+      Write-VcsMessage -Message "Found $($candidates.Count) matching .json file(s) under: $InputPath"
+      foreach ($candidate in $candidates) {
+        try {
+          ConvertTo-StreamerbotTemplate -InputFilePath $candidate.FullName
+        } catch {
+          Write-VcsMessage -Message "  Failed to convert: $($candidate.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-ThrowContext
+          throw "Failed to convert $($candidate.FullName) to vcs-template"
+        }
+      }
       return
     }
 
-    Write-VcsMessage -Message "Found $($candidates.Count) matching .json file(s) under: $InputPath"
-    foreach ($candidate in $candidates) {
-      Write-VcsMessage -Message ""
-      try {
-        ConvertTo-StreamerbotTemplate -InputFilePath $candidate.FullName
-      } catch {
-        Write-VcsMessage -Message "  Failed: $($candidate.FullName)" -Color Red
-        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+    $VcsRelativePath = Get-VcsRelativePath `
+      -InputFilePath $InputPath `
+      -Roots $streamerbotRoots `
+      -Markers $script:SbotMarkers `
+      -AppName "Streamer.bot"
+    $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
+    $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
+
+    ConvertTo-VcsTemplateFile `
+      -InputFilePath $InputPath `
+      -VcsOutDirPath $vcsOutDirPath `
+      -Rules $mappings `
+      -FormatQueue $script:VcsFormatQueue
+
+  } finally {
+    if ($isRootCall) {
+      if ($script:VcsFormatQueue.Count -gt 0) {
+        Format-JsonWithPrettier -FilePaths $script:VcsFormatQueue
       }
+      $script:VcsFormatQueue = $null
     }
-    return
   }
-
-  $VcsRelativePath = Get-VcsRelativePath `
-    -InputFilePath $InputPath `
-    -Roots $streamerbotRoots `
-    -Markers $script:SbotMarkers `
-    -AppName "Streamer.bot"
-
-  $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
-  $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
-
-  ConvertTo-VcsTemplateFile `
-    -InputFilePath $InputPath `
-    -VcsOutDirPath $vcsOutDirPath `
-    -Rules $mappings
 }
 
 function ConvertFrom-StreamerbotTemplate {
@@ -134,7 +148,6 @@ function ConvertFrom-StreamerbotTemplate {
     Write-VcsMessage -Message ("Found $($templates.Count) matching *.vcs-template.json file(s) " `
         + "under: $InputPath")
     foreach ($template in $templates) {
-      Write-VcsMessage -Message ""
       try {
         ConvertFrom-StreamerbotTemplate `
           -InputFilePath $template.FullName `

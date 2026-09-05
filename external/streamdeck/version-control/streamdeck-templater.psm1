@@ -729,20 +729,20 @@ Write-VcsMessage -NoLog -Message "  $PSScriptRoot"
 Write-VcsMessage -NoLog -Message "Usage:" -Color Cyan
 Write-VcsMessage -NoLog -Message "  All input files must be under: $script:SdeckBasePath"
 
-Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'manifest.json'                " `
-    + "       # Creates vcs-template.json")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'manifest.json'                " +
+  "       # Creates vcs-template.json")
 
-Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'  " `
-    + "       # Uses custom out path relative to this script location")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'manifest.json' 'custom/path'  " +
+  "       # Uses custom out path relative to this script location")
 
-Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'folder' (or '.')              " `
-    + "       # Recursively creates vcs-template.json for every manifest.json under folder")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamDeckTemplate 'folder' (or '.')              " +
+  "       # Recursively creates vcs-template.json for every manifest.json under folder")
 
-Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json' " `
-    + "       # Creates manifest.json")
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamDeckTemplate 'manifest.vcs-template.json' " +
+  "       # Creates manifest.json")
 
-Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamDeckTemplate 'folder' (or '.')            " `
-    + "       # Recursively restores every *.vcs-template.json under folder")
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamDeckTemplate 'folder' (or '.')            " +
+  "       # Recursively restores every *.vcs-template.json under folder")
 
 Export-ModuleMember -Function ConvertTo-StreamDeckTemplate, ConvertFrom-StreamDeckTemplate
 Write-VcsMessage -NoLog -Message "StreamDeck Templater functions loaded!" -Color Green

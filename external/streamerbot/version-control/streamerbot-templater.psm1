@@ -186,17 +186,17 @@ Write-VcsMessage -NoLog -Message "Usage:" -Color Cyan
 Write-VcsMessage -NoLog -Message ("  All input files must be under:`n$(
   $script:streamerbotRoots.Path -join "`n"
 )")
-Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamerbotTemplate 'actions.json'                " `
-    + "       # Creates vcs-template.json")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamerbotTemplate 'actions.json'                " +
+  "       # Creates vcs-template.json")
 
-Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamerbotTemplate 'folder' (or '.')             " `
-    + "       # Recursively creates vcs-template.json for every matching .json under folder")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-StreamerbotTemplate 'folder' (or '.')             " +
+  "       # Recursively creates vcs-template.json for every matching .json under folder")
 
-Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' " `
-    + "       # Creates actions.json")
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamerbotTemplate 'actions.vcs-template.json' " +
+  "       # Creates actions.json")
 
-Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamerbotTemplate 'folder' (or '.')           " `
-    + "       # Recursively restores every matching *.vcs-template.json under folder")
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-StreamerbotTemplate 'folder' (or '.')           " +
+  "       # Recursively restores every matching *.vcs-template.json under folder")
 
 Export-ModuleMember -Function ConvertTo-StreamerbotTemplate, ConvertFrom-StreamerbotTemplate
 Write-VcsMessage -NoLog -Message "Healthcheck:" -Color Cyan

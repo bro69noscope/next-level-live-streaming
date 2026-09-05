@@ -222,17 +222,17 @@ Write-VcsMessage -NoLog -Message ("  All input files must be under:`n$(
   $obsRoots.Path -join "`n"
 )")
 
-Write-VcsMessage -NoLog -Message ("  ConvertTo-ObsTemplate 'scenes.json'                         " `
-    + "       # Creates vcs-template.json")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-ObsTemplate 'scenes.json'                         " +
+  "       # Creates vcs-template.json")
 
-Write-VcsMessage -NoLog -Message ("  ConvertTo-ObsTemplate 'folder' (or '.')                     " `
-    + "       # Recursively creates vcs-template.json for every matching .json under folder")
+Write-VcsMessage -NoLog -Message ("  ConvertTo-ObsTemplate 'folder' (or '.')                     " +
+  "       # Recursively creates vcs-template.json for every matching .json under folder")
 
-Write-VcsMessage -NoLog -Message ("  ConvertFrom-ObsTemplate 'scenes.vcs-template.json'          " `
-    + "       # Creates scenes.json")
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-ObsTemplate 'scenes.vcs-template.json'          " +
+  "       # Creates scenes.json")
 
-Write-VcsMessage -NoLog -Message ("  ConvertFrom-ObsTemplate 'folder' (or '.')                   " `
-    + "       # Recursively restores every matching *.vcs-template.json under folder")
+Write-VcsMessage -NoLog -Message ("  ConvertFrom-ObsTemplate 'folder' (or '.')                   " +
+  "       # Recursively restores every matching *.vcs-template.json under folder")
 
 Export-ModuleMember -Function ConvertTo-ObsTemplate, ConvertFrom-ObsTemplate
 Write-VcsMessage -NoLog -Message "OBS Templater functions loaded!" -Color Green

@@ -10,6 +10,11 @@ $script:VcsMaxLogSizeBytes = 2MB
 $script:VcsVerboseEnabled = $false
 $Script:LogSuffix = "-vcs-templater.log"
 
+function Get-VcsMarkerFile {
+  param([Parameter(Mandatory=$true)] [string]$DirectoryPath)
+  return Get-ChildItem $DirectoryPath -File -Filter "*-marker.json" | Select-Object -First 1
+}
+
 function Write-VcsLogSeparator {
   param([int]$Lines = 5)
   if ($script:VcsLogFilePath) {
@@ -527,6 +532,7 @@ function ConvertFrom-VcsTemplateFile {
   )
 
   $inputFileName = Split-Path $InputFilePath -Leaf
+  $inputDirectory = Split-Path $InputFilePath -Parent
 
   if ($InputFilePath -notmatch '\.vcs-template\.json$') {
     Write-ThrowContext
@@ -546,6 +552,19 @@ function ConvertFrom-VcsTemplateFile {
   }
 
   $content = Get-Content $InputFilePath -Raw
+
+  if ([string]::IsNullOrWhiteSpace($content)) {
+    $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
+    Write-VcsMessage -Message "Template file: $InputFilePath is empty or unreadable" -Color Red
+    if ($markerFile) {
+      Write-VcsMessage -Message "  (Marker file present: $($markerFile.Name))" -Color Red
+    } else {
+      Write-VcsMessage -Message "  (No Marker file found)" -Color Red
+    }
+    Write-ThrowContext
+    throw "Template file is empty or unreadable: $InputFilePath"
+  }
+
 
   foreach ($rule in $Rules) {
     $content = Invoke-ScopedRestore -Content $content -Value $rule.Value -Token $rule.Token
@@ -571,6 +590,7 @@ $FunctionsToExport = @(
   "ConvertTo-VcsTemplateFile"
   "Format-JsonWithPrettier"
   "Get-VcsRelativePath"
+  "Get-VcsMarkerFile"
   "Read-ReplacementMappings"
   "Set-VcsLogFilePath"
   "Set-VcsVerbose"

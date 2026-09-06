@@ -557,7 +557,10 @@ function ConvertFrom-VcsTemplateFile {
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$true)]  [array]$Rules,
     [Parameter(Mandatory=$false)] [switch]$Backup,
-    [Parameter(Mandatory=$true)]  [ref]$ReplacedCount
+    [Parameter(Mandatory=$true)]  [ref]$ReplacedCount,
+    [Parameter(Mandatory=$true)]
+    [AllowEmptyCollection()]
+    [System.Collections.Generic.List[string]]$FormatQueue
   )
 
   $inputFileName = Split-Path $InputFilePath -Leaf
@@ -608,7 +611,7 @@ function ConvertFrom-VcsTemplateFile {
   }
 
   $content | Set-Content $outFilePath -Encoding UTF8
-  Format-JsonWithPrettier -FilePaths $outFilePath
+  $FormatQueue.Add($outFilePath)
   Write-VcsMessage -AsVerbose -Message "Real config saved: $outFilePath"
 
   return $outFilePath

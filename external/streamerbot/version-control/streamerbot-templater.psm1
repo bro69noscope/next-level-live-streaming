@@ -137,6 +137,7 @@ function ConvertFrom-StreamerbotTemplate {
   try {
     if ($isRootCall) {
       $vcsReplacedCount = 0
+      $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
       Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
       Write-VcsLogSeparator
@@ -174,10 +175,14 @@ function ConvertFrom-StreamerbotTemplate {
       -InputFilePath $InputPath `
       -Rules $mappings `
       -Backup:$Backup `
-      -ReplacedCount ([ref]$vcsReplacedCount)
+      -ReplacedCount ([ref]$vcsReplacedCount) `
+      -FormatQueue $vcsFormatQueue
 
   } finally {
     if ($isRootCall) {
+      if ($vcsFormatQueue.Count -gt 0) {
+        Format-JsonWithPrettier -FilePaths $vcsFormatQueue
+      }
       Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
       $vcsReplacedCount = $null
     }

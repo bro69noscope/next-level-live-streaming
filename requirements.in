@@ -1,6 +1,7 @@
 aiosqlite
 aiofiles
 black
+cairosvg
 google-cloud-speech
 gtts
 keyboard

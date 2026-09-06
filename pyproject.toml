@@ -6,6 +6,7 @@ version = "0.0.0"
 dev = ["ruff"]
 
 [tool.basedpyright]
+typeCheckingMode = "recommended"
 reportUnusedImport = false                # taken care of by ruff
 reportImplicitStringConcatenation = false # Prefer ruff's implicit concatenation enforcement
 reportUnusedCallResult = false            # Too advanced for me now ngl

@@ -593,6 +593,11 @@ function ConvertTo-StreamDeckTemplate {
         }
       }
 
+      if ($vcsFormatQueue.Count -gt 0) {
+        Format-JsonWithPrettier -FilePaths $vcsFormatQueue
+        $vcsFormatQueue.Clear()
+      }
+
       $jsonMarkerFiles = Get-ChildItem $InputPath -Recurse -File -Filter $jsonMarkerStr
       $markerGroups = $jsonMarkerFiles | Group-Object {
         Find-StreamDeckDeviceRoot -StartDirectory (Split-Path $_.FullName -Parent)
@@ -660,9 +665,6 @@ function ConvertTo-StreamDeckTemplate {
 
   } finally {
     if ($isRootCall) {
-      if ($vcsFormatQueue.Count -gt 0) {
-        Format-JsonWithPrettier -FilePaths $vcsFormatQueue
-      }
       Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
       $vcsFormatQueue = $null
     }

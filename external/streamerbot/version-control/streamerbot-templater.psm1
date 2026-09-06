@@ -56,11 +56,11 @@ function ConvertTo-StreamerbotTemplate {
     [Parameter(Mandatory=$true)]  [string]$InputFilePath
   )
 
-  $isRootCall = ($null -eq $script:VcsFormatQueue)
+  $isRootCall = ($null -eq $vcsFormatQueue)
 
   try {
     if ($isRootCall) {
-      $script:VcsFormatQueue = [System.Collections.Generic.List[string]]::new()
+      $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       $vcsReplacedCount = 0
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
       Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
@@ -76,13 +76,16 @@ function ConvertTo-StreamerbotTemplate {
           $_.Name -notmatch '\.vcs-template\.json$' -and
           (Test-StreamerbotMarkerPath -Path $_.FullName)
         }
+
       if (-not $candidates) {
         Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
         Write-VcsMessage -Message "  (must live under one of: $($script:SbotMarkers -join ', '))" `
           -Color Yellow
         return
       }
+
       Write-VcsMessage -Message "Found $($candidates.Count) matching .json file(s) under: $InputPath"
+
       foreach ($candidate in $candidates) {
         try {
           ConvertTo-StreamerbotTemplate -InputFilePath $candidate.FullName
@@ -92,6 +95,10 @@ function ConvertTo-StreamerbotTemplate {
           Write-ThrowContext
           throw "Failed to convert $($candidate.FullName) to vcs-template"
         }
+      }
+
+      if ($vcsFormatQueue.Count -gt 0) {
+        Format-JsonWithPrettier -FilePaths $vcsFormatQueue
       }
       return
     }
@@ -108,16 +115,13 @@ function ConvertTo-StreamerbotTemplate {
       -InputFilePath $InputPath `
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
-      -FormatQueue $script:VcsFormatQueue `
+      -FormatQueue $vcsFormatQueue `
       -ReplacedCount ([ref]$vcsReplacedCount)
 
   } finally {
     if ($isRootCall) {
-      if ($script:VcsFormatQueue.Count -gt 0) {
-        Format-JsonWithPrettier -FilePaths $script:VcsFormatQueue
-      }
       Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
-      $script:VcsFormatQueue = $null
+      $vcsFormatQueue = $null
       $vcsReplacedCount = $null
     }
   }

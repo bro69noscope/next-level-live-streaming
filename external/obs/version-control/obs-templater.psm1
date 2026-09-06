@@ -89,11 +89,11 @@ function ConvertTo-ObsTemplate {
     [string]$InputFilePath
   )
 
-  $isRootCall = ($null -eq $script:VcsFormatQueue)
+  $isRootCall = ($null -eq $vcsFormatQueue)
 
   try {
     if ($isRootCall) {
-      $script:VcsFormatQueue = [System.Collections.Generic.List[string]]::new()
+      $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       $vcsReplacedCount = 0
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
       Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "obs"
@@ -109,14 +109,17 @@ function ConvertTo-ObsTemplate {
           $_.Name -notmatch '\.vcs-template\.json$' -and
           (Test-ObsMarkerPath -Path $_.FullName)
         }
+
       if (-not $candidates) {
         Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
         Write-VcsMessage -Message "  (must live under one of: $($script:ObsMarkers -join ', '))" `
           -Color Yellow
         return
       }
+
       Write-VcsMessage -AsVerbose -Message ("Found $($candidates.Count) matching .json file(s) " `
           + "under: $InputPath")
+
       foreach ($candidate in $candidates) {
         try {
           ConvertTo-ObsTemplate -InputFilePath $candidate.FullName
@@ -126,6 +129,10 @@ function ConvertTo-ObsTemplate {
           Write-ThrowContext
           throw "Failed to convert $($candidate.FullName) to vcs-template"
         }
+      }
+
+      if ($vcsFormatQueue.Count -gt 0) {
+        Format-JsonWithPrettier -FilePaths $vcsFormatQueue
       }
       return
     }
@@ -143,16 +150,13 @@ function ConvertTo-ObsTemplate {
       -InputFilePath $InputPath `
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
-      -FormatQueue $script:VcsFormatQueue `
+      -FormatQueue $vcsFormatQueue `
       -ReplacedCount ([ref]$vcsReplacedCount)
 
   } finally {
     if ($isRootCall) {
-      if ($script:VcsFormatQueue.Count -gt 0) {
-        Format-JsonWithPrettier -FilePaths $script:VcsFormatQueue
-      }
       Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
-      $script:VcsFormatQueue = $null
+      $vcsFormatQueue = $null
       $vcsReplacedCount = $null
     }
   }

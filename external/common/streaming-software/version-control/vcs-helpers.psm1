@@ -396,12 +396,13 @@ function Invoke-ScopedReplace {
   )
 
   $isNumericSearch = $SearchValue -match '^-?\d+(\.\d+)?$'
+  $countRef = [ref]0
 
   # "Key": "quoted value" OR "Key": bareNumber
   $pattern = "(?<prefix>`"$([regex]::Escape($Key))`"\s*:\s*)" +
   "(?<val>`"(?:[^`"\\]|\\.)*`"|-?\d+(?:\.\d+)?)"
 
-  return [regex]::Replace($Content, $pattern, {
+  $newContent = [regex]::Replace($Content, $pattern, {
       param($m)
       $prefix = $m.Groups['prefix'].Value
       $val    = $m.Groups['val'].Value
@@ -410,25 +411,32 @@ function Invoke-ScopedReplace {
         $inner = $val.Substring(1, $val.Length - 2)   # strip surrounding quotes
 
         if ($isNumericSearch) {
-          # Numeric rule values require an exact match even if the target
-          # happens to be quoted — never a substring match on digits.
+          # Numeric rule values require an exact match even if the target happens to be quoted —
+          # never a substring match on digits. Don't replace 8080 in "19808045" or "8080abc": the
+          # port number 8080 is only meaningful when on its own.
           if ($inner -eq $SearchValue) {
-            Write-VcsMessage -Message "  Replaced ($Key): `"$SearchValue`" -> `"$Token`"" `
-              -Color DarkCyan
+            Write-VcsMessage -AsVerbose -Message (
+              "  Replaced ($Key): `"$SearchValue`" -> `"$Token`"") -Color DarkCyan
+            $countRef.Value++
             return $prefix + "`"$Token`""
           }
         } elseif ($inner.Contains($SearchValue)) {
-          Write-VcsMessage -Message "  Replaced ($Key): $SearchValue -> $Token in $val" `
+          Write-VcsMessage -AsVerbose -Message "  Replaced ($Key): $SearchValue -> $Token in $val" `
             -Color DarkCyan
+          $countRef.Value++
           return $prefix + "`"$($inner.Replace($SearchValue, $Token))`""
         }
       } elseif ($val -eq $SearchValue) {
-        Write-VcsMessage -Message "  Replaced ($Key): $SearchValue -> `"$Token`"" -Color DarkCyan
+        Write-VcsMessage -AsVerbose -Message "  Replaced ($Key): $SearchValue -> `"$Token`"" `
+          -Color DarkCyan
+        $countRef.Value++
         return $prefix + "`"$Token`""
       }
 
       return $m.Value
-    })
+    }.GetNewClosure())
+
+  return [PSCustomObject]@{ Content = $newContent; Count = $countRef.Value }
 }
 
 function Invoke-ScopedRestore {
@@ -439,20 +447,23 @@ function Invoke-ScopedRestore {
   )
 
   $isNumeric = $Value -match '^-?\d+(\.\d+)?$'
+  $count = 0
 
   if ($isNumeric) {
     $quotedToken = "`"$Token`""
     if ($Content.Contains($quotedToken)) {
       $Content = $Content.Replace($quotedToken, $Value)
-      Write-VcsMessage -Message "  Replaced: $quotedToken -> $Value" -Color DarkCyan
+      Write-VcsMessage -AsVerbose -Message "  Replaced: $quotedToken -> $Value" -Color DarkCyan
+      $count++
     }
   } elseif ($Content.Contains($Token)) {
     $escapedValue = ($Value | ConvertTo-Json -Compress).Trim('"')
     $Content = $Content.Replace($Token, $escapedValue)
-    Write-VcsMessage -Message "  Replaced: $Token -> $Value" -Color DarkCyan
+    Write-VcsMessage -AsVerbose -Message "  Replaced: $Token -> $Value" -Color DarkCyan
+    $count++
   }
 
-  return $Content
+  return [PSCustomObject]@{ Content = $Content; Count = $count }
 }
 
 function ConvertTo-VcsTemplateFile {
@@ -462,7 +473,8 @@ function ConvertTo-VcsTemplateFile {
     [Parameter(Mandatory=$true)] [array]$Rules,
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
-    [System.Collections.Generic.List[string]]$FormatQueue
+    [System.Collections.Generic.List[string]]$FormatQueue,
+    [Parameter(Mandatory=$true)] [ref]$ReplacedCount
   )
 
   $inputFileName  = Split-Path $InputFilePath -Leaf
@@ -495,11 +507,13 @@ function ConvertTo-VcsTemplateFile {
 
   foreach ($rule in $sortedRules) {
     if ($rule.Key) {
-      $content = Invoke-ScopedReplace `
+      $result = Invoke-ScopedReplace `
         -Content $content `
         -Key $rule.Key `
         -SearchValue $rule.Value `
         -Token $rule.Token
+      $content = $result.Content
+      $ReplacedCount.Value += $result.Count
     } else {
       $variants = @(
         $rule.Value,
@@ -508,7 +522,9 @@ function ConvertTo-VcsTemplateFile {
       foreach ($variant in $variants) {
         if ($content.Contains($variant)) {
           $content = $content.Replace($variant, $rule.Token)
-          Write-VcsMessage -Message "  Replaced: $variant -> $($rule.Token)" -Color DarkCyan
+          Write-VcsMessage -AsVerbose -Message "  Replaced: $variant -> $($rule.Token)" `
+            -Color DarkCyan
+          $ReplacedCount.Value++
         }
       }
     }
@@ -540,7 +556,8 @@ function ConvertFrom-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)]  [string]$InputFilePath,
     [Parameter(Mandatory=$true)]  [array]$Rules,
-    [Parameter(Mandatory=$false)] [switch]$Backup
+    [Parameter(Mandatory=$false)] [switch]$Backup,
+    [Parameter(Mandatory=$true)]  [ref]$ReplacedCount
   )
 
   $inputFileName = Split-Path $InputFilePath -Leaf
@@ -577,9 +594,10 @@ function ConvertFrom-VcsTemplateFile {
     throw "Template file is empty or unreadable: $InputFilePath"
   }
 
-
   foreach ($rule in $Rules) {
-    $content = Invoke-ScopedRestore -Content $content -Value $rule.Value -Token $rule.Token
+    $result = Invoke-ScopedRestore -Content $content -Value $rule.Value -Token $rule.Token
+    $content = $result.Content
+    $ReplacedCount.Value += $result.Count
   }
 
   $unresolvedMatches = [regex]::Matches($content, '\{\{[A-Z0-9_]+\}\}') |

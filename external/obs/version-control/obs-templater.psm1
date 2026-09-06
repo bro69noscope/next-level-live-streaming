@@ -94,6 +94,7 @@ function ConvertTo-ObsTemplate {
   try {
     if ($isRootCall) {
       $script:VcsFormatQueue = [System.Collections.Generic.List[string]]::new()
+      $vcsReplacedCount = 0
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
       Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "obs"
       Write-VcsLogSeparator
@@ -142,14 +143,17 @@ function ConvertTo-ObsTemplate {
       -InputFilePath $InputPath `
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
-      -FormatQueue $script:VcsFormatQueue
+      -FormatQueue $script:VcsFormatQueue `
+      -ReplacedCount ([ref]$vcsReplacedCount)
 
   } finally {
     if ($isRootCall) {
       if ($script:VcsFormatQueue.Count -gt 0) {
         Format-JsonWithPrettier -FilePaths $script:VcsFormatQueue
       }
+      Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
       $script:VcsFormatQueue = $null
+      $vcsReplacedCount = $null
     }
   }
 }
@@ -163,42 +167,56 @@ function ConvertFrom-ObsTemplate {
     [switch]$Backup
   )
 
-  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "obs"
-  Write-VcsLogSeparator
+  $isRootCall = ($null -eq $vcsReplacedCount)
 
-  $InputPath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath $InputPath -Roots $obsRoots
+  try {
+    if ($isRootCall) {
+      $vcsReplacedCount = 0
+      Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "obs"
+      Write-VcsLogSeparator
+    }
 
-  if (Test-Path $InputPath -PathType Container) {
-    $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json" |
-      Where-Object { Test-ObsMarkerPath -Path $_.FullName }
+    $InputPath = (Resolve-Path $InputFilePath).Path
+    Assert-InputPath $InputPath -Roots $obsRoots
 
-    if (-not $templates) {
-      Write-VcsMessage -Message "No matching *.vcs-template.json files found under: $InputPath" `
-        -Color Yellow
+    if (Test-Path $InputPath -PathType Container) {
+      $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json" |
+        Where-Object { Test-ObsMarkerPath -Path $_.FullName }
+
+      if (-not $templates) {
+        Write-VcsMessage -Message "No matching *.vcs-template.json files found under: $InputPath" `
+          -Color Yellow
+        return
+      }
+
+      Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) matching " `
+          + "*.vcs-template.json file(s) under: $InputPath")
+      foreach ($template in $templates) {
+        try {
+          ConvertFrom-ObsTemplate `
+            -InputFilePath $template.FullName `
+            -Backup:$Backup
+        } catch {
+          Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+        }
+      }
       return
     }
 
-    Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) matching " `
-        + "*.vcs-template.json file(s) under: $InputPath")
-    foreach ($template in $templates) {
-      try {
-        ConvertFrom-ObsTemplate `
-          -InputFilePath $template.FullName `
-          -Backup:$Backup
-      } catch {
-        Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
-        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
-      }
-    }
-    return
-  }
+    ConvertFrom-VcsTemplateFile `
+      -InputFilePath $InputPath `
+      -Rules $mappings `
+      -Backup:$Backup `
+      -ReplacedCount ([ref]$vcsReplacedCount)
 
-  ConvertFrom-VcsTemplateFile `
-    -InputFilePath $InputPath `
-    -Rules $mappings `
-    -Backup:$Backup
+  } finally {
+    if ($isRootCall) {
+      Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
+      $vcsReplacedCount = $null
+    }
+  }
 }
 
 Write-VcsMessage -NoLog -Message ""

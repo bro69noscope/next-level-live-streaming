@@ -515,6 +515,7 @@ function ConvertTo-StreamDeckTemplate {
     $isRootCall = ($null -eq $vcsFormatQueue)
     if ($isRootCall) {
       $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
+      $vcsReplacedCount = 0
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
       Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
       Write-VcsLogSeparator
@@ -654,13 +655,15 @@ function ConvertTo-StreamDeckTemplate {
       -InputFilePath $InputPath `
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
-      -FormatQueue:$vcsFormatQueue
+      -FormatQueue:$vcsFormatQueue `
+      -ReplacedCount ([ref]$vcsReplacedCount)
 
   } finally {
     if ($isRootCall) {
       if ($vcsFormatQueue.Count -gt 0) {
         Format-JsonWithPrettier -FilePaths $vcsFormatQueue
       }
+      Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
       $vcsFormatQueue = $null
     }
   }
@@ -673,69 +676,83 @@ function ConvertFrom-StreamDeckTemplate {
     [Parameter(Mandatory=$false)] [switch]$Backup
   )
 
-  Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-  Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
-  Write-VcsLogSeparator
+  try {
 
-  $InputPath = (Resolve-Path $InputFilePath).Path
-  Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
+    $isRootCall = ($null -eq $vcsReplacedCount)
+    if ($isRootCall) {
+      $vcsReplacedCount = 0
+      Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
+      Write-VcsLogSeparator
+    }
 
-  if (Test-Path $InputPath -PathType Container) {
-    $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json"
-    if (-not $templates) {
-      Write-VcsMessage -Message "No *.vcs-template.json files found under: $InputPath" `
-        -Color Yellow
+    $InputPath = (Resolve-Path $InputFilePath).Path
+    Assert-InputPath -Path $InputPath -Roots $streamDeckRoots
+
+    if (Test-Path $InputPath -PathType Container) {
+      $templates = Get-ChildItem $InputPath -Recurse -File -Filter "*.vcs-template.json"
+      if (-not $templates) {
+        Write-VcsMessage -Message "No *.vcs-template.json files found under: $InputPath" `
+          -Color Yellow
+        return
+      }
+      Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) *.vcs-template.json " `
+          + "file(s) under: $InputPath")
+
+      foreach ($template in $templates) {
+        $inputDirectory = Split-Path $template.FullName -Parent
+        $symlinkFile = Get-Item $template.FullName -Force
+
+        if (Test-DanglingVcsSymlink -SymlinkFile $symlinkFile) {
+          Write-VcsMessage -Message ("  This folder's manifest.json symlink no longer resolves to a" +
+            " valid path in the vcs repository:") -Color Yellow
+          $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
+          if ($markerFile) {
+            Write-VcsMessage -Message "  Marker file: $($markerFile.Name):" -Color Yellow
+          } else {
+            Write-VcsMessage -Message "  Marker file: none found:" -Color Yellow
+          }
+          Write-VcsMessage -Message "    $inputDirectory" -Color Yellow
+          Write-VcsMessage -Message ("  This may be due to intentional deletion of a no longer used" +
+            " ressource.") -Color Yellow
+
+          $response = Read-Host "  Delete this local folder? (y/N)"
+
+          if ($response -eq 'y') {
+            Remove-Item $inputDirectory -Recurse -Force
+            Write-VcsMessage -Message "  Deleted: $inputDirectory" -Color Yellow
+          } else {
+            Write-VcsMessage -Message "  Skipped: $inputDirectory" -Color DarkGray
+          }
+          continue
+        }
+
+        try {
+          ConvertFrom-StreamDeckTemplate `
+            -InputFilePath $template.FullName `
+            -Backup:$Backup
+        } catch {
+          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName)" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-ThrowContext
+          throw "Failed converting from template: $($template.FullName)"
+        }
+      }
       return
     }
-    Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) *.vcs-template.json " `
-        + "file(s) under: $InputPath")
 
-    foreach ($template in $templates) {
-      $inputDirectory = Split-Path $template.FullName -Parent
-      $symlinkFile = Get-Item $template.FullName -Force
+    ConvertFrom-VcsTemplateFile `
+      -InputFilePath $InputPath `
+      -Rules $mappings `
+      -Backup:$Backup `
+      -ReplacedCount ([ref]$vcsReplacedCount)
 
-      if (Test-DanglingVcsSymlink -SymlinkFile $symlinkFile) {
-        Write-VcsMessage -Message ("  This folder's manifest.json symlink no longer resolves to a" +
-          " valid path in the vcs repository:") -Color Yellow
-        $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
-        if ($markerFile) {
-          Write-VcsMessage -Message "  Marker file: $($markerFile.Name):" -Color Yellow
-        } else {
-          Write-VcsMessage -Message "  Marker file: none found:" -Color Yellow
-        }
-        Write-VcsMessage -Message "    $inputDirectory" -Color Yellow
-        Write-VcsMessage -Message ("  This may be due to intentional deletion of a no longer used" +
-          " ressource.") -Color Yellow
-
-        $response = Read-Host "  Delete this local folder? (y/N)"
-
-        if ($response -eq 'y') {
-          Remove-Item $inputDirectory -Recurse -Force
-          Write-VcsMessage -Message "  Deleted: $inputDirectory" -Color Yellow
-        } else {
-          Write-VcsMessage -Message "  Skipped: $inputDirectory" -Color DarkGray
-        }
-        continue
-      }
-
-      try {
-        ConvertFrom-StreamDeckTemplate `
-          -InputFilePath $template.FullName `
-          -Backup:$Backup
-      } catch {
-        Write-VcsMessage -Message "  Failed to convert from: $($template.FullName)" -Color Red
-        Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
-        Write-ThrowContext
-        throw "Failed converting from template: $($template.FullName)"
-      }
+  } finally {
+    if ($isRootCall) {
+      Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
+      $vcsReplacedCount = $null
     }
-    return
   }
-
-  ConvertFrom-VcsTemplateFile `
-    -InputFilePath $InputPath `
-    -Rules $mappings `
-    -Backup:$Backup
 }
 
 Write-VcsMessage -NoLog -Message ""

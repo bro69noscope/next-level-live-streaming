@@ -708,6 +708,11 @@ function ConvertTo-StreamDeckTemplate {
         $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
       }
 
+      $deviceVcsOutPath = Get-StreamDeckVcsOutDirPath `
+        -InputFilePath (Join-Path $InputPath "manifest.json") `
+        -RelativeOutPath $RelativeOutPath
+      Remove-EmptyVcsDirectories -RootPath $deviceVcsOutPath
+
       return
     }
 

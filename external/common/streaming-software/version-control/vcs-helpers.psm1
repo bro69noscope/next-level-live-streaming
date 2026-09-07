@@ -15,6 +15,25 @@ function Get-VcsMarkerFile {
   return Get-ChildItem $DirectoryPath -File -Filter "*-marker.json" | Select-Object -First 1
 }
 
+function Remove-EmptyVcsDirectories {
+  param([Parameter(Mandatory=$true)][string]$RootPath)
+
+  if (-not (Test-Path $RootPath -PathType Container)) {
+    Write-Warning "Remove-EmptyVcsDirectories: RootPath does not exist or is not a directory: $RootPath"
+    return
+  }
+
+  $subDirs = Get-ChildItem $RootPath -Directory -Recurse |
+    Sort-Object { $_.FullName.Length } -Descending
+
+  foreach ($dir in $subDirs) {
+    if (-not (Get-ChildItem $dir.FullName -Force)) {
+      Remove-Item $dir.FullName -Force
+      Write-VcsMessage -Message "  Removed empty vcs directory: $($dir.FullName)" -Color Yellow
+    }
+  }
+}
+
 function Test-DanglingVcsSymlink {
   param([Parameter(Mandatory=$true)] [System.IO.FileInfo]$SymlinkFile)
   if (-not $SymlinkFile.LinkType) {
@@ -625,6 +644,7 @@ $FunctionsToExport = @(
   "Get-VcsRelativePath"
   "Get-VcsMarkerFile"
   "Read-ReplacementMappings"
+  "Remove-EmptyVcsDirectories"
   "Set-VcsLogFilePath"
   "Set-VcsVerbose"
   "Test-DanglingVcsSymlink"

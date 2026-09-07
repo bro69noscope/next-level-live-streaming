@@ -29,6 +29,17 @@ $mappings = Read-ReplacementMappings `
 $Script:manifestStr = "manifest.json"
 $Script:jsonMarkerStr = "*-marker.json"
 
+Function Get-Guid (){
+  return [guid]::NewGuid().ToString("N")
+}
+
+function Get-FileContentHash {
+  param([Parameter(Mandatory=$true)] [string]$FilePath)
+  $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+  $hash = [System.Security.Cryptography.SHA256]::HashData($bytes)
+  return ([System.BitConverter]::ToString($hash) -replace "-").ToLower().Substring(0, 32)
+}
+
 function Find-StreamDeckDeviceRoot {
   param([Parameter(Mandatory=$true)][string]$StartDirectory)
 
@@ -436,23 +447,14 @@ function Copy-StreamDeckMarkerFile {
   }
 
   $isHome = $marker["type"] -eq "home"
-  Function Get-Guid (){
-    return [guid]::NewGuid().ToString("N")
-  }
 
-  if ($isHome) {
-    $newFlag = if ($ChildChanged -or -not $existingFlag) {
-      Get-Guid
-    } else {
-      $existingFlag
-    }
-  } elseif (Test-Path $manifestTemplatePath) {
-    $bytes = [System.IO.File]::ReadAllBytes($manifestTemplatePath)
-    $hash = [System.Security.Cryptography.SHA256]::HashData($bytes)
-    $newFlag = ([System.BitConverter]::ToString($hash) -replace "-").ToLower().Substring(0, 32)
+  if (Test-Path $manifestTemplatePath) {
+    $newFlag = Get-FileContentHash -FilePath $manifestTemplatePath
+    $homeChanged = ($isHome -and $newFlag -ne $existingFlag)
   } else {
     Write-Warning "  No manifest template found: $manifestTemplatePath falling back to random flag"
     $newFlag = "ERROR-NO-MANIFEST-" + (Get-Guid)
+    $homeChanged = $false
   }
 
   $metadataChanged = $true
@@ -473,12 +475,16 @@ function Copy-StreamDeckMarkerFile {
   $marker["vcs-flag"] = $newFlag
   $marker | ConvertTo-Json | Set-Content $destPath -Encoding UTF8
   $truncatedFlag = $newFlag.Substring(0, 6) + "..."
-  $flagChanged = $existingFlag -ne $newFlag
+  $flagChanged = ($existingFlag -ne $newFlag) -or ($isHome -and $ChildChanged)
 
   if ($isHome) {
     if ($flagChanged) {
-      $reason = if ($ChildChanged) {
+      $reason = if ($homeChanged -and $ChildChanged) {
+        "home and child manifest have changes"
+      } elseif ($ChildChanged) {
         "child manifest has changes"
+      } elseif ($homeChanged) {
+        "home manifest has changes"
       } else {
         "had no previous flag"
       }

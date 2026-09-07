@@ -157,10 +157,41 @@ function Resolve-StreamDeckMarkerName {
   if ($hasAnyActions) {
     $homeName = Find-StreamDeckHomeManifest -StartDirectory (Split-Path $MarkerDirectory -Parent)
     if ($homeName) {
-      return @{ Name = $homeName; Type = "profile-page" }
+      $pageIndex = Get-StreamDeckPageIndex -MarkerDirectory $MarkerDirectory
+      return @{ Name = $homeName; Type = "profile-page"; PageIndex = $pageIndex }
     }
   }
 
+  return $null
+}
+
+function Get-StreamDeckPageIndex {
+  param([Parameter(Mandatory=$true)][string]$MarkerDirectory)
+
+  $deviceRoot = Find-StreamDeckDeviceRoot -StartDirectory $MarkerDirectory
+  $homeManifestPath = Join-Path $deviceRoot "manifest.json"
+  if (-not (Test-Path $homeManifestPath)) {
+    Write-VcsMessage -Message "Home manifest not found: $homeManifestPath" -Color Red
+    Write-ThrowContext
+    throw "Home manifest not found: $homeManifestPath"
+  }
+
+  $homeManifest = Get-Content $homeManifestPath -Raw | ConvertFrom-Json -AsHashtable
+  if (-not $homeManifest.ContainsKey("Pages") -or -not $homeManifest["Pages"].ContainsKey("Pages")) {
+    Write-VcsMessage -Message "Home manifest does not have a 'Pages' section: $homeManifestPath" `
+      -Color Red
+    Write-ThrowContext
+    throw "Home manifest does not have a 'Pages' section: $homeManifestPath"
+  }
+
+  $folderGuid = Split-Path $MarkerDirectory -Leaf
+  $pages = $homeManifest["Pages"]["Pages"]
+
+  for ($i = 0; $i -lt $pages.Count; $i++) {
+    if ($pages[$i] -eq $folderGuid) {
+      return $i + 1
+    }
+  }
   return $null
 }
 
@@ -231,7 +262,8 @@ function Get-StreamDeckAncestorChain {
 function Get-StreamDeckMarkerFileName {
   param(
     [Parameter(Mandatory=$true)][string]$Name,
-    [Parameter(Mandatory=$true)][string]$Type
+    [Parameter(Mandatory=$true)][string]$Type,
+    [Parameter(Mandatory=$false)][AllowNull()][Nullable[int]]$PageIndex
   )
 
   $invalidChars = [System.IO.Path]::GetInvalidFileNameChars()
@@ -247,7 +279,13 @@ function Get-StreamDeckMarkerFileName {
     }
   }
 
-  return "$Name--$Type-marker.json"
+  $typeSegment = if ($null -ne $PageIndex) {
+    "$Type-$PageIndex"
+  } else {
+    $Type
+  }
+
+  return "$Name--$typeSegment-marker.json"
 }
 
 function New-MissingStreamDeckMarkers {
@@ -325,6 +363,11 @@ function Initialize-StreamDeckMarkerFile {
     } else {
       "unknown"
     }
+    "pageIndex" = if ($resolved -and $resolved.ContainsKey("PageIndex")) {
+      $resolved.PageIndex
+    } else {
+      $null
+    }
     "parents" = $parentsChain
     "fullChainDisplay" = $fullChainDisplay
   }
@@ -339,7 +382,8 @@ function Initialize-StreamDeckMarkerFile {
 
   if ($marker["name"] -and $marker["type"]) {
     try {
-      $expectedFileName = Get-StreamDeckMarkerFileName -Name $marker["name"] -Type $marker["type"]
+      $expectedFileName = Get-StreamDeckMarkerFileName -Name $marker["name"] -Type $marker["type"] `
+        -PageIndex $marker["pageIndex"]
       $expectedPath = Join-Path $markerDirectory $expectedFileName
 
       if ($expectedPath -ne $markerPath) {
@@ -426,11 +470,12 @@ function Copy-StreamDeckMarkerFile {
     New-Item -ItemType Directory -Path $vcsOutDirPath -Force | Out-Null
   }
 
-  $destFileName = Get-StreamDeckMarkerFileName -Name $marker['name'] -Type $marker['type']
+  $destFileName = Get-StreamDeckMarkerFileName -Name $marker['name'] -Type $marker['type'] `
+    -PageIndex $marker['pageIndex']
   $destPath = Join-Path $vcsOutDirPath $destFileName
   $manifestTemplatePath = Join-Path $vcsOutDirPath "manifest.vcs-template.json"
 
-  $staleMarkers = Get-ChildItem $vcsOutDirPath -File -Filter "*--$($marker['type'])-marker.json" |
+  $staleMarkers = Get-ChildItem $vcsOutDirPath -File -Filter "*--$($marker['type'])*-marker.json" |
     Where-Object { $_.FullName -ne $destPath }
 
   foreach ($stale in $staleMarkers) {

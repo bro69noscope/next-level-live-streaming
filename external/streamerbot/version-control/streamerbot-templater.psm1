@@ -188,6 +188,7 @@ function ConvertFrom-StreamerbotTemplate {
         Format-JsonWithPrettier -FilePaths $vcsFormatQueue
       }
       Write-VcsMessage -Message "Replaced $vcsReplacedCount token(s)" -Color Cyan
+      $vcsFormatQueue = $null
       $vcsReplacedCount = $null
     }
   }

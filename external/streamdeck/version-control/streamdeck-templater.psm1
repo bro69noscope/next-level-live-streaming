@@ -419,6 +419,14 @@ function Copy-StreamDeckMarkerFile {
   $destPath = Join-Path $vcsOutDirPath $destFileName
   $manifestTemplatePath = Join-Path $vcsOutDirPath "manifest.vcs-template.json"
 
+  $staleMarkers = Get-ChildItem $vcsOutDirPath -File -Filter "*--$($marker['type'])-marker.json" |
+    Where-Object { $_.FullName -ne $destPath }
+
+  foreach ($stale in $staleMarkers) {
+    Remove-Item $stale.FullName -Force
+    Write-VcsMessage -Message "  Removed stale marker (name changed): $($stale.Name)" -Color Yellow
+  }
+
   $existingFlag = $null
   if (Test-Path $destPath) {
     $existing = Get-Content $destPath -Raw | ConvertFrom-Json -AsHashtable

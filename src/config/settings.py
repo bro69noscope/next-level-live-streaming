@@ -32,6 +32,7 @@ def find_project_root() -> Path:
 PROJECT_ROOT_PATH = find_project_root()
 
 PYTHONPATH = get_env_var("PYTHONPATH")
+VENV_PYTHON = PROJECT_ROOT_PATH / ".venv" / "Scripts" / "python.exe"
 
 GOOGLE_CLOUD_API_KEY = get_env_var("GOOGLE_CLOUD_API_KEY_PATH")
 

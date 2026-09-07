@@ -12,7 +12,7 @@ import aiosqlite
 import websockets
 from websockets.asyncio.server import ServerConnection
 
-from src.config.settings import PROJECT_ROOT_PATH
+from src.config.settings import PROJECT_ROOT_PATH, VENV_PYTHON
 from src.connection.constants import STOP_SUBPROCESS_MESSAGE, SUBPROCESSES_PORTS
 from src.core.constants import (
     APPS_DIR_PATH,
@@ -59,14 +59,13 @@ async def _manage_subprocess(message: str) -> None:
         # able to manipulate the position of the script's terminal with the
         # terminal window manager module.
 
-        venv_python = PROJECT_ROOT_PATH / ".venv" / "Scripts" / "python.exe"
         script_path = APPS_DIR_PATH / target / "main.py"
 
         command = (
             f'start /min cmd /k "'
             f"cd /d {PROJECT_ROOT_PATH} && "
             f"set PYTHONPATH={PROJECT_ROOT_PATH} && "
-            f'{venv_python} {script_path}"'
+            f'{VENV_PYTHON} {script_path}"'
         )
 
         await asyncio.create_subprocess_shell(

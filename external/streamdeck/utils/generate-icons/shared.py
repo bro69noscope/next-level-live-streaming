@@ -1,4 +1,4 @@
-SYMLINK_PREFIX = "lnk_"
-GENERATED_PREFIX = "gen_"
-ACTIVE_SUFFIX = "_active"
-INACTIVE_SUFFIX = "_inactive"
+SYMLINK_PREFIX = "lnk__"
+GENERATED_PREFIX = "gen__"
+ACTIVE_SUFFIX = "__active"
+INACTIVE_SUFFIX = "__inactive"

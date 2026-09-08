@@ -2,36 +2,35 @@ import os
 from pathlib import Path
 
 
-from shared import GENERATED_PREFIX, SYMLINK_PREFIX
+from shared import SYMLINK_PREFIX
 
 
 def _walk_common_subdirs(root: Path):
     common = root / "common"
     for subdir in common.iterdir():
         if subdir.is_dir():
-            yield subdir  # e.g. common/scenes, common/profiles...
+            yield subdir
 
 
 def sync_symlinks(root: Path):
     for common_subdir in _walk_common_subdirs(root):
         subdir_name = common_subdir.name
-        common_files = {
-            f.name
-            for f in common_subdir.iterdir()
-            if f.is_file() and f.name.startswith(GENERATED_PREFIX)
-        }
+        common_generated = common_subdir / "generated"
+        if not common_generated.is_dir():
+            continue
+
+        common_files = {f.name for f in common_generated.iterdir() if f.is_file()}
 
         for game_dir in root.iterdir():
             if not game_dir.is_dir() or game_dir.name in ("common", "hub"):
                 continue
-            target_subdir = game_dir / subdir_name
+
+            target_subdir = game_dir / subdir_name / "generated"
             target_subdir.mkdir(parents=True, exist_ok=True)
-            if not target_subdir.exists():
-                continue  # or target_subdir.mkdir(parents=True) if structure isn't guaranteed yet
 
             existing = {f.name: f for f in target_subdir.iterdir()}
 
-            # add/refresh links for every common file
+            # add/refresh links for every common generated file
             for name in common_files:
                 link = target_subdir / (SYMLINK_PREFIX + name)
 
@@ -39,17 +38,11 @@ def sync_symlinks(root: Path):
                     continue  # real local file — leave it alone
 
                 if link.is_symlink():
-                    if link.resolve() == (common_subdir / name).resolve():
+                    if link.resolve() == (common_generated / name).resolve():
                         continue  # already correct
                     link.unlink()  # stale or broken symlink
 
-                elif link.exists():
-                    continue  # real local file — leave it alone
-
-                if link.exists():
-                    link.unlink()
-
-                rel_target = os.path.relpath(common_subdir / name, target_subdir)
+                rel_target = os.path.relpath(common_generated / name, target_subdir)
                 link.symlink_to(rel_target)
 
             # prune stale links (pointed at common, but source file is gone)
@@ -60,7 +53,7 @@ def sync_symlinks(root: Path):
                     and name[len(SYMLINK_PREFIX) :] not in common_files
                 ):
                     try:
-                        if f.resolve().parent == common_subdir:
+                        if f.resolve().parent == common_generated:
                             f.unlink()
                     except OSError:
                         pass

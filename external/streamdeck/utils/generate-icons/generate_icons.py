@@ -109,7 +109,7 @@ def walk_categories(root: Path):
     for category_dir in root.rglob("*"):
         if category_dir.is_dir() and category_dir.name in CATEGORY_COLORS:
             for f in category_dir.iterdir():
-                if not f.is_file() or f.stem.startswith(GENERATED_PREFIX):
+                if not f.is_file():
                     continue
                 if f.suffix.lower() not in IMAGE_EXTS:
                     print(f"skipping unsupported file: {f}")
@@ -118,8 +118,10 @@ def walk_categories(root: Path):
 
 
 def main(root_dir):
-    root = Path(root_dir).resolve()
-    for path, category, out_dir in walk_categories(root):
+    root = Path(root_dir)
+    for path, category, category_dir in walk_categories(root):
+        out_dir = category_dir / "generated"
+        out_dir.mkdir(exist_ok=True)
         process_image(path, category, out_dir)
     sync_symlinks(root)
 

@@ -35,16 +35,30 @@ INACTIVE_THICKNESS_FACTOR = 0.65
 MID_THICKNESS_FACTOR = (1 + INACTIVE_THICKNESS_FACTOR) / 2
 
 
+def _save_image(img: Image.Image, path: Path):
+    if path.suffix.lower() in (".jpg", ".jpeg"):
+        img = img.convert("RGB")
+    img.save(path)
+
+
 def _load_image(path: Path) -> Image.Image:
     if path.suffix.lower() == ".svg":
         png_bytes = cairosvg.svg2png(url=str(path))
         assert png_bytes is not None, f"cairosvg failed to render {path}"
-        return Image.open(io.BytesIO(png_bytes)).convert("RGB")
-    return Image.open(path).convert("RGB")
+        return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    return Image.open(path).convert("RGBA")
+
+
+def _dim_brightness_preserve_alpha(img: Image.Image, factor: float) -> Image.Image:
+    r, g, b, a = img.split()
+    rgb = Image.merge("RGB", (r, g, b))
+    dimmed = ImageEnhance.Brightness(rgb).enhance(factor)
+    dr, dg, db = dimmed.split()
+    return Image.merge("RGBA", (dr, dg, db, a))
 
 
 def _dim_color(color, factor):
-    return tuple(int(c * factor) for c in color)
+    return tuple(int(c * factor) for c in color[:3]) + (255,)
 
 
 def _draw_frame(img, color, thickness_w, thickness_h):
@@ -69,22 +83,22 @@ def process_image(path: Path, category: str, out_dir: Path):
     if category in CATEGORIES_WITH_ACTIVATION:
         active = img.copy()
         _draw_frame(active, color, thickness_w, thickness_h)
-        active.save(out_dir / f"generated_{stem}_active{ext}")
+        _save_image(active, out_dir / f"generated_{stem}_active{ext}")
 
-        inactive = ImageEnhance.Brightness(img).enhance(BRIGHTNESS_FACTOR)
+        inactive = _dim_brightness_preserve_alpha(img, BRIGHTNESS_FACTOR)
         inactive_color = _dim_color(color, BRIGHTNESS_FACTOR)
         inactive_thickness_w = round(thickness_w * INACTIVE_THICKNESS_FACTOR)
         inactive_thickness_h = round(thickness_h * INACTIVE_THICKNESS_FACTOR)
         _draw_frame(
             inactive, inactive_color, inactive_thickness_w, inactive_thickness_h
         )
-        inactive.save(out_dir / f"generated_{stem}_inactive{ext}")
+        _save_image(inactive, out_dir / f"generated_{stem}_inactive{ext}")
     else:
         single = img.copy()
         mid_thickness_w = round(thickness_w * MID_THICKNESS_FACTOR)
         mid_thickness_h = round(thickness_h * MID_THICKNESS_FACTOR)
         _draw_frame(single, color, mid_thickness_w, mid_thickness_h)
-        single.save(out_dir / f"generated_{stem}{ext}")
+        _save_image(single, out_dir / f"generated_{stem}{ext}")
 
 
 def walk_categories(root: Path):

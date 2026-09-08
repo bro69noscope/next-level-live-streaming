@@ -14,6 +14,8 @@ except OSError as e:
     raise SystemExit(1) from e
 
 from PIL import Image, ImageDraw, ImageEnhance
+from generate_icons_symlinks import sync_symlinks
+from shared import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
 
 CATEGORY_COLORS = {
     "scenes": (255, 0, 0),  # red *
@@ -83,7 +85,7 @@ def process_image(path: Path, category: str, out_dir: Path):
     if category in CATEGORIES_WITH_ACTIVATION:
         active = img.copy()
         _draw_frame(active, color, thickness_w, thickness_h)
-        _save_image(active, out_dir / f"generated_{stem}_active{ext}")
+        _save_image(active, out_dir / (GENERATED_PREFIX + stem + ACTIVE_SUFFIX + ext))
 
         inactive = _dim_brightness_preserve_alpha(img, BRIGHTNESS_FACTOR)
         inactive_color = _dim_color(color, BRIGHTNESS_FACTOR)
@@ -92,20 +94,22 @@ def process_image(path: Path, category: str, out_dir: Path):
         _draw_frame(
             inactive, inactive_color, inactive_thickness_w, inactive_thickness_h
         )
-        _save_image(inactive, out_dir / f"generated_{stem}_inactive{ext}")
+        _save_image(
+            inactive, out_dir / (GENERATED_PREFIX + stem + INACTIVE_SUFFIX + ext)
+        )
     else:
         single = img.copy()
         mid_thickness_w = round(thickness_w * MID_THICKNESS_FACTOR)
         mid_thickness_h = round(thickness_h * MID_THICKNESS_FACTOR)
         _draw_frame(single, color, mid_thickness_w, mid_thickness_h)
-        _save_image(single, out_dir / f"generated_{stem}{ext}")
+        _save_image(single, out_dir / (GENERATED_PREFIX + stem + ext))
 
 
 def walk_categories(root: Path):
     for category_dir in root.rglob("*"):
         if category_dir.is_dir() and category_dir.name in CATEGORY_COLORS:
             for f in category_dir.iterdir():
-                if not f.is_file() or f.stem.startswith("generated_"):
+                if not f.is_file() or f.stem.startswith(GENERATED_PREFIX):
                     continue
                 if f.suffix.lower() not in IMAGE_EXTS:
                     print(f"skipping unsupported file: {f}")
@@ -114,9 +118,10 @@ def walk_categories(root: Path):
 
 
 def main(root_dir):
-    root = Path(root_dir)
+    root = Path(root_dir).resolve()
     for path, category, out_dir in walk_categories(root):
         process_image(path, category, out_dir)
+    sync_symlinks(root)
 
 
 if __name__ == "__main__":

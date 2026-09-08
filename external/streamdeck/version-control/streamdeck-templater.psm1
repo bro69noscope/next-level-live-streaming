@@ -711,7 +711,12 @@ function ConvertTo-StreamDeckTemplate {
       $deviceVcsOutPath = Get-StreamDeckVcsOutDirPath `
         -InputFilePath (Join-Path $InputPath "manifest.json") `
         -RelativeOutPath $RelativeOutPath
-      Remove-EmptyVcsDirectories -RootPath $deviceVcsOutPath
+
+      $sdProfilePattern = '\\[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-' +
+      '[0-9A-Fa-f]{12}\.sdProfile(\\|$)'
+      Remove-EmptyVcsDirectories `
+        -RootPath $deviceVcsOutPath `
+        -RequiredAncestorPattern $sdProfilePattern
 
       return
     }

@@ -16,8 +16,10 @@ function Get-VcsMarkerFile {
 }
 
 function Remove-EmptyVcsDirectories {
-  param([Parameter(Mandatory=$true)][string]$RootPath)
-
+  param(
+    [Parameter(Mandatory=$true)][string]$RootPath,
+    [Parameter(Mandatory=$false)][string]$RequiredAncestorPattern
+  )
   if (-not (Test-Path $RootPath -PathType Container)) {
     Write-Warning "Remove-EmptyVcsDirectories: RootPath does not exist or is not a directory: $RootPath"
     return
@@ -25,7 +27,14 @@ function Remove-EmptyVcsDirectories {
 
   $subDirs = Get-ChildItem $RootPath -Directory -Recurse |
     Sort-Object { $_.FullName.Length } -Descending
-
+  if ($RequiredAncestorPattern) {
+    $matchedDirs = $subDirs | Where-Object { $_.FullName -match $RequiredAncestorPattern }
+    if ($subDirs.Count -gt 0 -and $matchedDirs.Count -eq 0) {
+      Write-Warning ("Remove-EmptyVcsDirectories: RequiredAncestorPattern matched no " `
+          + "directories under: $RootPath")
+    }
+    $subDirs = $matchedDirs
+  }
   foreach ($dir in $subDirs) {
     if (-not (Get-ChildItem $dir.FullName -Force)) {
       Remove-Item $dir.FullName -Force

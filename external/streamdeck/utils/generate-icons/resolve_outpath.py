@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from constants import ACTIVE_SUFFIX, INACTIVE_SUFFIX, STREAMDECK_DEVICE_SUFFIXES
-from place_icons_in_manifest import find_scene_keys_in_manifest
+from place_in_manifests import find_scene_keys_in_manifest
 from shared import logger
 from src.config.settings import PROJECT_ROOT_PATH
 

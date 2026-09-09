@@ -18,7 +18,7 @@ except OSError as e:
 from constants import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
 from generate_icons_symlinks import sync_symlinks
 from PIL import Image, ImageDraw, ImageEnhance
-from place_icons_in_manifest import place_icons_in_manifests
+from place_in_manifests import place_icons_in_manifests
 from resolve_outpath import ICONS_ROOT, VCDATA_ROOT, resolve_out_dir_for_category
 
 CATEGORY_COLORS = {

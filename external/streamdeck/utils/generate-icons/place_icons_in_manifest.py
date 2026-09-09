@@ -41,6 +41,20 @@ def format_with_prettier(path: Path):
     )
 
 
+def find_images_dirs(root: Path):
+    """Recursively finds every "images" directory under root, yielding
+    (images_dir, manifest_path) pairs — manifest_path is the
+    manifest.vcs-template.json sitting alongside that images dir."""
+    for images_dir in root.rglob("images"):
+        if not images_dir.is_dir():
+            continue
+        manifest_path = images_dir.parent / "manifest.vcs-template.json"
+        if not manifest_path.is_file():
+            logger.warning(f"No manifest found next to {images_dir}, skipping")
+            continue
+        yield images_dir, manifest_path
+
+
 def find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     """Returns {scene_name: [matching files]} for every gen__..-icon__(in)active
     file found directly in `directory`."""
@@ -70,6 +84,32 @@ def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:
     return scene_actions
 
 
+def process_manifest(images_dir: Path, manifest_path: Path):
+    scene_icons = find_scene_icons(images_dir)
+    manifest = json.loads(manifest_path.read_text())
+    scene_actions = find_scene_keys_in_manifest(manifest)
+
+    for scene_name, files in scene_icons.items():
+        action = scene_actions.get(scene_name)
+        if action is None:
+            print(f"{scene_name}: NOT in manifest ({manifest_path})")
+            continue
+
+        active_path, inactive_path = split_active_inactive(files)
+        if active_path is None or inactive_path is None:
+            logger.warning(
+                f"Scene {scene_name!r} missing active/inactive icon "
+                f"(active={active_path}, inactive={inactive_path})"
+            )
+            continue
+
+        apply_icon_to_action(action, active_path, inactive_path)
+        print(f"{scene_name}: updated ({manifest_path})")
+
+    manifest_path.write_text(json.dumps(manifest, separators=(",", ":")))
+    format_with_prettier(manifest_path)
+
+
 def split_active_inactive(files: list[Path]) -> tuple[Path | None, Path | None]:
     active = next((f for f in files if "__active" in f.stem), None)
     inactive = next((f for f in files if "__inactive" in f.stem), None)
@@ -95,30 +135,9 @@ def apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
     states[1]["Image"] = f"Images/{inactive_path.name}"
 
 
-def main(directory: Path):
-    scene_icons = find_scene_icons(directory)
-    manifest = json.loads(MANIFEST_PATH.read_text())
-    scene_actions = find_scene_keys_in_manifest(manifest)
-
-    for scene_name, files in scene_icons.items():
-        action = scene_actions.get(scene_name)
-        if action is None:
-            print(f"{scene_name}: NOT in manifest")
-            continue
-
-        active_path, inactive_path = split_active_inactive(files)
-        if active_path is None or inactive_path is None:
-            logger.warning(
-                f"Scene {scene_name!r} missing active/inactive icon "
-                f"(active={active_path}, inactive={inactive_path})"
-            )
-            continue
-
-        apply_icon_to_action(action, active_path, inactive_path)
-        print(f"{scene_name}: updated")
-
-    MANIFEST_PATH.write_text(json.dumps(manifest, separators=(",", ":")))
-    format_with_prettier(MANIFEST_PATH)
+def main(root_dir: Path):
+    for images_dir, manifest_path in find_images_dirs(root_dir):
+        process_manifest(images_dir, manifest_path)
 
 
 if __name__ == "__main__":

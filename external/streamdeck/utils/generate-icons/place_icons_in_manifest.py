@@ -7,7 +7,9 @@ under a "scene" key anywhere in the manifest.
 """
 
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -26,6 +28,19 @@ ICON_NAME_RE = re.compile(r"^(lnk__)?gen__(?P<scene_name>.+)-icon__(active|inact
 ACTION_TYPE_UUID = {"scene": "com.elgato.obsstudio.scene"}
 
 
+PRETTIER_PATH = (
+    Path(os.environ["LOCALAPPDATA"]) / "nvim-data" / "mason" / "bin" / "prettier.cmd"
+)
+
+
+def format_with_prettier(path: Path):
+    subprocess.run(
+        [str(PRETTIER_PATH), "--write", str(path)],
+        check=True,
+        cwd=path.parent,
+    )
+
+
 def find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     """Returns {scene_name: [matching files]} for every gen__..-icon__(in)active
     file found directly in `directory`."""
@@ -41,18 +56,24 @@ def find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     return found
 
 
-def find_scene_keys_in_manifest(manifest: dict) -> set[str]:
-    """Walks every action in the manifest, returns the set of all values
-    found under a "scene" key inside a scene action's Settings."""
-    scene_names = set()
+def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:
+    """Walks every action in the manifest, returns {scene_name: action}
+    for every scene action found."""
+    scene_actions: dict[str, dict] = {}
     for controller in manifest.get("Controllers", []):
         for action in controller.get("Actions", {}).values():
             if action.get("UUID") != ACTION_TYPE_UUID["scene"]:
                 continue
             settings = action.get("Settings", {})
             if "scene" in settings:
-                scene_names.add(settings["scene"])
-    return scene_names
+                scene_actions[settings["scene"]] = action
+    return scene_actions
+
+
+def split_active_inactive(files: list[Path]) -> tuple[Path | None, Path | None]:
+    active = next((f for f in files if "__active" in f.stem), None)
+    inactive = next((f for f in files if "__inactive" in f.stem), None)
+    return active, inactive
 
 
 def apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
@@ -77,14 +98,27 @@ def apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
 def main(directory: Path):
     scene_icons = find_scene_icons(directory)
     manifest = json.loads(MANIFEST_PATH.read_text())
-    manifest_scene_names = find_scene_keys_in_manifest(manifest)
+    scene_actions = find_scene_keys_in_manifest(manifest)
 
     for scene_name, files in scene_icons.items():
-        in_manifest = scene_name in manifest_scene_names
-        status = "found in manifest" if in_manifest else "NOT in manifest"
-        print(f"{scene_name}: {status}")
-        for f in files:
-            print(f"  {f.name}")
+        action = scene_actions.get(scene_name)
+        if action is None:
+            print(f"{scene_name}: NOT in manifest")
+            continue
+
+        active_path, inactive_path = split_active_inactive(files)
+        if active_path is None or inactive_path is None:
+            logger.warning(
+                f"Scene {scene_name!r} missing active/inactive icon "
+                f"(active={active_path}, inactive={inactive_path})"
+            )
+            continue
+
+        apply_icon_to_action(action, active_path, inactive_path)
+        print(f"{scene_name}: updated")
+
+    MANIFEST_PATH.write_text(json.dumps(manifest, separators=(",", ":")))
+    format_with_prettier(MANIFEST_PATH)
 
 
 if __name__ == "__main__":

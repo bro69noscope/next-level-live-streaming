@@ -1,0 +1,5 @@
+{
+  "pattern": "{name}--{type}-marker.json",
+  "paged_pattern": "{name}--{type}-{page_index}-marker.json",
+  "home_type": "home"
+}

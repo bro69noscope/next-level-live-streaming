@@ -5,7 +5,7 @@ ACTIVE_SUFFIX = "__active"
 INACTIVE_SUFFIX = "__inactive"
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".svg"}
-CATEGORY_COLORS = {
+CATEGORY_COLORS_MAP = {
     "scenes": (255, 0, 0),  # red *
     "sources": (255, 165, 0),  # orange *
     "streamerbot-actions": (0, 255, 255),  # cyan

@@ -10,16 +10,23 @@ from src.config.settings import PROJECT_ROOT_PATH
 STREAMDECK_ROOT = PROJECT_ROOT_PATH / "external" / "streamdeck"
 VCDATA_ROOT = STREAMDECK_ROOT / "version-control" / "vcdata"
 ICONS_ROOT = VCDATA_ROOT / "binaries" / "icons"
-COMMON_DIR_NAME = "common"
 
 
-_suffix_alternation = "|".join(re.escape(s) for s in STREAMDECK_DEVICE_SUFFIXES)
-HOME_MARKER_RE = re.compile(
-    rf"^(?P<profile>.+(?:{_suffix_alternation}))--home-marker\.json$"
+MARKER_FORMAT = json.loads(
+    (STREAMDECK_ROOT / "shared" / "marker-format.json").read_text()
 )
 
 
-def _game_from_home_marker(sdprofile_dir: Path) -> str | None:
+def _build_home_marker_regex():
+    literal = MARKER_FORMAT["pattern"].replace("{type}", MARKER_FORMAT["home_type"])
+    pattern = re.escape(literal).replace(r"\{name\}", r"(?P<profile>.+)")
+    return re.compile(f"^{pattern}$")
+
+
+HOME_MARKER_RE = _build_home_marker_regex()
+
+
+def _profile_name_from_home_marker(sdprofile_dir: Path) -> str | None:
     for f in sdprofile_dir.iterdir():
         if f.is_file():
             m = HOME_MARKER_RE.match(f.name)
@@ -28,9 +35,9 @@ def _game_from_home_marker(sdprofile_dir: Path) -> str | None:
     return None
 
 
-def _find_manifests_for_profile(vcdata_root: Path, profile: str):
+def _find_manifests_for_profile(vcdata_root: Path, profile_name: str):
     for sdprofile_dir in vcdata_root.glob("*.sdProfile"):
-        if _game_from_home_marker(sdprofile_dir) != profile:
+        if _profile_name_from_home_marker(sdprofile_dir) != profile_name:
             continue
         for manifest_path in sdprofile_dir.rglob("manifest.vcs-template.json"):
             yield manifest_path
@@ -92,7 +99,7 @@ def resolve_out_dir(
 def resolve_out_dir_for_category(
     icon_path: Path, icons_root: Path, vcdata_root: Path, category_dir: Path
 ) -> Path | None:
-    if category_dir.parent.name == COMMON_DIR_NAME:
+    if category_dir.parent.name == "common":
         out_dir = category_dir / "generated"
         out_dir.mkdir(exist_ok=True)
         return out_dir

@@ -13,7 +13,7 @@ except OSError as e:
     )
     raise SystemExit(1) from e
 
-from constants import ACTIVE_SUFFIX, CATEGORY_COLORS, GENERATED_PREFIX, INACTIVE_SUFFIX
+from constants import ACTIVE_SUFFIX, CATEGORY_COLORS_MAP, GENERATED_PREFIX, INACTIVE_SUFFIX
 from PIL import Image, ImageDraw, ImageEnhance
 
 CATEGORIES_WITH_ACTIVATION = {"scenes", "sources"}
@@ -61,7 +61,7 @@ def _draw_frame(img, color, thickness_w, thickness_h):
 
 
 def process_image(path: Path, category: str, out_dir: Path):
-    color = CATEGORY_COLORS[category]
+    color = CATEGORY_COLORS_MAP[category]
     img = _load_image(path)
     w, h = img.size
     thickness_w = round(w * FRAME_PCT)

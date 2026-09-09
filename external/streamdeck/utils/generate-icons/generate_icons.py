@@ -2,8 +2,6 @@ import io
 import sys
 from pathlib import Path
 
-from shared import logger
-
 try:
     import cairosvg
 except OSError as e:
@@ -15,25 +13,10 @@ except OSError as e:
     )
     raise SystemExit(1) from e
 
-from constants import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
-from generate_icons_symlinks import sync_symlinks
+from constants import ACTIVE_SUFFIX, CATEGORY_COLORS, GENERATED_PREFIX, INACTIVE_SUFFIX
 from PIL import Image, ImageDraw, ImageEnhance
-from place_in_manifests import place_icons_in_manifests
-from resolve_outpath import ICONS_ROOT, VCDATA_ROOT, resolve_out_dir_for_category
-
-CATEGORY_COLORS = {
-    "scenes": (255, 0, 0),  # red *
-    "sources": (255, 165, 0),  # orange *
-    "streamerbot-actions": (0, 255, 255),  # cyan
-    "websocket-msg": (173, 216, 230),  # light blue
-    "system-open": (0, 100, 0),  # dark green
-    "profiles": (255, 105, 180),  # pink
-    "hotkeys": (0, 0, 128),  # navy
-    "multi-action": (255, 255, 0),  # yellow
-}
 
 CATEGORIES_WITH_ACTIVATION = {"scenes", "sources"}
-IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".svg"}
 
 BRIGHTNESS_FACTOR = 0.3
 FRAME_PCT = 0.075
@@ -107,32 +90,3 @@ def process_image(path: Path, category: str, out_dir: Path):
         mid_thickness_h = round(thickness_h * MID_THICKNESS_FACTOR)
         _draw_frame(single, color, mid_thickness_w, mid_thickness_h)
         _save_image(single, out_dir / (GENERATED_PREFIX + stem + ext))
-
-
-def walk_categories(root: Path):
-    for category_dir in root.rglob("*"):
-        if category_dir.is_dir() and category_dir.name in CATEGORY_COLORS:
-            for f in category_dir.iterdir():
-                if not f.is_file():
-                    continue
-                if f.suffix.lower() not in IMAGE_EXTS:
-                    print(f"skipping unsupported file: {f}")
-                    continue
-                yield f, category_dir.name, category_dir
-
-
-def main():
-    for path, category, category_dir in walk_categories(ICONS_ROOT):
-        out_dir = resolve_out_dir_for_category(
-            path, ICONS_ROOT, VCDATA_ROOT, category_dir
-        )
-        if out_dir is None:
-            logger.info(f"no matching profile found for {path}, skipping")
-            continue
-        process_image(path, category, out_dir)
-    sync_symlinks(ICONS_ROOT, VCDATA_ROOT)
-    place_icons_in_manifests(VCDATA_ROOT)
-
-
-if __name__ == "__main__":
-    main()

@@ -1,6 +1,4 @@
-import os
 from pathlib import Path
-
 
 from shared import SYMLINK_PREFIX
 
@@ -42,8 +40,7 @@ def sync_symlinks(root: Path):
                         continue  # already correct
                     link.unlink()  # stale or broken symlink
 
-                rel_target = os.path.relpath(common_generated / name, target_subdir)
-                link.symlink_to(rel_target)
+                link.symlink_to((common_generated / name).resolve())
 
             # prune stale links (pointed at common, but source file is gone)
             for name, f in existing.items():

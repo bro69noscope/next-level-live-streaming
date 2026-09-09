@@ -11,6 +11,11 @@ import re
 import sys
 from pathlib import Path
 
+from src.utils.logging_utils import setup_logger
+
+LOG_DIR = Path(__file__).resolve().parent / "logs"
+logger = setup_logger("place_icons_in_manifest", log_dir=LOG_DIR)
+
 MANIFEST_PATH = Path(
     r"C:\Users\ville\myfiles\git-repos\woertsposzibllen4me\external\streamdeck"
     r"\version-control\vcdata\08F1CB5E-CA39-47F0-9924-8D181F508A8C.sdProfile"
@@ -48,6 +53,25 @@ def find_scene_keys_in_manifest(manifest: dict) -> set[str]:
             if "scene" in settings:
                 scene_names.add(settings["scene"])
     return scene_names
+
+
+def apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
+    """Sets or replaces the Image key on both states of a scene action.
+    State 0 = active, State 1 = inactive."""
+    if action.get("UUID") != ACTION_TYPE_UUID["scene"]:
+        logger.info("not implemented yet")
+        return
+
+    states = action.get("States", [])
+    if len(states) < 2:
+        logger.warning(
+            "Skipping action with unexpected States shape (expected 2, "
+            f"got {len(states)}): {action!r}"
+        )
+        return
+
+    states[0]["Image"] = f"Images/{active_path.name}"
+    states[1]["Image"] = f"Images/{inactive_path.name}"
 
 
 def main(directory: Path):

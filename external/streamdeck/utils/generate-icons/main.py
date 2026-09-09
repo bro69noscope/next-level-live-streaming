@@ -14,6 +14,8 @@ def walk_categories(root: Path):
             for f in category_dir.iterdir():
                 if not f.is_file():
                     continue
+                if f.name == ".gitkeep":
+                    continue
                 if f.suffix.lower() not in IMAGE_EXTS:
                     print(f"skipping unsupported file: {f}")
                     continue

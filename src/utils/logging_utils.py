@@ -48,6 +48,7 @@ def setup_logger(
         level = "DEBUG"
 
     with script_log_file_path.open("a", encoding="utf-8") as log_file:
+        log_file.write("\n")
         log_file.write("<< New Log Entry >>\n")
 
     logger = logging.getLogger(file_name)

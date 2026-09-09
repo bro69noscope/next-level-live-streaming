@@ -1,28 +1,10 @@
-"""find_scene_icons.py
-
-Given a directory, find generated icon files named like
-gen__scene_lounge-icon__active.png / __inactive.png, extract the scene
-name (e.g. "scene_lounge"), and check whether that scene name appears
-under a "scene" key anywhere in the manifest.
-"""
-
 import json
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 
-from src.utils.logging_utils import setup_logger
-
-LOG_DIR = Path(__file__).resolve().parent / "logs"
-logger = setup_logger("place_icons_in_manifest", log_dir=LOG_DIR)
-
-MANIFEST_PATH = Path(
-    r"C:\Users\ville\myfiles\git-repos\woertsposzibllen4me\external\streamdeck"
-    r"\version-control\vcdata\08F1CB5E-CA39-47F0-9924-8D181F508A8C.sdProfile"
-    r"\Profiles\F564D696-1142-4902-BA97-8EE0DA773BB9\manifest.vcs-template.json"
-)
+from shared import logger
 
 ICON_NAME_RE = re.compile(r"^(lnk__)?gen__(?P<scene_name>.+)-icon__(active|inactive)$")
 ACTION_TYPE_UUID = {"scene": "com.elgato.obsstudio.scene"}
@@ -75,7 +57,8 @@ def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:
     for every scene action found."""
     scene_actions: dict[str, dict] = {}
     for controller in manifest.get("Controllers", []):
-        for action in controller.get("Actions", {}).values():
+        actions = controller.get("Actions") or {}
+        for action in actions.values():
             if action.get("UUID") != ACTION_TYPE_UUID["scene"]:
                 continue
             settings = action.get("Settings", {})
@@ -92,7 +75,7 @@ def process_manifest(images_dir: Path, manifest_path: Path):
     for scene_name, files in scene_icons.items():
         action = scene_actions.get(scene_name)
         if action is None:
-            print(f"{scene_name}: NOT in manifest ({manifest_path})")
+            logger.info(f"{scene_name}: NOT in manifest ({manifest_path})")
             continue
 
         active_path, inactive_path = split_active_inactive(files)
@@ -104,7 +87,7 @@ def process_manifest(images_dir: Path, manifest_path: Path):
             continue
 
         apply_icon_to_action(action, active_path, inactive_path)
-        print(f"{scene_name}: updated ({manifest_path})")
+        logger.info(f"{scene_name}: updated ({manifest_path})")
 
     manifest_path.write_text(json.dumps(manifest, separators=(",", ":")))
     format_with_prettier(manifest_path)
@@ -135,10 +118,6 @@ def apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
     states[1]["Image"] = f"Images/{inactive_path.name}"
 
 
-def main(root_dir: Path):
+def place_icons_in_manifests(root_dir: Path):
     for images_dir, manifest_path in find_images_dirs(root_dir):
         process_manifest(images_dir, manifest_path)
-
-
-if __name__ == "__main__":
-    main(Path(sys.argv[1]))

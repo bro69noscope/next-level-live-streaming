@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from shared import SYMLINK_PREFIX
+from constants import SYMLINK_PREFIX
 
 
 def _walk_common_subdirs(root: Path):

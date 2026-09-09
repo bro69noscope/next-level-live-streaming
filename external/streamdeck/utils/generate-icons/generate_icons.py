@@ -2,6 +2,8 @@ import io
 import sys
 from pathlib import Path
 
+from shared import logger
+
 try:
     import cairosvg
 except OSError as e:
@@ -13,9 +15,11 @@ except OSError as e:
     )
     raise SystemExit(1) from e
 
-from PIL import Image, ImageDraw, ImageEnhance
+from constants import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
 from generate_icons_symlinks import sync_symlinks
-from shared import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
+from PIL import Image, ImageDraw, ImageEnhance
+from place_icons_in_manifest import place_icons_in_manifests
+from resolve_outpath import ICONS_ROOT, VCDATA_ROOT, resolve_out_dir
 
 CATEGORY_COLORS = {
     "scenes": (255, 0, 0),  # red *
@@ -117,14 +121,16 @@ def walk_categories(root: Path):
                 yield f, category_dir.name, category_dir
 
 
-def main(root_dir):
-    root = Path(root_dir)
-    for path, category, category_dir in walk_categories(root):
-        out_dir = category_dir / "generated"
-        out_dir.mkdir(exist_ok=True)
+def main():
+    for path, category, category_dir in walk_categories(ICONS_ROOT):
+        out_dir = resolve_out_dir(path, ICONS_ROOT, VCDATA_ROOT)
+        if out_dir is None:
+            logger.info(f"no matching profile found for {path}, skipping")
+            continue
         process_image(path, category, out_dir)
-    sync_symlinks(root)
+    sync_symlinks(ICONS_ROOT)
+    place_icons_in_manifests(VCDATA_ROOT)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

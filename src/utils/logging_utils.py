@@ -3,6 +3,7 @@
 import configparser
 import logging
 from logging import Logger
+from pathlib import Path
 
 from src.config.settings import PROJECT_ROOT_PATH
 from src.core.constants import COMMON_LOGS_FILE_PATH, LOG_DIR_PATH
@@ -19,16 +20,19 @@ LOG_LEVELS = {
 def setup_logger(
     file_name: str,
     level: str | None = None,
+    log_dir: Path | None = None,
+    log_in_common: bool = True,
 ) -> logging.Logger:
     """Set up a logger that logs to a script-specific log file and a common log file.
 
     If a logging level is not provided, it reads from the configuration file situated
-    in `config/settings.ini`
+    in `config/settings.ini`. If log_dir is not provided, defaults to LOG_DIR_PATH.
     """
-    if not LOG_DIR_PATH.exists():
-        LOG_DIR_PATH.mkdir(parents=True, exist_ok=True)
+    log_dir = log_dir or LOG_DIR_PATH
+    if not log_dir.exists():
+        log_dir.mkdir(parents=True, exist_ok=True)
 
-    script_log_file_path = LOG_DIR_PATH / f"{file_name}.log"
+    script_log_file_path = log_dir / f"{file_name}.log"
 
     if level is None:
         config = configparser.ConfigParser()
@@ -58,6 +62,9 @@ def setup_logger(
         )
         script_fh.setFormatter(formatter)
         logger.addHandler(script_fh)
+
+        if not log_in_common:
+            return logger
 
         # Common file handler with UTF-8 encoding
         common_fh = logging.FileHandler(COMMON_LOGS_FILE_PATH, encoding="utf-8")

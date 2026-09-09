@@ -17,6 +17,12 @@ LOG_LEVELS = {
 }
 
 
+class DotMsecFormatter(logging.Formatter):
+    """Formatter using a period instead of a comma before milliseconds."""
+
+    default_msec_format = "%s.%03d"
+
+
 def setup_logger(
     file_name: str,
     level: str | None = None,
@@ -58,7 +64,7 @@ def setup_logger(
         # Script-specific file handler with UTF-8 encoding
         script_fh = logging.FileHandler(script_log_file_path, encoding="utf-8")
         script_fh.setLevel(LOG_LEVELS[level])
-        formatter = logging.Formatter(
+        formatter = DotMsecFormatter(
             "%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s"
         )
         script_fh.setFormatter(formatter)
@@ -70,7 +76,7 @@ def setup_logger(
         # Common file handler with UTF-8 encoding
         common_fh = logging.FileHandler(COMMON_LOGS_FILE_PATH, encoding="utf-8")
         common_fh.setLevel(LOG_LEVELS[level])
-        common_formatter = logging.Formatter(
+        common_formatter = DotMsecFormatter(
             "%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s"
         )
         common_fh.setFormatter(common_formatter)

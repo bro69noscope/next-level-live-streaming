@@ -1,6 +1,8 @@
+import os
 from pathlib import Path
 
-from constants import SYMLINK_PREFIX
+from constants import GENERATED_PREFIX, SYMLINK_PREFIX
+from resolve_outpath import _action_name_from_generated_stem, resolve_images_dir
 
 
 def _walk_common_subdirs(root: Path):
@@ -10,47 +12,38 @@ def _walk_common_subdirs(root: Path):
             yield subdir
 
 
-def sync_symlinks(root: Path):
-    for common_subdir in _walk_common_subdirs(root):
-        subdir_name = common_subdir.name
+def _create_symlink(src_file: Path, out_dir: Path):
+    link = out_dir / (SYMLINK_PREFIX + src_file.name)
+
+    if link.exists() and not link.is_symlink():
+        return  # real local file — leave it alone
+
+    if link.is_symlink():
+        if link.resolve() == src_file.resolve():
+            return  # already correct
+        link.unlink()  # stale or broken symlink
+
+    link.symlink_to(src_file.resolve())
+
+
+def sync_symlinks(icons_root: Path, vcdata_root: Path):
+    for common_subdir in _walk_common_subdirs(icons_root):
         common_generated = common_subdir / "generated"
-        if not common_generated.is_dir():
-            continue
+        os.makedirs(common_generated, exist_ok=True)
 
-        common_files = {f.name for f in common_generated.iterdir() if f.is_file()}
-
-        for game_dir in root.iterdir():
-            if not game_dir.is_dir() or game_dir.name in ("common", "hub"):
+        for src_file in common_generated.iterdir():
+            if not src_file.is_file():
+                continue
+            action_name = _action_name_from_generated_stem(
+                src_file.stem.replace(GENERATED_PREFIX, "", 1)
+            )
+            if action_name is None:
                 continue
 
-            target_subdir = game_dir / subdir_name / "generated"
-            target_subdir.mkdir(parents=True, exist_ok=True)
-
-            existing = {f.name: f for f in target_subdir.iterdir()}
-
-            # add/refresh links for every common generated file
-            for name in common_files:
-                link = target_subdir / (SYMLINK_PREFIX + name)
-
-                if link.exists() and not link.is_symlink():
-                    continue  # real local file — leave it alone
-
-                if link.is_symlink():
-                    if link.resolve() == (common_generated / name).resolve():
-                        continue  # already correct
-                    link.unlink()  # stale or broken symlink
-
-                link.symlink_to((common_generated / name).resolve())
-
-            # prune stale links (pointed at common, but source file is gone)
-            for name, f in existing.items():
-                if (
-                    f.is_symlink()
-                    and name.startswith(SYMLINK_PREFIX)
-                    and name[len(SYMLINK_PREFIX) :] not in common_files
-                ):
-                    try:
-                        if f.resolve().parent == common_generated:
-                            f.unlink()
-                    except OSError:
-                        pass
+            for game_dir in icons_root.iterdir():
+                if not game_dir.is_dir() or game_dir.name in ("common", "hub"):
+                    continue
+                out_dir = resolve_images_dir(action_name, game_dir.name, vcdata_root)
+                if out_dir is None:
+                    continue
+                _create_symlink(src_file, out_dir)

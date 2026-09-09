@@ -19,7 +19,7 @@ from constants import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
 from generate_icons_symlinks import sync_symlinks
 from PIL import Image, ImageDraw, ImageEnhance
 from place_icons_in_manifest import place_icons_in_manifests
-from resolve_outpath import ICONS_ROOT, VCDATA_ROOT, resolve_out_dir
+from resolve_outpath import ICONS_ROOT, VCDATA_ROOT, resolve_out_dir_for_category
 
 CATEGORY_COLORS = {
     "scenes": (255, 0, 0),  # red *
@@ -123,12 +123,14 @@ def walk_categories(root: Path):
 
 def main():
     for path, category, category_dir in walk_categories(ICONS_ROOT):
-        out_dir = resolve_out_dir(path, ICONS_ROOT, VCDATA_ROOT)
+        out_dir = resolve_out_dir_for_category(
+            path, ICONS_ROOT, VCDATA_ROOT, category_dir
+        )
         if out_dir is None:
             logger.info(f"no matching profile found for {path}, skipping")
             continue
         process_image(path, category, out_dir)
-    sync_symlinks(ICONS_ROOT)
+    sync_symlinks(ICONS_ROOT, VCDATA_ROOT)
     place_icons_in_manifests(VCDATA_ROOT)
 
 

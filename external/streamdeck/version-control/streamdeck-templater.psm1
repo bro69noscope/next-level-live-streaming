@@ -14,6 +14,9 @@ try {
 
 $script:VcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
 
+$markerFormatPath = Join-Path $PSScriptRoot "..\shared\marker-format.json"
+$script:MarkerFormat = Get-Content ($markerFormatPath) -Raw | ConvertFrom-Json
+
 $streamDeckRoots = @(
   @{
     Path = $script:SdeckBasePath;
@@ -279,13 +282,18 @@ function Get-StreamDeckMarkerFileName {
     }
   }
 
-  $typeSegment = if ($null -ne $PageIndex) {
-    "$Type-$PageIndex"
+  $template = if ($null -ne $PageIndex) {
+    $script:MarkerFormat.paged_pattern
   } else {
-    $Type
+    $script:MarkerFormat.pattern
   }
 
-  return "$Name--$typeSegment-marker.json"
+  $result = $template -replace '\{name\}', $Name -replace '\{type\}', $Type
+  if ($null -ne $PageIndex) {
+    $result = $result -replace '\{page_index\}', $PageIndex
+  }
+
+  return $result
 }
 
 function New-MissingStreamDeckMarkers {

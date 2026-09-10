@@ -13,3 +13,6 @@ $SdeckOverrideMappings = Get-ChildItem "$PSScriptRoot\streamdeck-vcs-mappings*.j
 if ($SdeckOverrideMappings) {
   $script:SdeckMappingsPath = $SdeckOverrideMappings.FullName
 }
+
+# Export for non ps1 consumers
+$env:_STREAMDECK_ROOT_PATH = $script:SdeckBasePath

@@ -13,28 +13,21 @@ except OSError as e:
     )
     raise SystemExit(1) from e
 
+from constants import (
+    ACTIVE_SUFFIX,
+    CATEGORY_COLORS_MAP,
+    GENERATED_PREFIX,
+    INACTIVE_SUFFIX,
+)
 from PIL import Image, ImageDraw, ImageEnhance
-from generate_icons_symlinks import sync_symlinks
-from shared import ACTIVE_SUFFIX, GENERATED_PREFIX, INACTIVE_SUFFIX
-
-CATEGORY_COLORS = {
-    "scenes": (255, 0, 0),  # red *
-    "sources": (255, 165, 0),  # orange *
-    "streamerbot-actions": (0, 255, 255),  # cyan
-    "websocket-msg": (173, 216, 230),  # light blue
-    "system-open": (0, 100, 0),  # dark green
-    "profiles": (255, 105, 180),  # pink
-    "hotkeys": (0, 0, 128),  # navy
-    "multi-action": (255, 255, 0),  # yellow
-}
 
 CATEGORIES_WITH_ACTIVATION = {"scenes", "sources"}
-IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".svg"}
 
 BRIGHTNESS_FACTOR = 0.3
 FRAME_PCT = 0.075
 INACTIVE_THICKNESS_FACTOR = 0.65
 MID_THICKNESS_FACTOR = (1 + INACTIVE_THICKNESS_FACTOR) / 2
+MAX_ICON_DIMENSION = 256
 
 
 def _save_image(img: Image.Image, path: Path):
@@ -43,12 +36,22 @@ def _save_image(img: Image.Image, path: Path):
     img.save(path)
 
 
+def _resize_to_max(img: Image.Image, max_dim: int) -> Image.Image:
+    w, h = img.size
+    if max(w, h) <= max_dim:
+        return img
+    scale = max_dim / max(w, h)
+    return img.resize((round(w * scale), round(h * scale)), Image.Resampling.LANCZOS)
+
+
 def _load_image(path: Path) -> Image.Image:
     if path.suffix.lower() == ".svg":
         png_bytes = cairosvg.svg2png(url=str(path))
         assert png_bytes is not None, f"cairosvg failed to render {path}"
-        return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-    return Image.open(path).convert("RGBA")
+        img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    else:
+        img = Image.open(path).convert("RGBA")
+    return _resize_to_max(img, MAX_ICON_DIMENSION)
 
 
 def _dim_brightness_preserve_alpha(img: Image.Image, factor: float) -> Image.Image:
@@ -74,7 +77,7 @@ def _draw_frame(img, color, thickness_w, thickness_h):
 
 
 def process_image(path: Path, category: str, out_dir: Path):
-    color = CATEGORY_COLORS[category]
+    color = CATEGORY_COLORS_MAP[category]
     img = _load_image(path)
     w, h = img.size
     thickness_w = round(w * FRAME_PCT)
@@ -103,28 +106,3 @@ def process_image(path: Path, category: str, out_dir: Path):
         mid_thickness_h = round(thickness_h * MID_THICKNESS_FACTOR)
         _draw_frame(single, color, mid_thickness_w, mid_thickness_h)
         _save_image(single, out_dir / (GENERATED_PREFIX + stem + ext))
-
-
-def walk_categories(root: Path):
-    for category_dir in root.rglob("*"):
-        if category_dir.is_dir() and category_dir.name in CATEGORY_COLORS:
-            for f in category_dir.iterdir():
-                if not f.is_file():
-                    continue
-                if f.suffix.lower() not in IMAGE_EXTS:
-                    print(f"skipping unsupported file: {f}")
-                    continue
-                yield f, category_dir.name, category_dir
-
-
-def main(root_dir):
-    root = Path(root_dir)
-    for path, category, category_dir in walk_categories(root):
-        out_dir = category_dir / "generated"
-        out_dir.mkdir(exist_ok=True)
-        process_image(path, category, out_dir)
-    sync_symlinks(root)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1])

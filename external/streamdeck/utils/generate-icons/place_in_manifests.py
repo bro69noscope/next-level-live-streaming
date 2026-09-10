@@ -1,45 +1,30 @@
 import json
-import os
 import re
-import subprocess
 from pathlib import Path
 
-from shared import logger
+from constants import GENERATED_PREFIX, SDECK_MANIFEST_FILENAMES, SYMLINK_PREFIX
+from shared import format_with_prettier, logger
 
-ICON_NAME_RE = re.compile(r"^(lnk__)?gen__(?P<scene_name>.+)-icon__(active|inactive)$")
+ICON_NAME_RE = re.compile(
+    rf"^({re.escape(SYMLINK_PREFIX)})?{re.escape(GENERATED_PREFIX)}"
+    r"(?P<scene_name>.+)-icon__(active|inactive)$"
+    # example: lnk__gen__<scene_name>-icon__active
+)
 ACTION_TYPE_UUID = {"scene": "com.elgato.obsstudio.scene"}
 
 
-PRETTIER_PATH = (
-    Path(os.environ["LOCALAPPDATA"]) / "nvim-data" / "mason" / "bin" / "prettier.cmd"
-)
-
-
-def format_with_prettier(path: Path):
-    subprocess.run(
-        [str(PRETTIER_PATH), "--write", str(path)],
-        check=True,
-        cwd=path.parent,
-    )
-
-
-def find_images_dirs(root: Path):
-    """Recursively finds every "images" directory under root, yielding
-    (images_dir, manifest_path) pairs — manifest_path is the
-    manifest.vcs-template.json sitting alongside that images dir."""
-    for images_dir in root.rglob("images"):
-        if not images_dir.is_dir():
+def _find_images_dirs(sdeck_root: Path, manifest_filename: str):
+    for candidate in sdeck_root.rglob("*"):
+        if not (candidate.is_dir() and candidate.name.lower() == "images"):
             continue
-        manifest_path = images_dir.parent / "manifest.vcs-template.json"
+        manifest_path = candidate.parent / manifest_filename
         if not manifest_path.is_file():
-            logger.warning(f"No manifest found next to {images_dir}, skipping")
+            logger.warning(f"No manifest found next to {candidate}, skipping")
             continue
-        yield images_dir, manifest_path
+        yield candidate, manifest_path
 
 
-def find_scene_icons(directory: Path) -> dict[str, list[Path]]:
-    """Returns {scene_name: [matching files]} for every gen__..-icon__(in)active
-    file found directly in `directory`."""
+def _find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     found: dict[str, list[Path]] = {}
     for f in directory.iterdir():
         if not f.is_file():
@@ -52,9 +37,30 @@ def find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     return found
 
 
+def _split_active_inactive(files: list[Path]) -> tuple[Path | None, Path | None]:
+    active = next((f for f in files if "__active" in f.stem), None)
+    inactive = next((f for f in files if "__inactive" in f.stem), None)
+    return active, inactive
+
+
+def _apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
+    if action.get("UUID") != ACTION_TYPE_UUID["scene"]:
+        logger.info("not implemented yet")
+        return
+
+    states = action.get("States", [])
+    if len(states) < 2:
+        logger.warning(
+            "Skipping scene action with unexpected States shape (expected 2, "
+            f"got {len(states)}): {action!r}"
+        )
+        return
+
+    states[0]["Image"] = f"Images/{active_path.name}"
+    states[1]["Image"] = f"Images/{inactive_path.name}"
+
+
 def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:
-    """Walks every action in the manifest, returns {scene_name: action}
-    for every scene action found."""
     scene_actions: dict[str, dict] = {}
     for controller in manifest.get("Controllers", []):
         actions = controller.get("Actions") or {}
@@ -68,7 +74,7 @@ def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:
 
 
 def process_manifest(images_dir: Path, manifest_path: Path):
-    scene_icons = find_scene_icons(images_dir)
+    scene_icons = _find_scene_icons(images_dir)
     manifest = json.loads(manifest_path.read_text())
     scene_actions = find_scene_keys_in_manifest(manifest)
 
@@ -78,7 +84,7 @@ def process_manifest(images_dir: Path, manifest_path: Path):
             logger.info(f"{scene_name}: NOT in manifest ({manifest_path})")
             continue
 
-        active_path, inactive_path = split_active_inactive(files)
+        active_path, inactive_path = _split_active_inactive(files)
         if active_path is None or inactive_path is None:
             logger.warning(
                 f"Scene {scene_name!r} missing active/inactive icon "
@@ -86,38 +92,21 @@ def process_manifest(images_dir: Path, manifest_path: Path):
             )
             continue
 
-        apply_icon_to_action(action, active_path, inactive_path)
+        _apply_icon_to_action(action, active_path, inactive_path)
         logger.info(f"{scene_name}: updated ({manifest_path})")
 
     manifest_path.write_text(json.dumps(manifest, separators=(",", ":")))
     format_with_prettier(manifest_path)
 
 
-def split_active_inactive(files: list[Path]) -> tuple[Path | None, Path | None]:
-    active = next((f for f in files if "__active" in f.stem), None)
-    inactive = next((f for f in files if "__inactive" in f.stem), None)
-    return active, inactive
-
-
-def apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
-    """Sets or replaces the Image key on both states of a scene action.
-    State 0 = active, State 1 = inactive."""
-    if action.get("UUID") != ACTION_TYPE_UUID["scene"]:
-        logger.info("not implemented yet")
-        return
-
-    states = action.get("States", [])
-    if len(states) < 2:
-        logger.warning(
-            "Skipping action with unexpected States shape (expected 2, "
-            f"got {len(states)}): {action!r}"
+def place_icons_in_manifests(sdeck_root: Path):
+    manifest_filename = SDECK_MANIFEST_FILENAMES.get(sdeck_root)
+    if not manifest_filename:
+        msg = (
+            f"No manifest filename defined for {sdeck_root} "
+            f"(expected one of {[str(k) for k in SDECK_MANIFEST_FILENAMES]})"
         )
-        return
-
-    states[0]["Image"] = f"Images/{active_path.name}"
-    states[1]["Image"] = f"Images/{inactive_path.name}"
-
-
-def place_icons_in_manifests(root_dir: Path):
-    for images_dir, manifest_path in find_images_dirs(root_dir):
+        logger.error(msg)
+        raise ValueError(msg)
+    for images_dir, manifest_path in _find_images_dirs(sdeck_root, manifest_filename):
         process_manifest(images_dir, manifest_path)

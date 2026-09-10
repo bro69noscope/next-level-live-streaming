@@ -1,3 +1,23 @@
+import os
+from pathlib import Path
+
+from get_streamdeck_path import get_streamdeck_base_path
+from src.config.settings import PROJECT_ROOT_PATH
+
+PRETTIER_PATH = (
+    Path(os.environ["LOCALAPPDATA"]) / "nvim-data" / "mason" / "bin" / "prettier.cmd"
+)
+
+REPOSITORY_SDECK_ROOT = PROJECT_ROOT_PATH / "external" / "streamdeck"
+VCDATA_SDECK_ROOT = REPOSITORY_SDECK_ROOT / "version-control" / "vcdata"
+LOCAL_SDECK_ROOT = get_streamdeck_base_path(REPOSITORY_SDECK_ROOT)
+SDECK_ICONS_ROOT = VCDATA_SDECK_ROOT / "binaries" / "icons"
+
+SDECK_MANIFEST_FILENAMES = {
+    VCDATA_SDECK_ROOT: "manifest.vcs-template.json",
+    LOCAL_SDECK_ROOT: "manifest.json",
+}
+
 STREAMDECK_DEVICE_SUFFIXES = ["_4x8", "_3x5"]
 SYMLINK_PREFIX = "lnk__"
 GENERATED_PREFIX = "gen__"

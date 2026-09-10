@@ -9,8 +9,12 @@ PRETTIER_PATH = (
 )
 
 REPOSITORY_SDECK_ROOT = PROJECT_ROOT_PATH / "external" / "streamdeck"
+GENERATE_ICONS_ROOT = REPOSITORY_SDECK_ROOT / "utils" / "generate-icons"
 VCDATA_SDECK_ROOT = REPOSITORY_SDECK_ROOT / "version-control" / "vcdata"
-LOCAL_SDECK_ROOT = get_streamdeck_base_path(REPOSITORY_SDECK_ROOT)
+LOCAL_SDECK_ROOT = get_streamdeck_base_path(
+    REPOSITORY_SDECK_ROOT,
+    GENERATE_ICONS_ROOT,
+)
 SDECK_ICONS_ROOT = VCDATA_SDECK_ROOT / "binaries" / "icons"
 
 SDECK_MANIFEST_FILENAMES = {

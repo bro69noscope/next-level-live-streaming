@@ -1,33 +1,46 @@
-import os
+import json
 import subprocess
 from pathlib import Path
 
 from perf import timed
 
-STREAMDECK_ROOT_PATH_STR = "_STREAMDECK_ROOT_PATH"
+_CACHE_FILENAME = ".streamdeck-base-path.json"
 
 
-def get_streamdeck_base_path(repo_sdeck_root: Path) -> Path:
-    PS_PATHS_SCRIPT = (
+def _cache_path(generate_icons_root: Path) -> Path:
+    return generate_icons_root / _CACHE_FILENAME
+
+
+def get_streamdeck_base_path(repo_sdeck_root: Path, generate_icons_root: Path) -> Path:
+    cache_file = _cache_path(generate_icons_root)
+    if cache_file.is_file():
+        with timed("get_streamdeck_base_path (cache)"):
+            data = json.loads(cache_file.read_text())
+            return Path(data["sdeck_base_path"])
+
+    ps_paths_script = (
         repo_sdeck_root / "version-control" / "dotsource-streamdeck-paths.ps1"
     )
-    value = os.environ.get(STREAMDECK_ROOT_PATH_STR)
-    if value:
-        return Path(value)
 
     with timed("get_streamdeck_base_path (powershell)"):
         result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", f". '{PS_PATHS_SCRIPT}'"],
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f". '{ps_paths_script}'; Write-Output $env:_STREAMDECK_ROOT_PATH",
+            ],
             capture_output=True,
             text=True,
             check=True,
         )
+
     value = result.stdout.strip()
     if not value:
         raise RuntimeError(
-            f"{STREAMDECK_ROOT_PATH_STR} not set after running {PS_PATHS_SCRIPT} "
+            f"Failed to resolve sdeck base path from {ps_paths_script} "
             f"(stderr: {result.stderr})"
         )
 
-    os.environ[STREAMDECK_ROOT_PATH_STR] = value
+    cache_file.write_text(json.dumps({"sdeck_base_path": value}))
     return Path(value)

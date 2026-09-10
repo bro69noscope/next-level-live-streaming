@@ -13,7 +13,12 @@ except OSError as e:
     )
     raise SystemExit(1) from e
 
-from constants import ACTIVE_SUFFIX, CATEGORY_COLORS_MAP, GENERATED_PREFIX, INACTIVE_SUFFIX
+from constants import (
+    ACTIVE_SUFFIX,
+    CATEGORY_COLORS_MAP,
+    GENERATED_PREFIX,
+    INACTIVE_SUFFIX,
+)
 from PIL import Image, ImageDraw, ImageEnhance
 
 CATEGORIES_WITH_ACTIVATION = {"scenes", "sources"}
@@ -22,6 +27,7 @@ BRIGHTNESS_FACTOR = 0.3
 FRAME_PCT = 0.075
 INACTIVE_THICKNESS_FACTOR = 0.65
 MID_THICKNESS_FACTOR = (1 + INACTIVE_THICKNESS_FACTOR) / 2
+MAX_ICON_DIMENSION = 256
 
 
 def _save_image(img: Image.Image, path: Path):
@@ -30,12 +36,22 @@ def _save_image(img: Image.Image, path: Path):
     img.save(path)
 
 
+def _resize_to_max(img: Image.Image, max_dim: int) -> Image.Image:
+    w, h = img.size
+    if max(w, h) <= max_dim:
+        return img
+    scale = max_dim / max(w, h)
+    return img.resize((round(w * scale), round(h * scale)), Image.Resampling.LANCZOS)
+
+
 def _load_image(path: Path) -> Image.Image:
     if path.suffix.lower() == ".svg":
         png_bytes = cairosvg.svg2png(url=str(path))
         assert png_bytes is not None, f"cairosvg failed to render {path}"
-        return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-    return Image.open(path).convert("RGBA")
+        img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    else:
+        img = Image.open(path).convert("RGBA")
+    return _resize_to_max(img, MAX_ICON_DIMENSION)
 
 
 def _dim_brightness_preserve_alpha(img: Image.Image, factor: float) -> Image.Image:

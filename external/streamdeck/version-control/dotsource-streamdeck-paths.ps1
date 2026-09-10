@@ -16,4 +16,3 @@ if ($SdeckOverrideMappings) {
 
 # Export for non ps1 consumers
 $env:_STREAMDECK_ROOT_PATH = $script:SdeckBasePath
-Write-Output $env:_STREAMDECK_ROOT_PATH

@@ -2,6 +2,8 @@ import os
 import subprocess
 from pathlib import Path
 
+from perf import timed
+
 STREAMDECK_ROOT_PATH_STR = "_STREAMDECK_ROOT_PATH"
 
 
@@ -13,12 +15,13 @@ def get_streamdeck_base_path(repo_sdeck_root: Path) -> Path:
     if value:
         return Path(value)
 
-    result = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", f". '{PS_PATHS_SCRIPT}'"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    with timed("get_streamdeck_base_path (powershell)"):
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", f". '{PS_PATHS_SCRIPT}'"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
     value = result.stdout.strip()
     if not value:
         raise RuntimeError(

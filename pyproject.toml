@@ -1,5 +1,5 @@
 [project]
-name = "woertsposzibllen4me"
+name = "next-level-live-streaming"
 version = "0.0.0"
 
 [project.optional-dependencies]

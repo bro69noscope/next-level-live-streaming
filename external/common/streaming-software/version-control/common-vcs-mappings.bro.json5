@@ -1,7 +1,7 @@
 {
   paths: {
     // code repo.
-    "{{STREAMING_REPO_PATH}}": "C:/Users/ville/myfiles/git-repos/woertsposzibllen4me/",
+    "{{STREAMING_REPO_PATH}}": "C:/Users/ville/myfiles/git-repos/next-level-live-streaming/",
     // main media, icons, etc. source location.
     "{{STREAMING_DATA_PATH}}": "C:/Users/ville/myfiles/streaming-data/",
   },

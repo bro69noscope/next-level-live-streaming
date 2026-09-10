@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from constants import GENERATED_PREFIX, SDECK_MANIFEST_FILENAMES, SYMLINK_PREFIX
-from shared import format_with_prettier, logger
+from shared import PRETTIER_QUEUE, logger
 
 ICON_NAME_RE = re.compile(
     rf"^({re.escape(SYMLINK_PREFIX)})?{re.escape(GENERATED_PREFIX)}"
@@ -96,7 +96,7 @@ def process_manifest(images_dir: Path, manifest_path: Path):
         logger.info(f"{scene_name}: updated ({manifest_path})")
 
     manifest_path.write_text(json.dumps(manifest, separators=(",", ":")))
-    format_with_prettier(manifest_path)
+    PRETTIER_QUEUE.append(manifest_path)
 
 
 def place_icons_in_manifests(sdeck_root: Path):

@@ -11,7 +11,7 @@ from generate_icons import process_image
 from generate_symlinks import sync_symlinks
 from place_in_manifests import place_icons_in_manifests
 from resolve_outpath import resolve_out_dir_for_category
-from shared import logger
+from shared import PRETTIER_QUEUE, format_with_prettier, logger
 
 
 def walk_categories(root: Path):
@@ -41,7 +41,7 @@ def main():
                 filepath, SDECK_ICONS_ROOT, sdeck_root, category_dir
             )
             if out_dir is None:
-                logger.info(
+                logger.debug(
                     f"no matching profile found for {filepath} under {sdeck_root}, skipping"
                 )
                 continue
@@ -50,6 +50,8 @@ def main():
     for sdeck_root in (VCDATA_SDECK_ROOT, LOCAL_SDECK_ROOT):
         sync_symlinks(SDECK_ICONS_ROOT, sdeck_root)
         place_icons_in_manifests(sdeck_root)
+
+    format_with_prettier(PRETTIER_QUEUE)
 
 
 if __name__ == "__main__":

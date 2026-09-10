@@ -16,6 +16,13 @@ MARKER_FORMAT = json.loads(
 )
 
 
+class KnownBadProfile(ValueError):
+    pass
+
+
+_known_bad_profiles: set[str] = set()
+
+
 def _build_home_marker_regex():
     literal = MARKER_FORMAT["pattern"].replace("{type}", MARKER_FORMAT["home_type"])
     pattern = re.escape(literal).replace(r"\{name\}", r"(?P<profile>.+)")
@@ -44,9 +51,13 @@ def _find_manifests_for_profile(sdeck_root: Path, profile_name: str):
 def _profile_from_icon_path(icon_path: Path, icons_root: Path) -> str:
     rel = icon_path.relative_to(icons_root)
     profile = rel.parts[0]
-    logger.debug(f"  icon_path {icon_path.name} gives profile={profile!r}")
+
+    if profile in _known_bad_profiles:
+        raise KnownBadProfile(profile)
+
     if not any(suffix in profile for suffix in STREAMDECK_DEVICE_SUFFIXES):
-        logger.error(
+        _known_bad_profiles.add(profile)
+        raise ValueError(
             f"profile {profile!r} missing a known device suffix "
             f"{STREAMDECK_DEVICE_SUFFIXES} (from {icon_path})"
         )
@@ -86,8 +97,15 @@ def resolve_out_dir(icon_path: Path, icons_root: Path, sdeck_root: Path) -> Path
         logger.error(f"  {icon_path.name}: no action_name extracted from stem")
         raise ValueError(f"Cannot extract action_name from stem {icon_path.stem}")
 
-    profile_name = _profile_from_icon_path(icon_path, icons_root)
-    logger.info(
+    try:
+        profile_name = _profile_from_icon_path(icon_path, icons_root)
+    except KnownBadProfile:
+        return None
+    except ValueError as e:
+        logger.error(str(e))
+        return None
+
+    logger.debug(
         f"  {icon_path.name}: action_name={action_name!r}, profile={profile_name!r}"
     )
     return resolve_images_dir(action_name, profile_name, sdeck_root)

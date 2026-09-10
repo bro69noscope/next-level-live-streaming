@@ -4,12 +4,15 @@ from pathlib import Path
 from constants import PRETTIER_PATH
 from src.utils.logging_utils import setup_logger
 
+PRETTIER_QUEUE: list[Path] = []
 
-def format_with_prettier(path: Path):
+
+def format_with_prettier(paths: list[Path]):
+    if not paths:
+        return
     subprocess.run(
-        [str(PRETTIER_PATH), "--write", str(path)],
+        [str(PRETTIER_PATH), "--write", "--no-config", *[str(p) for p in paths]],
         check=True,
-        cwd=path.parent,
     )
 
 

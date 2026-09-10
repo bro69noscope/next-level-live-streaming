@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from pathlib import Path
 
 from constants import (
@@ -15,7 +16,7 @@ from resolve_outpath import resolve_out_dir_for_category
 from shared import PRETTIER_QUEUE, format_with_prettier, logger
 
 
-def walk_categories(root: Path):
+def walk_categories(root: Path) -> Iterator[tuple[Path, str, Path]]:
     for candidate in root.rglob("*"):
         if not (candidate.is_dir() and candidate.name in CATEGORY_COLORS_MAP):
             continue

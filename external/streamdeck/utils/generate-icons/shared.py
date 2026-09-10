@@ -7,6 +7,12 @@ from src.utils.logging_utils import setup_logger
 PRETTIER_QUEUE: list[Path] = []
 
 
+class KnownBadProfile(ValueError):
+    pass
+
+
+
+
 def format_with_prettier(paths: list[Path]):
     if not paths:
         return

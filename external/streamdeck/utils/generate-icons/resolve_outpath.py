@@ -1,43 +1,18 @@
 import json
-import re
 from pathlib import Path
 
-from constants import (
-    ACTIVE_SUFFIX,
-    INACTIVE_SUFFIX,
-    REPOSITORY_SDECK_ROOT,
-    STREAMDECK_DEVICE_SUFFIXES,
+from place_in_manifests import (
+    find_profile_switch_keys_in_manifest,
+    find_scene_keys_in_manifest,
 )
-from place_in_manifests import find_scene_keys_in_manifest
-from shared import logger
-
-MARKER_FORMAT = json.loads(
-    (REPOSITORY_SDECK_ROOT / "shared" / "marker-format.json").read_text()
+from resolve_action_names import (
+    _action_name_from_stem,
+    _profile_from_icon_path,
+    _profile_name_from_home_marker,
 )
-
-
-class KnownBadProfile(ValueError):
-    pass
-
+from shared import KnownBadProfile, logger
 
 _known_bad_profiles: set[str] = set()
-
-
-def _build_home_marker_regex():
-    literal = MARKER_FORMAT["pattern"].replace("{type}", MARKER_FORMAT["home_type"])
-    pattern = re.escape(literal).replace(r"\{name\}", r"(?P<profile>.+)")
-    return re.compile(f"^{pattern}$")
-
-
-HOME_MARKER_RE = _build_home_marker_regex()
-
-
-def _profile_name_from_home_marker(sdprofile_dir: Path) -> str | None:
-    for f in sdprofile_dir.iterdir():
-        if f.is_file():
-            m = HOME_MARKER_RE.match(f.name)
-            if m:
-                return m.group("profile")
 
 
 def _find_manifests_for_profile(sdeck_root: Path, profile_name: str):
@@ -48,34 +23,19 @@ def _find_manifests_for_profile(sdeck_root: Path, profile_name: str):
             yield manifest_path
 
 
-def _profile_from_icon_path(icon_path: Path, icons_root: Path) -> str:
-    rel = icon_path.relative_to(icons_root)
-    profile = rel.parts[0]
-
-    if profile in _known_bad_profiles:
-        raise KnownBadProfile(profile)
-
-    if not any(suffix in profile for suffix in STREAMDECK_DEVICE_SUFFIXES):
-        _known_bad_profiles.add(profile)
-        raise ValueError(
-            f"profile {profile!r} missing a known device suffix "
-            f"{STREAMDECK_DEVICE_SUFFIXES} (from {icon_path})"
+def resolve_profile_switch_images_dir(
+    action_name: str, sdeck_root: Path, manifest_filename: str
+) -> Path | None:
+    for manifest_path in sdeck_root.rglob(manifest_filename):
+        manifest = json.loads(manifest_path.read_text())
+        profile_actions = find_profile_switch_keys_in_manifest(
+            manifest, sdeck_root, manifest_filename
         )
-    return profile
-
-
-def _action_name_from_stem(stem: str) -> str | None:
-    if stem.endswith("-icon"):
-        return stem[: -len("-icon")]
+        if action_name in profile_actions:
+            images_dir = manifest_path.parent / "images"
+            images_dir.mkdir(exist_ok=True)
+            return images_dir
     return None
-
-
-def _action_name_from_generated_stem(stem: str) -> str | None:
-    for suffix in (ACTIVE_SUFFIX, INACTIVE_SUFFIX):
-        if stem.endswith(suffix):
-            stem = stem[: -len(suffix)]
-            break
-    return _action_name_from_stem(stem)
 
 
 def resolve_images_dir(

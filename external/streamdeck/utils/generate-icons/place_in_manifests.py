@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 from constants import GENERATED_PREFIX, SDECK_MANIFEST_FILENAMES, SYMLINK_PREFIX
+from resolve_action_names import profile_name_from_uuid
 from shared import PRETTIER_QUEUE, logger
 
 ICON_NAME_RE = re.compile(
@@ -10,7 +11,10 @@ ICON_NAME_RE = re.compile(
     r"(?P<scene_name>.+)-icon__(active|inactive)$"
     # example: lnk__gen__<scene_name>-icon__active
 )
-ACTION_TYPE_UUID = {"scene": "com.elgato.obsstudio.scene"}
+ACTION_TYPE_UUID = {
+    "scene": "com.elgato.obsstudio.scene",
+    "profile": "com.elgato.streamdeck.profile.rotate",
+}
 
 
 def _find_images_dirs(sdeck_root: Path, manifest_filename: str):
@@ -58,6 +62,29 @@ def _apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
 
     states[0]["Image"] = f"Images/{active_path.name}"
     states[1]["Image"] = f"Images/{inactive_path.name}"
+
+
+def find_profile_switch_keys_in_manifest(
+    manifest: dict, sdeck_root: Path, manifest_filename: str
+) -> dict[str, dict]:
+    profile_actions: dict[str, dict] = {}
+    for controller in manifest.get("Controllers", []):
+        actions = controller.get("Actions") or {}
+        for action in actions.values():
+            if action.get("UUID") != ACTION_TYPE_UUID["profile"]:
+                continue
+            settings = action.get("Settings", {})
+            profile_uuid = settings.get("ProfileUUID")
+            if not profile_uuid:
+                continue
+            name = profile_name_from_uuid(profile_uuid, sdeck_root, manifest_filename)
+            if name is None:
+                logger.warning(
+                    f"ProfileUUID {profile_uuid!r} did not resolve to a known profile"
+                )
+                continue
+            profile_actions[f"profile_{name}"] = action
+    return profile_actions
 
 
 def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:

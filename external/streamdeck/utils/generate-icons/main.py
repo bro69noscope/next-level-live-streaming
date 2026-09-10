@@ -16,23 +16,22 @@ from shared import PRETTIER_QUEUE, format_with_prettier, logger
 
 
 def walk_categories(root: Path):
-    for item in root.rglob("*"):
-        if item.is_dir() and item.name in CATEGORY_COLORS_MAP:
-            category_dir = item
-            for f in category_dir.iterdir():
-                if not f.is_file():
-                    continue
-                if f.name == ".gitkeep":
-                    continue
-                if f.suffix.lower() not in IMAGE_EXTS:
-                    msg = (
-                        f"skipping unsupported file: {f} "
-                        f"(unsupported extension {f.suffix})"
-                    )
-                    logger.warning(msg)
-                    print(msg)
-                    continue
-                yield f, category_dir.name, category_dir
+    for candidate in root.rglob("*"):
+        if not (candidate.is_dir() and candidate.name in CATEGORY_COLORS_MAP):
+            continue
+        for f in candidate.iterdir():
+            if not f.is_file():
+                continue
+            if f.name == ".gitkeep":
+                continue
+            if f.suffix.lower() not in IMAGE_EXTS:
+                msg = (
+                    f"skipping unsupported file: {f} (unsupported extension {f.suffix})"
+                )
+                logger.warning(msg)
+                print(msg)
+                continue
+            yield f, candidate.name, candidate
 
 
 def main():

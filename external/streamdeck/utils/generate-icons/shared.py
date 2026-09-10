@@ -11,8 +11,6 @@ class KnownBadProfile(ValueError):
     pass
 
 
-
-
 def format_with_prettier(paths: list[Path]):
     if not paths:
         return
@@ -35,4 +33,4 @@ def format_with_prettier(paths: list[Path]):
 
 
 LOG_DIR = Path(__file__).resolve().parent / "logs"
-logger = setup_logger("generate-icons", log_dir=LOG_DIR)
+logger = setup_logger("generate-icons", log_dir=LOG_DIR, log_in_common=False)

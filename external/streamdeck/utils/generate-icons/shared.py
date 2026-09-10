@@ -10,10 +10,22 @@ PRETTIER_QUEUE: list[Path] = []
 def format_with_prettier(paths: list[Path]):
     if not paths:
         return
-    subprocess.run(
+
+    result = subprocess.run(
         [str(PRETTIER_PATH), "--write", "--no-config", *[str(p) for p in paths]],
-        check=True,
+        capture_output=True,
+        text=True,
     )
+
+    if result.stdout:
+        logger.info(result.stdout.strip())
+
+    if result.returncode != 0:
+        if result.stderr:
+            logger.error(result.stderr.strip())
+        raise subprocess.CalledProcessError(
+            result.returncode, result.args, result.stdout, result.stderr
+        )
 
 
 LOG_DIR = Path(__file__).resolve().parent / "logs"

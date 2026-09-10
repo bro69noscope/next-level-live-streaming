@@ -6,15 +6,22 @@ from constants import GENERATED_PREFIX, SDECK_MANIFEST_FILENAMES, SYMLINK_PREFIX
 from resolve_action_names import profile_name_from_uuid
 from shared import PRETTIER_QUEUE, logger
 
-ICON_NAME_RE = re.compile(
-    rf"^({re.escape(SYMLINK_PREFIX)})?{re.escape(GENERATED_PREFIX)}"
-    r"(?P<scene_name>.+)-icon__(active|inactive)$"
-    # example: lnk__gen__<scene_name>-icon__active
-)
 ACTION_TYPE_UUID = {
     "scene": "com.elgato.obsstudio.scene",
     "profile": "com.elgato.streamdeck.profile.rotate",
 }
+
+SCENE_OR_SOURCE_ICON_RE = re.compile(
+    rf"^({re.escape(SYMLINK_PREFIX)})?{re.escape(GENERATED_PREFIX)}"
+    r"(?P<scene_name>.+)-icon__(active|inactive)$"
+    # example: lnk__gen__<scene_or_source_name>-icon__active
+)
+
+PROFILE_ICON_RE = re.compile(
+    rf"^({re.escape(SYMLINK_PREFIX)})?{re.escape(GENERATED_PREFIX)}"
+    r"(?P<profile_name>profile_.+)-icon$"
+    # example: lnk__gen__profile_<profile_name>-icon
+)
 
 
 def _find_images_dirs(sdeck_root: Path, manifest_filename: str):
@@ -28,12 +35,24 @@ def _find_images_dirs(sdeck_root: Path, manifest_filename: str):
         yield candidate, manifest_path
 
 
+def _find_profile_icons(directory: Path) -> dict[str, Path]:
+    found: dict[str, Path] = {}
+    for f in directory.iterdir():
+        if not f.is_file():
+            continue
+        m = PROFILE_ICON_RE.match(f.stem)
+        if not m:
+            continue
+        found[m.group("profile_name")] = f
+    return found
+
+
 def _find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     found: dict[str, list[Path]] = {}
     for f in directory.iterdir():
         if not f.is_file():
             continue
-        m = ICON_NAME_RE.match(f.stem)
+        m = SCENE_OR_SOURCE_ICON_RE.match(f.stem)
         if not m:
             continue
         scene_name = m.group("scene_name")
@@ -41,27 +60,55 @@ def _find_scene_icons(directory: Path) -> dict[str, list[Path]]:
     return found
 
 
-def _split_active_inactive(files: list[Path]) -> tuple[Path | None, Path | None]:
-    active = next((f for f in files if "__active" in f.stem), None)
-    inactive = next((f for f in files if "__inactive" in f.stem), None)
-    return active, inactive
+def _reorder_state_with_image(state: dict, image_value: str) -> dict:
+    reordered = {"Image": image_value}
+    for k, v in state.items():
+        if k != "Image":
+            reordered[k] = v
+    return reordered
 
 
-def _apply_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
+def _apply_profile_icon_to_action(action: dict, icon_path: Path):
+    states = action.get("States", [])
+    if not states:
+        logger.warning(f"Skipping profile action with no States: {action!r}")
+        return
+
+    if len(states) < 1:
+        logger.warning(
+            "Skipping profile action with unexpected States shape len (expected 1, "
+            f"got {len(states)}): {action!r}"
+        )
+        return
+
+    states[0] = _reorder_state_with_image(states[0], f"Images/{icon_path.name}")
+
+
+def _apply_scene_icon_to_action(action: dict, active_path: Path, inactive_path: Path):
     if action.get("UUID") != ACTION_TYPE_UUID["scene"]:
         logger.info("not implemented yet")
         return
 
     states = action.get("States", [])
+    if not states:
+        logger.warning(f"Skipping scene action with no States: {action!r}")
+        return
+
     if len(states) < 2:
         logger.warning(
-            "Skipping scene action with unexpected States shape (expected 2, "
+            "Skipping scene action with unexpected States shape len (expected 2, "
             f"got {len(states)}): {action!r}"
         )
         return
 
-    states[0]["Image"] = f"Images/{active_path.name}"
-    states[1]["Image"] = f"Images/{inactive_path.name}"
+    states[0] = _reorder_state_with_image(states[0], f"Images/{active_path.name}")
+    states[1] = _reorder_state_with_image(states[1], f"Images/{inactive_path.name}")
+
+
+def _split_active_inactive(files: list[Path]) -> tuple[Path | None, Path | None]:
+    active = next((f for f in files if "__active" in f.stem), None)
+    inactive = next((f for f in files if "__inactive" in f.stem), None)
+    return active, inactive
 
 
 def find_profile_switch_keys_in_manifest(
@@ -100,11 +147,13 @@ def find_scene_keys_in_manifest(manifest: dict) -> dict[str, dict]:
     return scene_actions
 
 
-def process_manifest(images_dir: Path, manifest_path: Path):
-    scene_icons = _find_scene_icons(images_dir)
+def process_manifest(
+    images_dir: Path, manifest_path: Path, sdeck_root: Path, manifest_filename: str
+):
     manifest = json.loads(manifest_path.read_text())
-    scene_actions = find_scene_keys_in_manifest(manifest)
 
+    scene_icons = _find_scene_icons(images_dir)
+    scene_actions = find_scene_keys_in_manifest(manifest)
     for scene_name, files in scene_icons.items():
         action = scene_actions.get(scene_name)
         if action is None:
@@ -119,8 +168,20 @@ def process_manifest(images_dir: Path, manifest_path: Path):
             )
             continue
 
-        _apply_icon_to_action(action, active_path, inactive_path)
-        logger.info(f"{scene_name}: updated ({manifest_path})")
+        _apply_scene_icon_to_action(action, active_path, inactive_path)
+        logger.info(f"scene {scene_name}: updated ({manifest_path})")
+
+    profile_icons = _find_profile_icons(images_dir)
+    profile_actions = find_profile_switch_keys_in_manifest(
+        manifest, sdeck_root, manifest_filename
+    )
+    for profile_name, icon_path in profile_icons.items():
+        action = profile_actions.get(profile_name)
+        if action is None:
+            logger.info(f"{profile_name}: NOT in manifest ({manifest_path})")
+            continue
+        _apply_profile_icon_to_action(action, icon_path)
+        logger.info(f"profile switch {profile_name}: updated ({manifest_path})")
 
     manifest_path.write_text(json.dumps(manifest, separators=(",", ":")))
     PRETTIER_QUEUE.append(manifest_path)
@@ -136,4 +197,4 @@ def place_icons_in_manifests(sdeck_root: Path):
         logger.error(msg)
         raise ValueError(msg)
     for images_dir, manifest_path in _find_images_dirs(sdeck_root, manifest_filename):
-        process_manifest(images_dir, manifest_path)
+        process_manifest(images_dir, manifest_path, sdeck_root, manifest_filename)

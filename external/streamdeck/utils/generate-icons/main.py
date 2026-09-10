@@ -6,6 +6,7 @@ from constants import (
     IMAGE_EXTS,
     LOCAL_SDECK_ROOT,
     SDECK_ICONS_ROOT,
+    SDECK_MANIFEST_FILENAMES,
     VCDATA_SDECK_ROOT,
 )
 from generate_icons import process_image
@@ -53,7 +54,9 @@ def main():
 
         for sdeck_root in (VCDATA_SDECK_ROOT, LOCAL_SDECK_ROOT):
             with timed("sync_symlinks"):
-                sync_symlinks(SDECK_ICONS_ROOT, sdeck_root)
+                sync_symlinks(
+                    SDECK_ICONS_ROOT, sdeck_root, SDECK_MANIFEST_FILENAMES[sdeck_root]
+                )
             with timed("place_icons_in_manifests"):
                 place_icons_in_manifests(sdeck_root)
 

@@ -6,9 +6,9 @@ from place_in_manifests import (
     find_scene_keys_in_manifest,
 )
 from resolve_action_names import (
-    _action_name_from_stem,
     _profile_from_icon_path,
     _profile_name_from_home_marker,
+    action_name_from_stem,
 )
 from shared import KnownBadProfile, logger
 
@@ -23,9 +23,10 @@ def _find_manifests_for_profile(sdeck_root: Path, profile_name: str):
             yield manifest_path
 
 
-def resolve_profile_switch_images_dir(
+def resolve_profile_switch_images_dirs(
     action_name: str, sdeck_root: Path, manifest_filename: str
-) -> Path | None:
+) -> list[Path]:
+    out_dirs = []
     for manifest_path in sdeck_root.rglob(manifest_filename):
         manifest = json.loads(manifest_path.read_text())
         profile_actions = find_profile_switch_keys_in_manifest(
@@ -34,8 +35,8 @@ def resolve_profile_switch_images_dir(
         if action_name in profile_actions:
             images_dir = manifest_path.parent / "images"
             images_dir.mkdir(exist_ok=True)
-            return images_dir
-    return None
+            out_dirs.append(images_dir)
+    return out_dirs
 
 
 def resolve_images_dir(
@@ -52,7 +53,7 @@ def resolve_images_dir(
 
 
 def resolve_out_dir(icon_path: Path, icons_root: Path, sdeck_root: Path) -> Path | None:
-    action_name = _action_name_from_stem(icon_path.stem)
+    action_name = action_name_from_stem(icon_path.stem)
     if action_name is None:
         logger.error(f"  {icon_path.name}: no action_name extracted from stem")
         raise ValueError(f"Cannot extract action_name from stem {icon_path.stem}")

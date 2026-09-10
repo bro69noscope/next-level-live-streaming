@@ -46,18 +46,18 @@ def _profile_from_icon_path(icon_path: Path, icons_root: Path) -> str:
     return profile
 
 
-def _action_name_from_stem(stem: str) -> str | None:
+def action_name_from_stem(stem: str) -> str | None:
     if stem.endswith("-icon"):
         return stem[: -len("-icon")]
     return None
 
 
-def _action_name_from_generated_stem(stem: str) -> str | None:
+def action_name_from_generated_stem(stem: str) -> str | None:
     for suffix in (ACTIVE_SUFFIX, INACTIVE_SUFFIX):
         if stem.endswith(suffix):
             stem = stem[: -len(suffix)]
             break
-    return _action_name_from_stem(stem)
+    return action_name_from_stem(stem)
 
 
 def profile_name_from_uuid(

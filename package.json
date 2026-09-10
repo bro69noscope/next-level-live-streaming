@@ -13,5 +13,8 @@
     "setup:cairo": "node external/streamdeck/utils/generate-icons/ensure-cairo.mjs",
     "setup:ps1": "pwsh -File ./external/common/helpers/ps1/install-all.ps1",
     "postinstall": "npm run setup:ps1 && npm run setup:cairo"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

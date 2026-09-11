@@ -59,6 +59,9 @@ def main():
                 )
             with timed("place_icons_in_manifests"):
                 place_icons_in_manifests(sdeck_root)
+                # TODO: since we replace icons in actual manifest files, we should run
+                # the pwsh marker file generation logic right after to help track the
+                # changes this might cause in the vcs repo.
 
         with timed("format_with_prettier"):
             format_with_prettier(PRETTIER_QUEUE)

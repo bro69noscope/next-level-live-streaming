@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-from constants import GENERATED_PREFIX, SYMLINK_PREFIX
-from resolve_action_names import action_name_from_generated_stem
-from resolve_outpath import (
+from .constants import GENERATED_PREFIX, SYMLINK_PREFIX
+from .resolve_action_names import action_name_from_generated_stem
+from .resolve_outpath import (
     resolve_images_dir,
     resolve_profile_switch_images_dirs,
 )

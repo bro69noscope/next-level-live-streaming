@@ -2,8 +2,9 @@ import json
 import os
 from pathlib import Path
 
-from get_streamdeck_path import get_streamdeck_base_path
 from src.config.settings import PROJECT_ROOT_PATH
+
+from .get_streamdeck_path import get_streamdeck_base_path
 
 PRETTIER_PATH = (
     Path(os.environ["LOCALAPPDATA"]) / "nvim-data" / "mason" / "bin" / "prettier.cmd"
@@ -11,7 +12,7 @@ PRETTIER_PATH = (
 
 
 REPOSITORY_SDECK_ROOT = PROJECT_ROOT_PATH / "external" / "streamdeck"
-GENERATE_ICONS_ROOT = REPOSITORY_SDECK_ROOT / "utils" / "generate-icons"
+GENERATE_ICONS_ROOT = Path(__file__).resolve().parent
 VCDATA_SDECK_ROOT = REPOSITORY_SDECK_ROOT / "version-control" / "vcdata"
 LOCAL_SDECK_ROOT = get_streamdeck_base_path(
     REPOSITORY_SDECK_ROOT,

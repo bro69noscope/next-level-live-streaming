@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from pathlib import Path
 
-from constants import (
+from .constants import (
     CATEGORY_COLORS_MAP,
     IMAGE_EXTS,
     LOCAL_SDECK_ROOT,
@@ -9,12 +9,12 @@ from constants import (
     SDECK_MANIFEST_FILENAMES,
     VCDATA_SDECK_ROOT,
 )
-from generate_icons import process_image
-from generate_symlinks import sync_symlinks
-from perf import print_summary, timed
-from place_in_manifests import place_icons_in_manifests
-from resolve_outpath import resolve_out_dir_for_category
-from shared import PRETTIER_QUEUE, format_with_prettier, logger
+from .generate_icons import process_image
+from .generate_symlinks import sync_symlinks
+from .perf import print_summary, timed
+from .place_in_manifests import place_icons_in_manifests
+from .resolve_outpath import resolve_out_dir_for_category
+from .shared import PRETTIER_QUEUE, format_with_prettier, logger
 
 
 def walk_categories(root: Path) -> Iterator[tuple[Path, str, Path]]:

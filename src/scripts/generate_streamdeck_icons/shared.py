@@ -1,8 +1,9 @@
 import subprocess
 from pathlib import Path
 
-from constants import PRETTIER_PATH
 from src.utils.logging_utils import setup_logger
+
+from .constants import PRETTIER_PATH
 
 PRETTIER_QUEUE: list[Path] = []
 

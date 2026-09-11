@@ -2,13 +2,13 @@ import json
 import re
 from pathlib import Path
 
-from constants import (
+from .constants import (
     ACTIVE_SUFFIX,
     INACTIVE_SUFFIX,
     MARKER_FORMAT,
     STREAMDECK_DEVICE_SUFFIXES,
 )
-from shared import KnownBadProfile
+from .shared import KnownBadProfile
 
 _known_bad_profiles: set[str] = set()
 

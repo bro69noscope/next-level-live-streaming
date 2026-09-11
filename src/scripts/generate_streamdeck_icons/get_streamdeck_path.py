@@ -2,7 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from perf import timed
+from .perf import timed
 
 _CACHE_FILENAME = ".streamdeck-base-path.json"
 

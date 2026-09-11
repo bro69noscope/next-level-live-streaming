@@ -2,9 +2,9 @@ import json
 import re
 from pathlib import Path
 
-from constants import GENERATED_PREFIX, SDECK_MANIFEST_FILENAMES, SYMLINK_PREFIX
-from resolve_action_names import profile_name_from_uuid
-from shared import PRETTIER_QUEUE, logger
+from .constants import GENERATED_PREFIX, SDECK_MANIFEST_FILENAMES, SYMLINK_PREFIX
+from .resolve_action_names import profile_name_from_uuid
+from .shared import PRETTIER_QUEUE, logger
 
 ACTION_TYPE_UUID = {
     "scene": "com.elgato.obsstudio.scene",

@@ -7,19 +7,20 @@ try:
 except OSError as e:
     print(
         f"{__file__} requires the cairo native library (cairo.dll or libcairo-2.dll) "
-        "to be installed. Run `npm run setup:cairo` at repo root to install it, "
+        "to be installed. Run `sdeck-ensure-cairo` to install it, "
         "then restart your shell.",
         file=sys.stderr,
     )
     raise SystemExit(1) from e
 
-from constants import (
+from PIL import Image, ImageDraw, ImageEnhance
+
+from .constants import (
     ACTIVE_SUFFIX,
     CATEGORY_COLORS_MAP,
     GENERATED_PREFIX,
     INACTIVE_SUFFIX,
 )
-from PIL import Image, ImageDraw, ImageEnhance
 
 CATEGORIES_WITH_ACTIVATION = {"scenes", "sources"}
 

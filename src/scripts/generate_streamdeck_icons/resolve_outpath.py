@@ -1,16 +1,16 @@
 import json
 from pathlib import Path
 
-from place_in_manifests import (
+from .place_in_manifests import (
     find_profile_switch_keys_in_manifest,
     find_scene_keys_in_manifest,
 )
-from resolve_action_names import (
+from .resolve_action_names import (
     _profile_from_icon_path,
     _profile_name_from_home_marker,
     action_name_from_stem,
 )
-from shared import KnownBadProfile, logger
+from .shared import KnownBadProfile, logger
 
 _known_bad_profiles: set[str] = set()
 

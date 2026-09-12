@@ -9,9 +9,13 @@
   },
   "scripts": {
     "build:js-helpers": "node external/common/helpers/js/build-js-helpers.mjs",
-    "build:all": "npm run build:js-helpers && npm run setup:ps1",
+    "build:ts": "tsc -b && npm run build:js-helpers",
+    "build:alerts-overlays": "tsc -b external/html/alerts-overlays && npm run build:js-helpers",
+    "build:streamfeed": "tsc -b external/StreamFeedApp && npm run build:js-helpers",
+    "build:all": "npm run build:ts && npm run setup:ps1",
     "setup:ps1": "pwsh -File ./external/common/helpers/ps1/install-all.ps1",
-    "postinstall": "npm run setup:ps1"
+    "postinstall": "npm run setup:ps1",
+    "clean:ts": "tsc -b --clean"
   },
   "allowScripts": {
     "esbuild@0.28.2": true

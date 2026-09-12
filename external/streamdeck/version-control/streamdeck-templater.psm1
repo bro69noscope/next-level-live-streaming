@@ -13,6 +13,7 @@ try {
 }
 
 $script:VcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
+$script:VcsFlagSnapshotDirPath = Join-Path $PSScriptRoot "log\flag-snapshots"
 
 $markerFormatPath = Join-Path $PSScriptRoot "..\shared\marker-format.json"
 $script:MarkerFormat = Get-Content ($markerFormatPath) -Raw | ConvertFrom-Json
@@ -508,6 +509,48 @@ function Copy-StreamDeckMarkerFile {
     Write-Warning "  No manifest template found: $manifestTemplatePath falling back to random flag"
     $newFlag = "ERROR-NO-MANIFEST-" + (Get-Guid)
     $homeChanged = $false
+  }
+
+  if (Test-Path $manifestTemplatePath) {
+    $templateInfo = Get-Item $manifestTemplatePath
+    Write-VcsMessage -AsVerbose -Message ("  Hashed $($templateInfo.Name): " `
+        + "$($templateInfo.Length) byte(s), last write " `
+        + "$($templateInfo.LastWriteTime.ToString('o')), flag $($newFlag.Substring(0,6))...")
+  }
+
+  if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath)) {
+    if (-not (Test-Path $script:VcsFlagSnapshotDirPath)) {
+      New-Item -ItemType Directory -Path $script:VcsFlagSnapshotDirPath -Force | Out-Null
+    }
+
+    $pageSuffix = if ($null -ne $marker['pageIndex']) {
+      "-$($marker['pageIndex'])"
+    } else {
+      ""
+    }
+
+    $snapshotBaseName = "$($marker['name'])--$($marker['type'])$pageSuffix"
+    $oldSnapshotPath = Join-Path $script:VcsFlagSnapshotDirPath `
+      "$snapshotBaseName--$($existingFlag.Substring(0,8)).json"
+    $newSnapshotPath = Join-Path $script:VcsFlagSnapshotDirPath `
+      "$snapshotBaseName--$($newFlag.Substring(0,8)).json"
+
+    Copy-Item -Path $manifestTemplatePath -Destination $newSnapshotPath -Force
+
+    $diffNote = if (Test-Path $oldSnapshotPath) {
+      $diffLines = Compare-Object (Get-Content $oldSnapshotPath) (Get-Content $manifestTemplatePath)
+      if ($diffLines) {
+        "$($diffLines.Count) line(s) differ from previous snapshot"
+      } else {
+        "content is BYTE-IDENTICAL to previous snapshot — flag change is spurious, " `
+          + "look at Get-FileContentHash / encoding, not content generation"
+      }
+    } else {
+      "no previous snapshot on disk to compare against"
+    }
+
+    $truncated = $newSnapshotPath.Substring($Global:RepoPath.Length).TrimStart('\')
+    Write-VcsMessage -Message "  Snapshot saved: $truncated ($diffNote)" -Color DarkGray
   }
 
   $metadataChanged = $true

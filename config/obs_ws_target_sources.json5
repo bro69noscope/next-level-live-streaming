@@ -1,0 +1,14 @@
+// OBS sources we target directly with the OBS WebSocket API. hard-coded names for now.
+{
+  // Used to refresh the obs sources after we started serving the alerts pages.
+  alerts_overlays: {
+    ftp: {
+      obs_instance_key_in_ports_json5: "portable_ftp",
+      browser_source_name_in_obs: "browser_streamerbot_alerts",
+    },
+    production: {
+      obs_instance_key_in_ports_json5: "production",
+      browser_source_name_in_obs: "browser_streamerbot_alerts",
+    },
+  },
+}

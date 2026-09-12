@@ -5,8 +5,15 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import override
 
+from external.common.helpers.py.obs_ws.client import (
+    ObsWebSocketError,
+    refresh_browser_source,
+)
+from external.common.helpers.py.obs_ws.target_sources import (
+    ALERTS_OVERLAYS_OBS_WS_TARGET_SOURCES,
+)
 from src.config.settings import PROJECT_ROOT_PATH
-from src.connection.constants import ALERTS_OVERLAYS_STATIC
+from src.connection.constants import ALERTS_OVERLAYS_STATIC, PORTS
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -44,6 +51,25 @@ def _build_urls() -> dict[str, str]:
     }
 
 
+def _refresh_obs_alert_sources() -> None:
+    """Reload the alerts browser source in every running OBS instance."""
+    print("OBS alert sources (config/obs_ws_target_sources.json5):")
+    for env, source in ALERTS_OVERLAYS_OBS_WS_TARGET_SOURCES.items():
+        instance_key = source["obs_instance_key_in_ports_json5"]
+        source_name = source["browser_source_name_in_obs"]
+        obs = PORTS["obs"][instance_key]
+        target = f"{source_name} in obs.{instance_key} @ {obs['host']}:{obs['port']}"
+        try:
+            refresh_browser_source(obs["host"], obs["port"], source_name)
+        except OSError as e:
+            print(f"  {env:12s} {target}  [SKIPPED: OBS not reachable: {e}]")
+        except ObsWebSocketError as e:
+            print(f"  {env:12s} {target}  [FAILED: {e}]")
+        else:
+            print(f"  {env:12s} {target}  [REFRESHED]")
+    print()
+
+
 def main() -> None:
     """Print server info and serve forever."""
     urls = _build_urls()
@@ -63,6 +89,7 @@ def main() -> None:
     server = ThreadingHTTPServer(
         (ALERTS_OVERLAYS_STATIC["host"], ALERTS_OVERLAYS_STATIC["port"]), handler
     )
+    _refresh_obs_alert_sources()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

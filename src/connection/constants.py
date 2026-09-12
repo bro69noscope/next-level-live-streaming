@@ -45,6 +45,7 @@ class RepositoryConfig(TypedDict):
 class PySubProcessesPortsConfig(TypedDict):
     """Port configuration for Streamer.bot and managed subprocesses."""
 
+    obs: dict[str, EndpointConfig]
     streamerbot: dict[str, StreamerbotEnvironmentConfig]
     subprocesses: dict[str, SubprocessConfig]
     repository: RepositoryConfig

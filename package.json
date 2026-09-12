@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "@prettier/plugin-xml": "^3.4.2",
+    "concurrently": "^10.0.5",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
   },
@@ -13,6 +14,10 @@
     "build:alerts-overlays": "tsc -b external/html/alerts-overlays && npm run build:js-helpers",
     "build:streamfeed": "tsc -b external/StreamFeedApp && npm run build:js-helpers",
     "build:all": "npm run build:ts && npm run setup:ps1",
+    "serve:alerts-overlays": ".venv\\Scripts\\python external\\html\\alerts-overlays\\server.py",
+    "serve:all": "concurrently --kill-others-on-fail -n alerts -c cyan \"npm:serve:alerts-overlays\"",
+    "weztab:alerts-overlays": "wezterm cli spawn --cwd \"%cd%\" -- pwsh -NoExit -Command \"npm run serve:alerts-overlays\"",
+    "weztab:all": "npm run weztab:alerts-overlays",
     "setup:ps1": "pwsh -File ./external/common/helpers/ps1/install-all.ps1",
     "postinstall": "npm run setup:ps1",
     "clean:ts": "tsc -b --clean"

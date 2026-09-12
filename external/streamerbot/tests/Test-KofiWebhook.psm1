@@ -21,6 +21,10 @@
 # }
 # Usage:
 # Test-KofiWebhook -Type "Donation" -FromName "TestUser" -Message "hi" -Amount "3" -Currency "USD"
+# Shorthand presets:
+# Test-KofiWebhook sub -Message "message" ...
+# Test-KofiWebhook resub -Message "message" ...
+# Test-KofiWebhook dono -Message "message" ...
 
 function Test-KofiWebhook {
   param(

@@ -32,6 +32,10 @@ function Test-KofiWebhook {
     [ValidateSet("sub", "resub", "dono")]
     [string]$Preset,
 
+    [ValidateSet("ftp", "prod")]
+    [Parameter(Position = 1)]
+    [string]$Env = "ftp",
+
     [string]$Type = "Donation",
     [string]$FromName = "TestUser",
     [string]$Message = "This is a custom test message",
@@ -66,10 +70,25 @@ function Test-KofiWebhook {
   }
 
   Import-Module "$env:STREAMING_REPO_PATH\src\scripts\CredentialHelpers.psm1" -Force
-  $WebhookUrl = Get-CmdkeySecret -Target "HardscopeKofiWebhookUrl"
-  $VerificationToken = Get-CmdkeySecret -Target "HardscopeKofiVerificationToken"
-  # $WebhookUrl = Get-CmdkeySecret -Target "NoscopeKofiWebhookUrl"
-  # $VerificationToken = Get-CmdkeySecret -Target "NoscopeKofiVerificationToken"
+
+  $UrlTarget = if ($Env -eq "prod") {
+    "NoscopeKofiWebhookUrl"
+  } else {
+    "HardscopeKofiWebhookUrl"
+  }
+  $TokenTarget = if ($Env -eq "prod") {
+    "NoscopeKofiVerificationToken"
+  } else {
+    "HardscopeKofiVerificationToken"
+  }
+
+  $WebhookUrl = Get-CmdkeySecret -Target $UrlTarget
+  $VerificationToken = Get-CmdkeySecret -Target $TokenTarget
+
+  if ([string]::IsNullOrWhiteSpace($WebhookUrl) -or [string]::IsNullOrWhiteSpace($VerificationToken)) {
+    throw "Test-KofiWebhook: failed to retrieve credentials for '$Env' " `
+      + "(target(s): $UrlTarget, $TokenTarget). Check cmdkey entries."
+  }
 
   $payload = @{
     verification_token              = $VerificationToken
@@ -101,7 +120,7 @@ function Test-KofiWebhook {
     data = $jsonPayload
   }
 
-  Write-Host "Sending payload:" -ForegroundColor Cyan
+  Write-Host "Sending payload to '$Env':" -ForegroundColor Cyan
   Write-Host $displayJson
 
   $response = Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $body -ContentType "application/x-www-form-urlencoded"

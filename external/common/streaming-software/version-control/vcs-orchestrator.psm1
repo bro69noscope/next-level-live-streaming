@@ -121,8 +121,8 @@ function Invoke-VcsTemplating {
     [Parameter(Mandatory=$true, HelpMessage="Enter 'To' or 'From'")]
     [ValidateSet("To", "From")]
     [string]$Direction,
-
     [Parameter(Mandatory=$false)] [switch]$Backup,
+    [Parameter(Mandatory=$false)] [switch]$Import,
     [Parameter(Mandatory=$false)] [switch]$SkipPortsGeneration
   )
 
@@ -130,7 +130,10 @@ function Invoke-VcsTemplating {
     Invoke-PortsGeneration
   }
 
-  Import-VcsTemplaterModules
+  if ($Import) {
+    Import-VcsTemplaterModules 
+  }
+
   $targets = Get-VcsTargets
 
   $failures = @()
@@ -188,13 +191,13 @@ Write-Host "VCS Orchestrator:" -ForegroundColor Yellow
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "(Calls all Streaming Templaters recursively for all known root paths)"
 
-Write-Host ("  Invoke-VcsTemplating -Direction To [-SkipPortsGeneration]   " +
+Write-Host ("  Invoke-VcsTemplating -Direction To [-SkipPortsGeneration] [-Import]  " +
   "# Regenerates ports and converts to vcs-template.json")
 
-Write-Host ("  Invoke-VcsTemplating -Direction From [-Backup]              " +
+Write-Host ("  Invoke-VcsTemplating -Direction From [-Backup] [-Import]             " +
   "# Converts from vcs-template.json to original files")
 
-Write-Host ("  Invoke-PortsGeneration [-PythonExe <path>]                  " +
+Write-Host ("  Invoke-PortsGeneration [-PythonExe <path>]                           " +
   "# Regenerates scoped port mappings from ports.json5")
 
 Write-Host "VCS Orchestrator functions loaded" -ForegroundColor Green

@@ -6,30 +6,38 @@
   </head>
 
   <body class="body--hide-raw">
-    <div id="status" class="status">connecting...</div>
+    <div class="app">
+      <div class="app__blank"></div>
 
-    <div id="streamFeedFilterBar" class="filterBar">
-      <button class="filterBar__btn" data-sbot-instance-filter="all">
-        All
-      </button>
-      <button class="filterBar__btn" data-sbot-instance-filter="production">
-        Production
-      </button>
-      <button class="filterBar__btn" data-sbot-instance-filter="ftp">
-        Ftp
-      </button>
-      <button id="toggleTwitchFollowsBtn" class="filterBar__btn">
-        Hide Follows
-      </button>
-      <button id="toggleRawBtn" class="filterBar__btn">Show JSON</button>
+      <div class="app__feed">
+        <div id="status" class="status">connecting...</div>
 
-      <div id="streamFeedActionBar" class="actionBar">
-        <button id="loadHistoryBtn" class="actionBar__btn">Load History</button>
-        <button id="clearFeedBtn" class="actionBar__btn">Clear Feed</button>
+        <div id="streamFeedFilterBar" class="filterBar">
+          <button class="filterBar__btn" data-sbot-instance-filter="all">
+            All
+          </button>
+          <button class="filterBar__btn" data-sbot-instance-filter="production">
+            Production
+          </button>
+          <button class="filterBar__btn" data-sbot-instance-filter="ftp">
+            Ftp
+          </button>
+          <button id="toggleTwitchFollowsBtn" class="filterBar__btn">
+            Hide Follows
+          </button>
+          <button id="toggleRawBtn" class="filterBar__btn">Show JSON</button>
+
+          <div id="streamFeedActionBar" class="actionBar">
+            <button id="loadHistoryBtn" class="actionBar__btn">
+              Load History
+            </button>
+            <button id="clearFeedBtn" class="actionBar__btn">Clear Feed</button>
+          </div>
+        </div>
+
+        <div id="feed" class="feed"></div>
       </div>
     </div>
-
-    <div id="feed" class="feed"></div>
 
     <template id="feed-entry-template">
       <div class="feed__entry">

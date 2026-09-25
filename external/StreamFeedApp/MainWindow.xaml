@@ -3,10 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="Activity Feed"
-        Width="420" Height="900"
+        Width="{x:Static SystemParameters.PrimaryScreenWidth}" Height="900"
         Background="#111111"
         WindowStartupLocation="Manual"
-        Left="1500" Top="0">
+        Left="0" Top="0">
     <Grid>
         <wv2:WebView2 x:Name="WebView" />
     </Grid>

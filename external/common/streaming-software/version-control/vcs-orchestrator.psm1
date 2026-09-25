@@ -60,7 +60,7 @@ function Invoke-PortsGeneration {
   }
 }
 
-function Import-VcsTemplaterModules {
+function Import-VcsPathDefinitions {
   $pathFiles = @(
     (Join-Path $script:StreamDeckDir "dotsource-streamdeck-paths.ps1"),
     (Join-Path $script:ObsDir "dotsource-obs-paths.ps1"),
@@ -74,7 +74,9 @@ function Import-VcsTemplaterModules {
     }
     . $pathFile
   }
+}
 
+function Import-VcsTemplaterModules {
   $moduleFiles = @(
     (Join-Path $script:StreamDeckDir "streamdeck-templater.psm1"),
     (Join-Path $script:ObsDir "obs-templater.psm1"),
@@ -130,8 +132,10 @@ function Invoke-VcsTemplating {
     Invoke-PortsGeneration
   }
 
+  Import-VcsPathDefinitions
+
   if ($Import) {
-    Import-VcsTemplaterModules 
+    Import-VcsTemplaterModules
   }
 
   $targets = Get-VcsTargets
@@ -148,8 +152,14 @@ function Invoke-VcsTemplating {
       $target.FromFunction
     }
 
+    if (-not $target.Paths) {
+      Write-Host "  No paths defined for $($target.App), skipping." -ForegroundColor Yellow
+      continue
+    }
+
     foreach ($path in $target.Paths) {
       if ([string]::IsNullOrWhiteSpace($path)) {
+        Write-Host "  Skipping empty path entry (path variable not set)" -ForegroundColor Yellow
         continue
       }
       if (-not (Test-Path $path)) {

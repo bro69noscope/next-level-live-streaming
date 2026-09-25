@@ -9,6 +9,7 @@
     // separately recorded gameplay with eyetracker footage intended for game reviews.
     // does not have to be valid as long as the source record plugin is not used.
     "{{AOE2_EYETRACK_VIDEOS_OUTPATH}}": "C:/Users/ville/OneDrive/Videos/aoe2",
+    "{{DOTA2_EYETRACK_VIDEOS_OUTPATH}}": "C:/Users/ville/OneDrive/Videos/dota2",
   },
 
   devices: {

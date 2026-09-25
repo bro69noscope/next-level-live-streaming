@@ -74,6 +74,9 @@ function Test-ObsMarkerPath {
         ($sceneName -and $sceneName -match $script:ObsSceneTestSuffixPattern)
       ) {
         return $true
+      } else {
+        Write-VcsMessage ("Scene '$sceneName' is not in the allowlist and does not match the " +
+          "`_test` suffix pattern. Skipping.") -Color DarkGray
       }
       continue
     }

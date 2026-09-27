@@ -1,0 +1,3 @@
+[filter "nlls-discard"]
+    clean = cat > /dev/null
+    smudge = cat

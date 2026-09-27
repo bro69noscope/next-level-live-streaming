@@ -19,7 +19,8 @@
     "weztab:alerts-overlays": "wezterm cli spawn --cwd \"%cd%\" -- pwsh -NoExit -Command \"npm run serve:alerts-overlays\"",
     "weztab:all": "npm run weztab:alerts-overlays",
     "setup:ps1": "pwsh -File ./external/common/helpers/ps1/install-all.ps1",
-    "postinstall": "npm run setup:ps1",
+    "setup:git": "git config include.path ../.gitconfig",
+    "postinstall": "npm run setup:git && npm run setup:ps1",
     "clean:ts": "tsc -b --clean"
   },
   "allowScripts": {

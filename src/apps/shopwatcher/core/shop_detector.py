@@ -72,7 +72,10 @@ class ShopDetector:
 
             if write:
                 cv.imwrite(
-                    str(SHOP_TEMPLATE_IMAGE_PATH.parent / "new_shop_template.jpg"),
+                    str(
+                        SHOP_TEMPLATE_IMAGE_PATH.parent
+                        / ("new_" + SHOP_TEMPLATE_IMAGE_PATH.name)
+                    ),
                     gray_frame,
                 )
 

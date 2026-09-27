@@ -1,6 +1,7 @@
 """Main entry point for the ShopWatcher application."""
 
 import asyncio
+import sys
 
 import aiosqlite
 import cv2 as cv
@@ -31,18 +32,18 @@ twm = TerminalWindowManager()
 
 
 async def run_main_task(
-    conn: aiosqlite.Connection, slot: int, shopwatcher: ShopDetector
+    conn: aiosqlite.Connection, slot: int, shopwatcher: ShopDetector, write: bool
 ) -> None:
     """Run the main scanning and notification task."""
     mute_ssim_prints.set()
-    main_task = asyncio.create_task(shopwatcher.scan_for_shop_and_notify(write=False))
+    main_task = asyncio.create_task(shopwatcher.scan_for_shop_and_notify(write=write))
     await secondary_windows_spawned.wait()
     await twm.adjust_secondary_windows(conn, slot, SECONDARY_WINDOWS)
     mute_ssim_prints.clear()
     await main_task
 
 
-async def main() -> None:
+async def main(write: bool) -> None:
     """Get this shit going."""
     socket_server_task = None
     slots_db_conn = None
@@ -64,7 +65,7 @@ async def main() -> None:
 
         shopwatcher = ShopDetector(socket_server_handler, logger, ws_client)
 
-        await run_main_task(slots_db_conn, slot, shopwatcher)
+        await run_main_task(slots_db_conn, slot, shopwatcher, write=write)
 
     except Exception as e:
         print(f"Unexpected error of type: {type(e).__name__}: {e}")
@@ -81,5 +82,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    sysargs = sys.argv[1:]
+    write_mode = "--write" in sysargs
+    asyncio.run(main(write_mode))
     print_countdown()

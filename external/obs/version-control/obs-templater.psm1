@@ -35,10 +35,10 @@ $mappings = Read-ReplacementMappings `
 $script:ObsMarkers = @("scenes", "plugin_config")
 $script:ObsPluginAllowlist = @("obs-websocket")
 $script:ObsSceneAllowlist = @(
-  "collection_aoe2",
-  "collection_dota2",
-  "ftp_collection_main",
-  "vcam_collection_main"
+  "collection__aoe2",
+  "collection__dota2",
+  "ftp_collection__main",
+  "vcam_collection__main"
 )
 # also allow any scene name that ends with these suffixes, for testing purposes
 $script:ObsSceneTestSuffixPattern = '_(fake|test)$'

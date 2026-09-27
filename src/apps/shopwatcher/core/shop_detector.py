@@ -62,6 +62,11 @@ class ShopDetector:
 
         """
         template = load_grayscale_opencv_template(SHOP_TEMPLATE_IMAGE_PATH)
+        template = cv.resize(
+            template,
+            (SCREEN_CAPTURE_AREA["width"], SCREEN_CAPTURE_AREA["height"]),
+            interpolation=cv.INTER_AREA,
+        )
 
         while not self.socket_handler.stop_event.is_set():
             frame = await self._capture_window(SCREEN_CAPTURE_AREA)

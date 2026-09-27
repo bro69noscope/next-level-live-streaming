@@ -1,14 +1,16 @@
 """Constants for the shopwatcher app."""
 
-from src.config.settings import PROJECT_ROOT_PATH
+from pathlib import Path
+
 from src.core.termwm import SecondaryWindow
 from src.utils.scale_resolution import ScaledArea
 
 # Base paths
-_BASE_DIR = PROJECT_ROOT_PATH / "data" / "apps" / "shopwatcher"
-_OPENCV_DIR = _BASE_DIR / "opencv"
-_WS_REQUESTS_DIR = _BASE_DIR / "ws_requests"
-_OBS_DIR = _BASE_DIR / "obs"
+_APP_DIR = Path(__file__).resolve().parents[1]
+_DATA_DIR = _APP_DIR / "data"
+_OPENCV_DIR = _DATA_DIR / "opencv"
+_WS_REQUESTS_DIR = _DATA_DIR / "ws_requests"
+_OBS_DIR = _DATA_DIR / "obs"
 
 # Window config for TerminalWindowManager
 SECONDARY_WINDOWS = [SecondaryWindow("opencv_shop_scanner", 150, 100)]

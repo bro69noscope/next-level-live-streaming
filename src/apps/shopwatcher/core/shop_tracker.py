@@ -8,6 +8,7 @@ from typing import final
 
 import aiofiles
 
+from src.apps.shopwatcher.core import runtime_flags
 from src.apps.shopwatcher.core.constants import (
     BRB_BUYING_MILK_HIDE_PATH,
     BRB_BUYING_MILK_SHOW_PATH,
@@ -22,9 +23,6 @@ from src.connection.websocket_client import WebSocketClient
 @final
 class ShopTracker:
     """Tracks the shop's opening and closing times, and reacts accordingly."""
-
-    SHORT_OPEN_THRESHOLD_SECONDS = 5
-    LONG_OPEN_THRESHOLD_SECONDS = 15
 
     def __init__(self, logger: Logger, ws_client: WebSocketClient) -> None:
         """Initialize the ShopTracker with logger and websocket client.
@@ -43,6 +41,14 @@ class ShopTracker:
         }
         self.logger = logger
         self.ws = ws_client
+
+    @property
+    def short_open_threshold(self) -> int:
+        return 5 if not runtime_flags.react_fast else 2
+
+    @property
+    def long_open_threshold(self) -> int:
+        return 15 if not runtime_flags.react_fast else 4
 
     async def react_to_opened_shop(self) -> None:
         """Signal that the shop has opened and start tracking its duration."""
@@ -76,14 +82,15 @@ class ShopTracker:
     ) -> None:
         if duration == "short":
             print("rolling for a reaction to shop staying open for a short while...")
-            if random.randint(1, 4) == 1:  # noqa: S311
+            if random.randint(1, 4) == 1 or runtime_flags.always_react:  # noqa: S311
                 print("reacting !")
                 await self._react_to_short_shop_opening()
             else:
                 print("not reacting !")
+
         elif duration == "long" and seconds:
             print("rolling for a reaction to shop staying open for a long while...")
-            if random.randint(1, 3) == 1:  # noqa: S311
+            if random.randint(1, 3) == 1 or runtime_flags.always_react:  # noqa: S311
                 print("reacting !")
                 await self._react_to_long_shop_opening(seconds)
             else:
@@ -98,14 +105,14 @@ class ShopTracker:
             elapsed_time = round(time.time() - self.shop_opening_time)
             print(f"Shop has been open for {elapsed_time} seconds")
             if (
-                elapsed_time >= self.SHORT_OPEN_THRESHOLD_SECONDS
+                elapsed_time >= self.short_open_threshold
                 and not self.flags["reacted_to_open_short"]
             ):
                 await self._react_to_shop_staying_open("short")
                 self.flags["reacted_to_open_short"] = True
 
             if (
-                elapsed_time >= self.LONG_OPEN_THRESHOLD_SECONDS
+                elapsed_time >= self.long_open_threshold
                 and not self.flags["reacted_to_open_long"]
             ):
                 await self._react_to_shop_staying_open("long", seconds=elapsed_time)

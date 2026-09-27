@@ -6,6 +6,7 @@ import sys
 import aiosqlite
 import cv2 as cv
 
+from src.apps.shopwatcher.core import runtime_flags
 from src.apps.shopwatcher.core.constants import SECONDARY_WINDOWS
 from src.apps.shopwatcher.core.shared_events import (
     mute_ssim_prints,
@@ -84,5 +85,7 @@ async def main(write: bool) -> None:
 if __name__ == "__main__":
     sysargs = sys.argv[1:]
     write_mode = "--write" in sysargs
+    runtime_flags.always_react = "--always" in sysargs
+    runtime_flags.react_fast = "--fast" in sysargs
     asyncio.run(main(write_mode))
     print_countdown()

@@ -422,6 +422,7 @@ function Invoke-ScopedReplace {
   )
 
   $isNumericSearch = $SearchValue -match '^-?\d+(\.\d+)?$'
+  $escapedSearch = ($SearchValue | ConvertTo-Json -Compress).Trim('"')
   $countRef = [ref]0
 
   # "Key": "quoted value" OR "Key": bareNumber
@@ -446,11 +447,11 @@ function Invoke-ScopedReplace {
             $countRef.Value++
             return $prefix + "`"$Token`""
           }
-        } elseif ($inner.Contains($SearchValue)) {
+        } elseif ($inner.Contains($escapedSearch)) {
           Write-VcsMessage -AsVerbose -Message "  Replaced ($Key): $SearchValue -> $Token in $val" `
             -Color DarkCyan
           $countRef.Value++
-          return $prefix + "`"$($inner.Replace($SearchValue, $Token))`""
+          return $prefix + "`"$($inner.Replace($escapedSearch, $Token))`""
         }
       } elseif ($val -eq $SearchValue) {
         Write-VcsMessage -AsVerbose -Message "  Replaced ($Key): $SearchValue -> `"$Token`"" `

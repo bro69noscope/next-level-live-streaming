@@ -14,8 +14,8 @@ from skimage.metrics import (
 from src.apps.shopwatcher.core.constants import (
     SCREEN_CAPTURE_AREA,
     SECONDARY_WINDOWS,
-    SHOP_TEMPLATE_IMAGE_PATH,
 )
+from src.apps.shopwatcher.core.paths import SHOP_TEMPLATE_IMAGE_PATH
 from src.apps.shopwatcher.core.shared_events import (
     mute_ssim_prints,
     secondary_windows_spawned,

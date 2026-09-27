@@ -28,7 +28,7 @@ $script:streamerbotRoots = @(
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SbotMappingsPath `
-  -ScopedMappingsPaths @($script:SbotPortsPath)
+  -ScopedMappingsPaths @($script:SbotScopedPath)
 
 $script:SbotMarkers = @("data")
 $script:SbotFileAllowlist = @("obs.json", "settings.json", "actions.json")

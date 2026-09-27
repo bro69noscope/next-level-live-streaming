@@ -1,4 +1,6 @@
-"""Thin CLI for generating per-consumer scoped mapping JSON files from ports.json5.
+"""Thin CLI for generating per-consumer scoped mapping JSON files.
+
+Rules come from ports.json5 (ports, urls) and from code-defined path rules.
 
 Usage:
     python generate_scoped_mappings.py
@@ -10,8 +12,9 @@ from typing import TYPE_CHECKING, cast
 import json5
 
 from src.streaming_config.scoped_mappings import (
+    PATH_RULES,
     PORTS_SOURCE,
-    collect_rules,
+    collect_ports_rules,
     write_consumer_files,
 )
 
@@ -20,19 +23,19 @@ if TYPE_CHECKING:
 
 
 def main() -> None:
-    """Generate per-consumer scoped mapping JSON files from a single ports.json5."""
+    """Generate per-consumer scoped mapping JSON files from ports.json5 and path rules."""
     if not PORTS_SOURCE.exists():
         print(f"Source file not found: {PORTS_SOURCE}", file=sys.stderr)
         sys.exit(1)
 
     with PORTS_SOURCE.open("r", encoding="utf-8") as f:
-        tree = cast(
+        ports_tree = cast(
             "JsonTree",
             json5.load(f),  # pyright: ignore[reportUnknownMemberType]
         )
 
     rules: list[Rule] = []
-    collect_rules(tree, rules)
+    collect_ports_rules(ports_tree, rules)
 
     if not rules:
         print(
@@ -40,8 +43,10 @@ def main() -> None:
         )
         sys.exit(1)
 
-    for _consumer, out_path, count in write_consumer_files(rules):
-        print(f"Wrote {count} rules -> {out_path}")
+    rules.extend(PATH_RULES)
+
+    for consumer, out_path, count in write_consumer_files(rules):
+        print(f"Wrote {count} rules for {consumer} -> {out_path}")
 
 
 if __name__ == "__main__":

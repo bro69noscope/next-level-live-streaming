@@ -11,12 +11,15 @@ ScopeKeys = dict[Consumer | Literal["default"], str]
 
 
 class Rule(NamedTuple):
-    """One (field, value, token) tuple collected from a ports.json5 leaf."""
+    """One (field, value, token) tuple destined for consumer mapping files."""
 
     field_name: str
     value: str
     token: str
-    scope_keys: ScopeKeys
+    scope_keys: ScopeKeys | None = None
+    """Per-consumer key overrides; None means field_name is used everywhere."""
+    consumers: frozenset[Consumer] | None = None
+    """Consumers that receive this rule; None means all of them."""
 
 
 class ScopedEntry(TypedDict):

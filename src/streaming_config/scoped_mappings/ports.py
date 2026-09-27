@@ -1,27 +1,12 @@
-"""Docstring  placeholder."""
+"""Port rules: collected from the ports.json5 tree."""
 
-import json
 import sys
-from pathlib import Path
 from typing import cast, get_args
 
 from src.config.settings import PROJECT_ROOT_PATH
-from src.streaming_config.types import (
-    Consumer,
-    JsonValue,
-    Rule,
-    ScopedEntry,
-    ScopedMapping,
-    ScopeKeys,
-)
+from src.streaming_config.types import Consumer, JsonValue, Rule, ScopeKeys
 
 PORTS_SOURCE = PROJECT_ROOT_PATH / "config" / "ports.json5"
-
-CONSUMER_OUTPUTS: dict[Consumer, Path] = {
-    "obs": PROJECT_ROOT_PATH / "config" / "ports_generated.obs.json",
-    "streamdeck": PROJECT_ROOT_PATH / "config" / "ports_generated.streamdeck.json",
-    "streamerbot": PROJECT_ROOT_PATH / "config" / "ports_generated.streamerbot.json",
-}
 
 VALID_SCOPE_KEYS = frozenset(get_args(Consumer)) | {"default"}
 
@@ -36,26 +21,8 @@ def _validate_scope_keys(scope_keys: ScopeKeys, context: str) -> None:
         raise ValueError(err)
 
 
-def _resolve_key(field_name: str, scope_keys: ScopeKeys, consumer: str) -> str:
-    if not scope_keys:
-        return field_name
-    if consumer in scope_keys:
-        return scope_keys[consumer]
-    if "default" in scope_keys:
-        return scope_keys["default"]
-    return field_name
-
-
-def _build_scoped_entries(rules: list[Rule], consumer: str) -> list[ScopedEntry]:
-    entries: list[ScopedEntry] = []
-    for field_name, value, token, scope_keys in rules:
-        key = _resolve_key(field_name, scope_keys, consumer)
-        entries.append({"key": key, "value": value, "token": token})
-    return entries
-
-
-def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
-    """Recursively walk the parsed json5 tree and collect rules."""
+def collect_ports_rules(node: JsonValue, rules: list[Rule]) -> None:
+    """Recursively walk the parsed json5 tree and collect ports rules."""
     if not isinstance(node, dict):
         return
 
@@ -105,22 +72,4 @@ def collect_rules(node: JsonValue, rules: list[Rule]) -> None:
 
     for value in node.values():
         if isinstance(value, dict):
-            collect_rules(value, rules)
-
-
-def write_consumer_files(rules: list[Rule]) -> list[tuple[str, Path, int]]:
-    """Write each consumer's scoped mapping file.
-
-    Returns one (consumer, output_path, entry_count) tuple per consumer, in
-    the order they were written, for the caller to report on.
-    """
-    written: list[tuple[str, Path, int]] = []
-    for consumer, out_path in CONSUMER_OUTPUTS.items():
-        entries = _build_scoped_entries(rules, consumer)
-        mapping: ScopedMapping = {"scoped": entries}
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with out_path.open("w", encoding="utf-8") as f:
-            json.dump(mapping, f, indent=2)
-            f.write("\n")
-        written.append((consumer, out_path, len(entries)))
-    return written
+            collect_ports_rules(value, rules)

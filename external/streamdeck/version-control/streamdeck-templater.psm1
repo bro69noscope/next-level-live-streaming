@@ -28,7 +28,7 @@ $streamDeckRoots = @(
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SdeckMappingsPath `
-  -ScopedMappingsPaths @($script:PortsPath)
+  -ScopedMappingsPaths @($script:SdeckScopedPath)
 
 $Script:manifestStr = "manifest.json"
 $Script:jsonMarkerStr = "*-marker.json"

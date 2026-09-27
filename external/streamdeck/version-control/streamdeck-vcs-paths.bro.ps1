@@ -3,8 +3,8 @@
 
 $script:SdeckBasePath = Join-Path $env:APPDATA "Elgato\StreamDeck\ProfilesV3"
 
-$script:PortsPath = Join-Path $env:STREAMING_REPO_PATH `
-  "config\ports_generated.streamdeck.json"
+$script:SdeckScopedPath = Join-Path $env:STREAMING_REPO_PATH `
+  "config\scoped_generated.streamdeck.json"
 
 $script:SdeckMappingsPath = Join-Path $PSScriptRoot "streamdeck-vcs-mappings.bro.json5"
 

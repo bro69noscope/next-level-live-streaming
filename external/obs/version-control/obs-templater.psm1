@@ -30,7 +30,7 @@ $obsRoots = @(
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:ObsMappingsPath `
-  -ScopedMappingsPaths @($script:ObsPortsPath)
+  -ScopedMappingsPaths @($script:ObsScopedPath)
 
 $script:ObsMarkers = @("scenes", "plugin_config")
 $script:ObsPluginAllowlist = @("obs-websocket")

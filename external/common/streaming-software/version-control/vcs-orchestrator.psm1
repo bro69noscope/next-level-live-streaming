@@ -1,7 +1,4 @@
 # Orchestrates the full VCS templating pipeline across all apps:
-#   1. Regenerates per-consumer scoped port mapping files from ports.json5
-#   2. Re-imports each app's templater module (picking up the fresh mappings)
-#   3. Runs ConvertTo or ConvertFrom against every known root path for every app
 #
 # Usage:
 #   Import-Module .\vcs-orchestrator.psm1 -Force
@@ -23,9 +20,9 @@ $script:StreamDeckDir = Join-Path $RepoPath "external\streamdeck\version-control
 $script:ObsDir = Join-Path $RepoPath "external\obs\version-control"
 $script:StreamerbotDir = Join-Path $RepoPath "external\streamerbot\version-control"
 $script:CommonDir = Join-Path $RepoPath "external\common\streaming-software\version-control"
-$script:PortsGeneratorPath = Join-Path $RepoPath "src\scripts\generate_scoped_mappings.py"
+$script:ScopedGeneratorPath = Join-Path $RepoPath "src\scripts\generate_scoped_mappings.py"
 
-function Invoke-PortsGeneration {
+function Invoke-ScopedGeneration {
   param([string]$PythonExe = (Join-Path $Global:RepoPath ".venv\Scripts\python.exe"))
 
   if (-not (Test-Path $PythonExe)) {
@@ -33,9 +30,9 @@ function Invoke-PortsGeneration {
     throw "Python interpreter not found at: $PythonExe"
   }
 
-  if (-not (Test-Path $script:PortsGeneratorPath)) {
+  if (-not (Test-Path $script:ScopedGeneratorPath)) {
     Write-ThrowContext
-    throw "Ports generator script not found: $script:PortsGeneratorPath"
+    throw "Scoped generator script not found: $script:ScopedGeneratorPath"
   }
 
   Write-Host "Regenerating scoped port mappings..." -ForegroundColor Cyan
@@ -46,7 +43,7 @@ function Invoke-PortsGeneration {
     $Global:RepoPath
   }
   try {
-    & $PythonExe $script:PortsGeneratorPath
+    & $PythonExe $script:ScopedGeneratorPath
     if ($LASTEXITCODE -ne 0) {
       Write-ThrowContext
       throw "generate_scoped_mappings.py failed with exit code $LASTEXITCODE"
@@ -125,11 +122,11 @@ function Invoke-VcsTemplating {
     [string]$Direction,
     [Parameter(Mandatory=$false)] [switch]$Backup,
     [Parameter(Mandatory=$false)] [switch]$Import,
-    [Parameter(Mandatory=$false)] [switch]$SkipPortsGeneration
+    [Parameter(Mandatory=$false)] [switch]$SkipScopedGeneration
   )
 
-  if (-not $SkipPortsGeneration) {
-    Invoke-PortsGeneration
+  if (-not $SkipScopedGeneration) {
+    Invoke-ScopedGeneration
   }
 
   Import-VcsPathDefinitions
@@ -201,14 +198,14 @@ Write-Host "VCS Orchestrator:" -ForegroundColor Yellow
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "(Calls all Streaming Templaters recursively for all known root paths)"
 
-Write-Host ("  Invoke-VcsTemplating -Direction To [-SkipPortsGeneration] [-Import]  " +
-  "# Regenerates ports and converts to vcs-template.json")
+Write-Host ("  Invoke-VcsTemplating -Direction To [-SkipScopedGeneration] [-Import]  " +
+  "# Regenerates Scoped mappings and converts to vcs-template.json")
 
 Write-Host ("  Invoke-VcsTemplating -Direction From [-Backup] [-Import]             " +
   "# Converts from vcs-template.json to original files")
 
-Write-Host ("  Invoke-PortsGeneration [-PythonExe <path>]                           " +
-  "# Regenerates scoped port mappings from ports.json5")
+Write-Host ("  Invoke-ScopedGeneration [-PythonExe <path>]                           " +
+  "# Regenerates scoped ports and paths mappings with src/scripts/generate_scoped_mappings.py")
 
 Write-Host "VCS Orchestrator functions loaded" -ForegroundColor Green
 Export-ModuleMember -Function Invoke-VcsTemplating, Invoke-PortsGeneration

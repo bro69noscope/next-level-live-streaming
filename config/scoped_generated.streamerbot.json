@@ -79,6 +79,11 @@
       "key": "port",
       "value": "59003",
       "token": "{{SYNONYM_ADDER_PORT}}"
+    },
+    {
+      "key": "file",
+      "value": "C:\\Users\\ville\\myfiles\\git-repos\\next-level-live-streaming\\src\\apps\\shopwatcher\\data\\obs\\time_since_shop_opened.txt",
+      "token": "{{SHOPWATCHER_TIME_SINCE_SHOP_OPENED_TXT_PATH}}"
     }
   ]
 }

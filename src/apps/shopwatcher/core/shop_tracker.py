@@ -9,7 +9,7 @@ from typing import final
 import aiofiles
 
 from src.apps.shopwatcher.core import runtime_flags
-from src.apps.shopwatcher.core.constants import (
+from src.apps.shopwatcher.core.paths import (
     BRB_BUYING_MILK_HIDE_PATH,
     BRB_BUYING_MILK_SHOW_PATH,
     DISPLAY_TIME_SINCE_SHOP_OPENED_PATH,

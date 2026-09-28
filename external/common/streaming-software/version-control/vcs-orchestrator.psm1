@@ -217,10 +217,10 @@ Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "(Calls all Streaming Templaters recursively for all known root paths)"
 
 Write-Host ("  Invoke-VcsTemplating -Direction To [-Import]                               " +
-  "# Regenerates scoped mappings and converts to vcs-template.json")
+  "# Generates scoped mappings and converts to vcs-template.json")
 
 Write-Host ("  Invoke-VcsTemplating -Direction From [-Backup] [-Import]                   " +
-  "# Converts from vcs-template.json to original files")
+  "# Generates scoped mappings and converts from vcs-template.json to original files")
 
 Write-Host ("  Invoke-VcsTemplating ... [-StreamDeck|-sdeck] [-Obs] [-Streamerbot|-sbot]  " +
   "# Limits to selected apps (no flag = all)")
@@ -229,7 +229,7 @@ Write-Host ("  Invoke-VcsTemplating ... [-SkipScopedGeneration|-nogen]          
   "# Skips scoped mappings generation")
 
 Write-Host ("  Invoke-ScopedGeneration [-PythonExe <path>]                                " +
-  "# Regenerates scoped mappings with src/scripts/generate_scoped_mappings.py")
+  "# Generates scoped mappings with src/scripts/generate_scoped_mappings.py")
 
 Write-Host "VCS Orchestrator functions loaded" -ForegroundColor Green
 Export-ModuleMember -Function Invoke-VcsTemplating, Invoke-PortsGeneration

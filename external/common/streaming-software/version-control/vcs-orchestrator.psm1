@@ -122,7 +122,7 @@ function Invoke-VcsTemplating {
     [string]$Direction,
     [Parameter(Mandatory=$false)] [switch]$Backup,
     [Parameter(Mandatory=$false)] [switch]$Import,
-    [Parameter(Mandatory=$false)] [switch]$SkipScopedGeneration,
+    [Parameter(Mandatory=$false)] [Alias('nogen')] [switch]$SkipScopedGeneration,
     [Parameter(Mandatory=$false)] [Alias('sdeck')] [switch]$StreamDeck,
     [Parameter(Mandatory=$false)] [switch]$Obs,
     [Parameter(Mandatory=$false)] [Alias('sbot')] [switch]$Streamerbot
@@ -216,14 +216,17 @@ Write-Host "VCS Orchestrator:" -ForegroundColor Yellow
 Write-Host "Usage:" -ForegroundColor Cyan
 Write-Host "(Calls all Streaming Templaters recursively for all known root paths)"
 
-Write-Host ("  Invoke-VcsTemplating -Direction To [-SkipScopedGeneration] [-Import]       " +
+Write-Host ("  Invoke-VcsTemplating -Direction To [-Import]                               " +
   "# Regenerates scoped mappings and converts to vcs-template.json")
 
 Write-Host ("  Invoke-VcsTemplating -Direction From [-Backup] [-Import]                   " +
   "# Converts from vcs-template.json to original files")
 
 Write-Host ("  Invoke-VcsTemplating ... [-StreamDeck|-sdeck] [-Obs] [-Streamerbot|-sbot]  " +
-  "# Limit to selected apps (no flag = all)")
+  "# Limits to selected apps (no flag = all)")
+
+Write-Host ("  Invoke-VcsTemplating ... [-SkipScopedGeneration|-nogen]                    " +
+  "# Skips scoped mappings generation")
 
 Write-Host ("  Invoke-ScopedGeneration [-PythonExe <path>]                                " +
   "# Regenerates scoped mappings with src/scripts/generate_scoped_mappings.py")

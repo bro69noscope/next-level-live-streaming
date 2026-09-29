@@ -271,6 +271,10 @@ function Get-StreamDeckMarkerFileName {
   )
 
   $invalidChars = [System.IO.Path]::GetInvalidFileNameChars()
+
+  $newlinePattern = '\s*[\r\n]+\s*'
+  $Name = $Name -replace $newlinePattern, ' '
+
   foreach ($field in @{ name = $Name; type = $Type }.GetEnumerator()) {
     if (-not $field.Value) {
       continue

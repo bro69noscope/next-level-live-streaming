@@ -128,7 +128,7 @@ class ShopTracker:
         while True:
             elapsed_time = time.time() - start_time + seconds
             seconds_only = round(elapsed_time)
-            formatted_time = f"{seconds_only:02d}"
+            formatted_time = f"{seconds_only}"
             async with aiofiles.open(TIME_SINCE_SHOP_OPENED_TXT_PATH, "w") as file:
                 await file.write(
                     f"Bro you've been in the shop for {formatted_time} seconds,"

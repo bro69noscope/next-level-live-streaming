@@ -44,11 +44,11 @@ class ShopTracker:
 
     @property
     def short_open_threshold(self) -> int:
-        return 5 if not runtime_flags.react_fast else 2
+        return 4 if not runtime_flags.react_fast else 2
 
     @property
     def long_open_threshold(self) -> int:
-        return 15 if not runtime_flags.react_fast else 4
+        return 8 if not runtime_flags.react_fast else 4
 
     async def react_to_opened_shop(self) -> None:
         """Signal that the shop has opened and start tracking its duration."""

@@ -35,6 +35,15 @@ SCRIPT_NAME = construct_script_name(__file__)
 MIN_MSG_LENGTH = 2
 
 logger = setup_logger(SCRIPT_NAME)
+ahk_clients: set[ServerConnection] = set()
+
+
+async def _broadcast_to_ahk(message: str) -> None:
+    for client in list(ahk_clients):
+        try:
+            await client.send(message)
+        except websockets.ConnectionClosed:
+            ahk_clients.discard(client)
 
 
 async def _manage_subprocess(message: str) -> None:
@@ -123,6 +132,17 @@ def create_websocket_handler(
     """Create a websocket handler function with access to given database connection."""
 
     async def websocket_handler(websocket: ServerConnection) -> None:
+        path = websocket.request.path if websocket.request else "/"
+        logger.info(f"Connection opened on path '{path}'")
+
+        if path == "/ahk/listen":
+            ahk_clients.add(websocket)
+            try:
+                await websocket.wait_closed()
+            finally:
+                ahk_clients.discard(websocket)
+            return
+
         async for raw_message in websocket:
             message = (
                 raw_message.decode("utf-8")
@@ -130,7 +150,6 @@ def create_websocket_handler(
                 else raw_message
             )
 
-            path = websocket.request.path if websocket.request else "/"
             print(f"Received: '{message}' on path: {path}")
 
             if path == "/subprocess":
@@ -142,12 +161,17 @@ def create_websocket_handler(
             elif path == "/database":
                 await _manage_database(conn, message)
 
+            elif path == "/ahk/command":
+                await _broadcast_to_ahk(message.strip())
+
             elif path == "/test":  # Path to test stuff
                 if message == "get windows":
                     windows_names = await sdh.get_all_names(conn)
                     print(f"Windows in slot DB: {windows_names}")
-                elif message == "hi bitch":
-                    print("I aint ur bitch")
+
+            else:
+                logger.warning(f"Unknown path '{path}', ignoring message: '{message}'")
+                print(f"Unknown path '{path}', ignoring message: '{message}'")
 
     return websocket_handler
 

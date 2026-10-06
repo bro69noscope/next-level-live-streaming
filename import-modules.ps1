@@ -1,6 +1,6 @@
 # import all useful modules used in the repo for testing and development purposes
 
-$repoRoot = Find-RepoRoot # build cmd in package.json
+$repoRoot = Find-RepoRoot # the build cmd is in package.json
 
 $modules = @(
   'src\scripts\CredentialHelpers.psm1'

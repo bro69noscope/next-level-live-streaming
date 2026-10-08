@@ -11,11 +11,11 @@ PortsFile := StreamingRepoPath "config\ports.json5"
 msgboxShown := false
 
 wsCommands := Map(
-  "MoveProductionObsRight", () => MoveProductionOBS("right"),
-  "MoveProductionObsCenter", () => MoveProductionOBS("center"),
+  "MoveObsProductionRight", () => MoveObsProduction("right"),
+  "MoveObsProductionCenter", () => MoveObsProduction("center"),
   "ActivateStreamFeedApp", () => ActivateStreamFeedApp(),
-  "ActivateObs", () => ActivateOBS(true),
-  "ActivateObsPortableFtp", () => ActivateOBSPortable("ftp", true)
+  "ActivateObsProduction", () => ActivateObsProduction(true),
+  "ActivateObsPortableFtp", () => ActivateObsPortable("ftp", true)
 )
 
 NoticeError(msg) {

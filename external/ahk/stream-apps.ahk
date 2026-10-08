@@ -1,7 +1,7 @@
 #Include window-helpers.ahk
 #Include config.ahk
 
-MoveProductionOBS(direction := "right") {
+MoveObsProduction(direction := "right") {
   hwnd := 0
   for win in WinGetList("ahk_exe obs64.exe") {
     title := WinGetTitle(win)
@@ -12,7 +12,7 @@ MoveProductionOBS(direction := "right") {
   }
 
   if !hwnd {
-    ToolTip "No production OBS window found to move."
+    ToolTip "No production Obs window found to move."
     SetTimer(() => ToolTip(), -2000)
     return
   }
@@ -67,9 +67,9 @@ ActivateStreamFeedAppDebug() {
   }
 }
 
-ActivateOBS(moveChat := false) {
+ActivateObsProduction(moveChat := false) {
   hwnd := 0
-  FindOBSWindow() {
+  FindObsWindow() {
     for win in WinGetList("ahk_exe obs64.exe ahk_class Qt6111QWindowIcon") {
       if !WinExist("ahk_id " win)
         continue
@@ -82,7 +82,7 @@ ActivateOBS(moveChat := false) {
     }
     return 0
   }
-  idMethod := () => FindOBSWindow()
+  idMethod := () => FindObsWindow()
 
   MinMaxOnCreation(hwnd) {
     ; fixes weird false maximized state
@@ -111,8 +111,8 @@ ActivateOBS(moveChat := false) {
   }
 }
 
-ActivateOBSPortable(profile := "", moveChat := false) {
-  FindOBSPortableWindow(profile := "") {
+ActivateObsPortable(profile := "", moveChat := false) {
+  FindObsPortableWindow(profile := "") {
     for win in WinGetList("ahk_exe obs64.exe") {
       title := WinGetTitle(win)
       if InStr(title, "Portable Mode" . (profile ? " - Profile: " profile : ""))
@@ -120,7 +120,7 @@ ActivateOBSPortable(profile := "", moveChat := false) {
     }
     return 0
   }
-  idMethod := () => FindOBSPortableWindow(profile)
+  idMethod := () => FindObsPortableWindow(profile)
 
   hwnd := idMethod()
   if hwnd {
@@ -153,5 +153,5 @@ ActivateOBSPortable(profile := "", moveChat := false) {
     ActivateWhenReady(idMethod, 3000)
   }
   else
-    MsgBox "No OBS portable profile specified and no matching window found."
+    MsgBox "No Obs portable profile specified and no matching window found."
 }

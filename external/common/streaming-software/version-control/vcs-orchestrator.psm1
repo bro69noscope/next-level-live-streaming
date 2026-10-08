@@ -123,7 +123,7 @@ function Invoke-VcsTemplating {
     [Parameter(Mandatory=$false)] [switch]$Backup,
     [Parameter(Mandatory=$false)] [switch]$Import,
     [Parameter(Mandatory=$false)] [Alias('nogen')] [switch]$SkipScopedGeneration,
-    [Parameter(Mandatory=$false)] [Alias('sdeck')] [switch]$StreamDeck,
+    [Parameter(Mandatory=$false)] [Alias('deck')] [switch]$StreamDeck,
     [Parameter(Mandatory=$false)] [switch]$Obs,
     [Parameter(Mandatory=$false)] [Alias('sbot')] [switch]$Streamerbot
   )

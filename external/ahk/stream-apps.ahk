@@ -1,15 +1,25 @@
 #Include window-helpers.ahk
 #Include config.ahk
 
-MoveObsProduction(direction := "right") {
-  hwnd := 0
-  for win in WinGetList("ahk_exe obs64.exe") {
-    title := WinGetTitle(win)
-    if !InStr(title, "Portable Mode") {
-      hwnd := win
-      break
+FindObsWindow(portable_profile := "") {
+  for win in WinGetList("ahk_exe" ObsExe) {
+    try
+      title := WinGetTitle(win)
+    catch
+      continue
+
+    if !portable_profile {
+      if !InStr(title, ObsPortableString)
+        return win
     }
+    else if InStr(title, ObsPortableString portable_profile)
+      return win
   }
+  return 0
+}
+
+MoveObsProduction(direction := "right") {
+  hwnd := FindObsWindow()
 
   if !hwnd {
     ToolTip "No production Obs window found to move."
@@ -77,7 +87,7 @@ ActivateObsProduction(moveChat := false) {
         title := WinGetTitle(win)
       catch
         continue
-      if !InStr(title, "Portable Mode")
+      if !InStr(title, ObsPortableString)
         return win
     }
     return 0
@@ -111,16 +121,8 @@ ActivateObsProduction(moveChat := false) {
   }
 }
 
-ActivateObsPortable(profile := "", moveChat := false) {
-  FindObsPortableWindow(profile := "") {
-    for win in WinGetList("ahk_exe obs64.exe") {
-      title := WinGetTitle(win)
-      if InStr(title, "Portable Mode" . (profile ? " - Profile: " profile : ""))
-        return win
-    }
-    return 0
-  }
-  idMethod := () => FindObsPortableWindow(profile)
+ActivateObsPortable(profile, moveChat := false) {
+  idMethod := () => FindObsWindow(profile)
 
   hwnd := idMethod()
   if hwnd {

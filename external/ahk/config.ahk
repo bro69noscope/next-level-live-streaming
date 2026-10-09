@@ -3,6 +3,8 @@ StreamingRepoPath := _ahkDir "\..\..\"
 
 ObsExe := "obs64.exe"
 StreamerbotExe := "Streamer.bot.exe"
+
+ObsPortableString := "Portable Mode - Profile: "
 FtpPortableString := "Portable Mode - Profile: ftp"
 VcamPortableString := "Portable Mode - Profile: vcam"
 

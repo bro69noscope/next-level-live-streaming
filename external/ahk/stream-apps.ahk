@@ -18,7 +18,7 @@ FindObsWindow(portable_profile := "") {
   return 0
 }
 
-MoveObsProduction(direction := "right") {
+MoveObsProduction(direction) {
   hwnd := FindObsWindow()
 
   if !hwnd {
@@ -27,9 +27,14 @@ MoveObsProduction(direction := "right") {
     return
   }
 
-  targetX := direction = "right" ? 2560 : direction = "center" ? 0 : x
+  SetWinDelay 0
+
+  if WinGetMinMax(hwnd) != 0
+    WinRestore(hwnd)
 
   WinGetPos(&x, &y, &w, &h, hwnd)
+  targetX := GetTargetX(direction)
+
   WinMove(targetX, y, w, h, hwnd)
   EnsureFullscreen(hwnd)
   WinActivate(hwnd)

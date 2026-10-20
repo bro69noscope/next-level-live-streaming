@@ -36,7 +36,8 @@ ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false) {
     if (hwnd := checkFn()) {
       WinActivate(hwnd)
       if isLaunch
-        CenterIfWindowed(hwnd)
+        try ; silent failing usually means an attempt to transform an elevated window failed
+          CenterIfWindowed(hwnd)
       if onFound
         onFound(hwnd)
       return true

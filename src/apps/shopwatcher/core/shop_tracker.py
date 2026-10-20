@@ -22,6 +22,9 @@ from src.connection.websocket_client import WebSocketClient
 SHORT_DURTION_THRESHOLD = 3
 LONG_DURATION_THRESHOLD = 6
 
+SHORT_REACTION_CHANCE = 1 / 3
+LONG_REACTION_CHANCE = 1 / 2
+
 
 @final
 class ShopTracker:
@@ -46,12 +49,16 @@ class ShopTracker:
         self.ws = ws_client
 
     @property
-    def short_open_threshold(self) -> int:
+    def _short_open_threshold(self) -> int:
         return SHORT_DURTION_THRESHOLD if not runtime_flags.react_fast else 2
 
     @property
-    def long_open_threshold(self) -> int:
+    def _long_open_threshold(self) -> int:
         return LONG_DURATION_THRESHOLD if not runtime_flags.react_fast else 4
+
+    @staticmethod
+    def _should_react(chance: float) -> bool:
+        return runtime_flags.always_react or random.random() < chance  # noqa: S311
 
     async def react_to_opened_shop(self) -> None:
         """Signal that the shop has opened and start tracking its duration."""
@@ -85,7 +92,7 @@ class ShopTracker:
     ) -> None:
         if duration == "short":
             print("rolling for a reaction to shop staying open for a short while...")
-            if random.randint(1, 3) == 1 or runtime_flags.always_react:  # noqa: S311
+            if self._should_react(SHORT_REACTION_CHANCE):
                 print("reacting !")
                 await self._react_to_short_shop_opening()
             else:
@@ -93,7 +100,7 @@ class ShopTracker:
 
         elif duration == "long" and seconds:
             print("rolling for a reaction to shop staying open for a long while...")
-            if random.randint(1, 2) == 1 or runtime_flags.always_react:  # noqa: S311
+            if self._should_react(LONG_REACTION_CHANCE):
                 print("reacting !")
                 await self._react_to_long_shop_opening(seconds)
             else:
@@ -108,14 +115,14 @@ class ShopTracker:
             elapsed_time = round(time.time() - self.shop_opening_time)
             print(f"Shop has been open for {elapsed_time} seconds")
             if (
-                elapsed_time >= self.short_open_threshold
+                elapsed_time >= self._short_open_threshold
                 and not self.flags["reacted_to_open_short"]
             ):
                 await self._react_to_shop_staying_open("short")
                 self.flags["reacted_to_open_short"] = True
 
             if (
-                elapsed_time >= self.long_open_threshold
+                elapsed_time >= self._long_open_threshold
                 and not self.flags["reacted_to_open_long"]
             ):
                 await self._react_to_shop_staying_open("long", seconds=elapsed_time)

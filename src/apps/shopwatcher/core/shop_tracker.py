@@ -19,6 +19,9 @@ from src.apps.shopwatcher.core.paths import (
 )
 from src.connection.websocket_client import WebSocketClient
 
+SHORT_DURTION_THRESHOLD = 3
+LONG_DURATION_THRESHOLD = 6
+
 
 @final
 class ShopTracker:
@@ -44,11 +47,11 @@ class ShopTracker:
 
     @property
     def short_open_threshold(self) -> int:
-        return 4 if not runtime_flags.react_fast else 2
+        return SHORT_DURTION_THRESHOLD if not runtime_flags.react_fast else 2
 
     @property
     def long_open_threshold(self) -> int:
-        return 8 if not runtime_flags.react_fast else 4
+        return LONG_DURATION_THRESHOLD if not runtime_flags.react_fast else 4
 
     async def react_to_opened_shop(self) -> None:
         """Signal that the shop has opened and start tracking its duration."""
@@ -82,7 +85,7 @@ class ShopTracker:
     ) -> None:
         if duration == "short":
             print("rolling for a reaction to shop staying open for a short while...")
-            if random.randint(1, 4) == 1 or runtime_flags.always_react:  # noqa: S311
+            if random.randint(1, 3) == 1 or runtime_flags.always_react:  # noqa: S311
                 print("reacting !")
                 await self._react_to_short_shop_opening()
             else:
@@ -90,7 +93,7 @@ class ShopTracker:
 
         elif duration == "long" and seconds:
             print("rolling for a reaction to shop staying open for a long while...")
-            if random.randint(1, 3) == 1 or runtime_flags.always_react:  # noqa: S311
+            if random.randint(1, 2) == 1 or runtime_flags.always_react:  # noqa: S311
                 print("reacting !")
                 await self._react_to_long_shop_opening(seconds)
             else:

@@ -57,7 +57,13 @@ async def _manage_subprocess(message: str) -> None:
         raise ValueError(error_msg)
 
     target = parts[0]
+    app_main_path = APPS_DIR_PATH / target / "main.py"
+    if not app_main_path.is_file():
+        error_msg = f"No main.py for target {target} in path: {app_main_path}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
     instructions = parts[1].strip()
+
     if target not in SUBPROCESSES_PORTS:
         error_msg = f" Unknown target {target} not in {list(SUBPROCESSES_PORTS.keys())}"
         logger.error(error_msg)
@@ -68,13 +74,11 @@ async def _manage_subprocess(message: str) -> None:
         # able to manipulate the position of the script's terminal with the
         # terminal window manager module.
 
-        script_path = APPS_DIR_PATH / target / "main.py"
-
         command = (
             f'start /min cmd /k "'
             f"cd /d {PROJECT_ROOT_PATH} && "
             f"set PYTHONPATH={PROJECT_ROOT_PATH} && "
-            f'{VENV_PYTHON} {script_path}"'
+            f'{VENV_PYTHON} {app_main_path}"'
         )
 
         await asyncio.create_subprocess_shell(
@@ -98,7 +102,8 @@ async def _manage_subprocess(message: str) -> None:
             "Check for server ACK", SUBPROCESSES_PORTS[target]
         )
         if not answer:
-            lock_file = LOCK_FILES_DIR_PATH / f"{target}.lock"
+            script_name = construct_script_name(app_main_path)
+            lock_file = LOCK_FILES_DIR_PATH / f"{script_name}.lock"
             print(f"Checking for {lock_file}")
             if lock_file.exists():
                 lock_file.unlink()

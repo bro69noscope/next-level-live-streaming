@@ -35,8 +35,8 @@ class WindowPropertiesCalculator:
             y_pos = height * (slot % MAX_WINDOWS_PER_COLUMN)
 
         elif window_type == WinType.SERVER:
-            width = 700
-            height = 400
+            width = 1000
+            height = 600
             x_pos = -1920
             y_pos = 640
 

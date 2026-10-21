@@ -101,7 +101,8 @@ async def _manage_subprocess(message: str) -> None:
         answer = await send_message_to_subprocess_socket(
             "Check for server ACK", SUBPROCESSES_PORTS[target]
         )
-        if not answer:
+
+        if answer is None:  # unreachable, we probably want to remove a stale lock file
             script_name = construct_script_name(app_main_path)
             lock_file = LOCK_FILES_DIR_PATH / f"{script_name}.lock"
             print(f"Checking for {lock_file}")
@@ -109,7 +110,11 @@ async def _manage_subprocess(message: str) -> None:
                 lock_file.unlink()
                 print(f"Found and removed lock for {target}")
             else:
-                print("No lock found here, traveler.")
+                print("No lock file found here, traveler.")
+
+        elif answer == "":
+            print(f"{target} accepted connection but sent no ACK, cannot unlock")
+
         else:
             print(f"{target} seems to be running, cannot unlock")
 
@@ -183,8 +188,11 @@ def create_websocket_handler(
 
 async def send_message_to_subprocess_socket(
     message: str, port: int, host: str = "localhost"
-) -> str:
-    """Client function to send messages to subprocesses servers."""
+) -> str | None:
+    """Client function to send messages to subprocesses servers.
+
+    Returns the reply, or None if the server could not be reached.
+    """
     try:
         reader, writer = await asyncio.open_connection(host, port)
 
@@ -201,7 +209,7 @@ async def send_message_to_subprocess_socket(
     except OSError as e:
         logger.warning(f"SOCK: Could not connect to {host}:{port}: {e}")
         print(f"SOCK: Could not connect to {host}:{port}")
-        msg = ""
+        return None
 
     return msg
 

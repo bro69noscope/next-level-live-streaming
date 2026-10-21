@@ -194,8 +194,10 @@ async def send_message_to_subprocess_socket(
         await writer.wait_closed()
 
     except OSError as e:
-        msg = f"SOCK: Could not connect to {host}:{port}"
-        print(e)
+        logger.warning(f"SOCK: Could not connect to {host}:{port}: {e}")
+        print(f"SOCK: Could not connect to {host}:{port}")
+        msg = ""
+
     return msg
 
 

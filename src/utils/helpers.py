@@ -14,7 +14,7 @@ def print_countdown(duration: int = 3) -> None:
         time.sleep(1)
 
 
-def construct_script_name(file_path: str) -> str:
+def construct_script_name(file_path: str | Path) -> str:
     """Construct a script name from a file path for further use.
 
     This function extracts a meaningful module name from the file path to avoid the

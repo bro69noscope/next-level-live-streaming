@@ -9,6 +9,7 @@ from typing import final
 import aiofiles
 
 from src.apps.shopwatcher.core import runtime_flags
+from src.apps.shopwatcher.core.gui_protocol import SHOP_KEY, Gui
 from src.apps.shopwatcher.core.paths import (
     BRB_BUYING_MILK_HIDE_PATH,
     BRB_BUYING_MILK_SHOW_PATH,
@@ -30,12 +31,15 @@ LONG_REACTION_CHANCE = 1 / 2
 class ShopTracker:
     """Tracks the shop's opening and closing times, and reacts accordingly."""
 
-    def __init__(self, logger: Logger, ws_client: WebSocketClient) -> None:
-        """Initialize the ShopTracker with logger and websocket client.
+    def __init__(
+        self, logger: Logger, ws_client: WebSocketClient, gui: Gui
+    ) -> None:
+        """Initialize the ShopTracker with logger, websocket client and GUI.
 
         Args:
             logger: Logger instance for logging messages
             ws_client: WebSocket client for sending requests
+            gui: Where the live shop status is shown
 
         """
         self.shop_is_currently_open = False
@@ -47,6 +51,7 @@ class ShopTracker:
         }
         self.logger = logger
         self.ws = ws_client
+        self.gui = gui
 
     @property
     def _short_open_threshold(self) -> int:
@@ -84,6 +89,7 @@ class ShopTracker:
             except asyncio.CancelledError:
                 print("Shop open duration tracking stopped.")
         print("Shop just closed")
+        self.gui.set_status(SHOP_KEY, "Shop closed")
         await self.ws.send_json_requests(str(DSLR_SHOW_PATH))
         await self._reset_flags()
 
@@ -113,7 +119,7 @@ class ShopTracker:
     async def _track_shop_open_duration(self) -> None:
         while self.shop_is_currently_open:
             elapsed_time = round(time.time() - self.shop_opening_time)
-            print(f"Shop has been open for {elapsed_time} seconds")
+            self.gui.set_status(SHOP_KEY, f"Shop open for {elapsed_time:.0f}s")
             if (
                 elapsed_time >= self._short_open_threshold
                 and not self.flags["reacted_to_open_short"]

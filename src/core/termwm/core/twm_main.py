@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import aiosqlite
 
@@ -37,10 +37,12 @@ class TerminalWindowManager:
         conn: aiosqlite.Connection,
         window_type: WinType,
         window_name: str,
+        *,
+        title_setter: Callable[[str], None] | None = None,
     ) -> tuple[Optional[int], str]:
         """Entry method to adjust a script's terminal window."""
         slot, name = await self.manager.initially_manage_window(
-            conn, window_type, window_name
+            conn, window_type, window_name, title_setter=title_setter
         )
         logger.info(f"Adjusted window <{window_name}> of type {window_type.name}.")
         return slot, name

@@ -68,11 +68,12 @@ async def _manage_script_startup(
     window_type: WinType,
     script_name: str,
     lock_file_manager: LockFileManager | None = None,
+    title_setter: Callable[[str], None] | None = None,
 ) -> int | None:
     twm = TerminalWindowManager()
 
     slot, name = await twm.adjust_terminal_window(
-        slots_db_conn, window_type, script_name
+        slots_db_conn, window_type, script_name, title_setter=title_setter
     )
     if window_type == WinType.DENIED:
         _register_atexit_func(sdh.free_denied_slot_sync, slot)
@@ -88,9 +89,10 @@ async def _manage_script_startup(
 
 
 async def setup_script(
-    script_name: str,
+    script_name, *, title_setter=None
 ) -> tuple[aiosqlite.Connection, int | None]:
     """Initialize the must have components for a terminal window managed script."""
+
     lock_file_manager = LockFileManager(script_name)
     db_conn = await sdh.create_connection(TERMINAL_WINDOW_SLOTS_DB_FILE_PATH)
 
@@ -107,7 +109,7 @@ async def setup_script(
         window_type = WinType.ACCEPTED
 
     slot = await _manage_script_startup(
-        db_conn, window_type, script_name, lock_file_manager
+        db_conn, window_type, script_name, lock_file_manager, title_setter
     )
 
     return db_conn, slot

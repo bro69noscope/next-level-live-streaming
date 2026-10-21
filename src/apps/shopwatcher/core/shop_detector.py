@@ -15,11 +15,9 @@ from src.apps.shopwatcher.core.constants import (
     SCREEN_CAPTURE_AREA,
     SECONDARY_WINDOWS,
 )
+from src.apps.shopwatcher.core.gui_protocol import SSIM_KEY, Gui
 from src.apps.shopwatcher.core.paths import SHOP_TEMPLATE_IMAGE_PATH
-from src.apps.shopwatcher.core.shared_events import (
-    mute_ssim_prints,
-    secondary_windows_spawned,
-)
+from src.apps.shopwatcher.core.shared_events import secondary_windows_spawned
 from src.apps.shopwatcher.core.shop_tracker import ShopTracker
 from src.apps.shopwatcher.core.socket_handler import ShopWatcherHandler
 from src.connection.websocket_client import WebSocketClient
@@ -38,6 +36,7 @@ class ShopDetector:
         socket_handler: ShopWatcherHandler,
         logger: Logger,
         ws_client: WebSocketClient,
+        gui: Gui,
     ) -> None:
         """Initialize the ShopWatcher class.
 
@@ -45,13 +44,15 @@ class ShopDetector:
             socket_handler: Handler for WebSocket connections.
             logger: Logger instance for logging, forwarded to ShopTracker.
             ws_client: Client for WebSocket communication, forwarded to ShopTracker.
+            gui: Where frames and live readouts are shown, forwarded to
+                ShopTracker.
 
         """
         self.secondary_windows_spawned = secondary_windows_spawned
-        self.mute_ssim_prints = mute_ssim_prints
         self.socket_handler = socket_handler
         self.logger = logger
-        self.shop_tracker = ShopTracker(logger, ws_client)
+        self.gui = gui
+        self.shop_tracker = ShopTracker(logger, ws_client, gui)
 
     async def scan_for_shop_and_notify(self, *, write: bool) -> None:
         """Scan for the shop on the screen and react when it appears/disappears.
@@ -62,6 +63,8 @@ class ShopDetector:
 
         """
         template = load_grayscale_opencv_template(SHOP_TEMPLATE_IMAGE_PATH)
+        self.logger.debug(f"capture area is {SCREEN_CAPTURE_AREA}")
+
         template = cv.resize(
             template,
             (SCREEN_CAPTURE_AREA["width"], SCREEN_CAPTURE_AREA["height"]),
@@ -72,7 +75,7 @@ class ShopDetector:
             frame = await self._capture_window(SCREEN_CAPTURE_AREA)
             gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             match_value = await self._compare_images(gray_frame, template)
-            cv.imshow(SECONDARY_WINDOWS[0].name, gray_frame)
+            self.gui.show_frame(SECONDARY_WINDOWS[0].name, gray_frame)
             self.secondary_windows_spawned.set()
 
             if write:
@@ -84,10 +87,7 @@ class ShopDetector:
                     gray_frame,
                 )
 
-            if cv.waitKey(1) == ord("q"):
-                break
-            if not self.mute_ssim_prints.is_set():
-                print(f"SSIM: {match_value:.6f}", end="\r")
+            self.gui.set_status(SSIM_KEY, f"SSIM: {match_value:.6f}")
 
             if match_value >= self.SSIM_SIMILARITY_THRESHOLD:
                 await self.shop_tracker.react_to_opened_shop()

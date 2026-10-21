@@ -58,7 +58,7 @@ def setup_logger(
         log_file.write("<< New Log Entry >>\n")
 
     logger = logging.getLogger(file_name)
-    if not logger.hasHandlers():
+    if not logger.handlers:
         logger.setLevel(LOG_LEVELS[level])
 
         # Script-specific file handler with UTF-8 encoding

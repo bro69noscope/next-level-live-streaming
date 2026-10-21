@@ -5,6 +5,10 @@ from src.core.termwm.core.constants import (
     MAIN_WINDOW_HEIGHT,
     MAIN_WINDOW_WIDTH,
     MAX_WINDOWS_PER_COLUMN,
+    SERVER_WINDOW_HEIGHT,
+    SERVER_WINDOW_WIDTH,
+    SERVER_WINDOW_X_POS,
+    SERVER_WINDOW_Y_POS,
 )
 from src.core.termwm.core.types import SecondaryWindow, WinType
 
@@ -35,10 +39,10 @@ class WindowPropertiesCalculator:
             y_pos = height * (slot % MAX_WINDOWS_PER_COLUMN)
 
         elif window_type == WinType.SERVER:
-            width = 1000
-            height = 600
-            x_pos = -1920
-            y_pos = 640
+            width = SERVER_WINDOW_WIDTH
+            height = SERVER_WINDOW_HEIGHT
+            x_pos = SERVER_WINDOW_X_POS
+            y_pos = SERVER_WINDOW_Y_POS
 
         self.logger.debug(
             f"Calculated properties for {window_type.name} window at slot number {slot}"

@@ -6,6 +6,8 @@ about later.
 """
 
 import asyncio
+import os
+import subprocess
 from collections.abc import Awaitable, Callable
 
 import aiosqlite
@@ -33,6 +35,7 @@ twm = TerminalWindowManager()
 
 SCRIPT_NAME = construct_script_name(__file__)
 MIN_MSG_LENGTH = 2
+GUI_TARGETS = {"shopwatcher"}
 
 logger = setup_logger(SCRIPT_NAME)
 ahk_clients: set[ServerConnection] = set()
@@ -69,7 +72,19 @@ async def _manage_subprocess(message: str) -> None:
         logger.error(error_msg)
         raise ValueError(error_msg)
 
-    if instructions == "start":
+    if instructions == "start" and target in GUI_TARGETS:
+        await asyncio.create_subprocess_exec(
+            str(VENV_PYTHON),
+            str(app_main_path),
+            cwd=str(PROJECT_ROOT_PATH),
+            env={**os.environ, "PYTHONPATH": str(PROJECT_ROOT_PATH)},
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
+
+        print(f"Started {target}")
+        logger.info(f"Started GUI subprocess {target}")
+
+    elif instructions == "start":
         # Open the process in a new separate cli window: this is done to be
         # able to manipulate the position of the script's terminal with the
         # terminal window manager module.

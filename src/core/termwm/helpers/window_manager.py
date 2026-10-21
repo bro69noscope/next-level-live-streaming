@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Optional
+from typing import Callable, Optional
 
 import aiosqlite
 import src.core.termwm.slots_db_handler as sdh
@@ -61,12 +61,14 @@ class WindowManager:
         conn: aiosqlite.Connection,
         window_type: WinType,
         window_name: str,
+        *,
+        title_setter: Callable[[str], None] | None = None,
     ) -> tuple[Optional[int], str]:
         """Main method to manage the main window of the script."""
 
         window_name = WINDOW_NAME_SUFFIX + window_name
         slot, title = await self._assign_slot_and_name_window(
-            conn, window_type, window_name
+            conn, window_type, window_name, title_setter
         )
 
         properties = self.calculator.calculate_main_window_properties(window_type, slot)
@@ -79,25 +81,30 @@ class WindowManager:
         return slot, window_name
 
     async def _assign_slot_and_name_window(
-        self, conn: aiosqlite.Connection, window_type: WinType, window_name: str
+        self,
+        conn: aiosqlite.Connection,
+        window_type: WinType,
+        window_name: str,
+        title_setter: Callable[[str], None] | None = None,
     ) -> tuple[Optional[int], str]:
+        set_title = title_setter or self.adjuster.set_window_title
         if window_type == WinType.ACCEPTED:
             slot_id = await sdh.get_first_free_slot(conn)
             if slot_id is None:
                 raise ValueError("No available slot for an accepted window.")
             title = window_name
-            self.adjuster.set_window_title(title)
+            set_title(title)
 
         elif window_type == WinType.DENIED:
             slot_id = await sdh.occupy_first_free_denied_slot(conn)
             if slot_id is None:
                 raise ValueError("No available slot for a denied window.")
             title = f"{window_name}_denied({slot_id})"
-            self.adjuster.set_window_title(title)
+            set_title(title)
 
         elif window_type == WinType.SERVER:
             slot_id = None  # Server doesn't occupy a slot in the DB
             title = SERVER_WINDOW_NAME
-            self.adjuster.set_window_title(title)
+            set_title(title)
 
         return slot_id, title

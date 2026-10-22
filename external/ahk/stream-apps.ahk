@@ -62,7 +62,7 @@ ActivateStreamFeedApp() {
   }
   else {
     Run("dotnet run", StreamingRepoPath "external\StreamFeedApp", "Min")
-    ActivateWhenReady(idMethod, 3000, Reposition)
+    ActivateWhenReady(idMethod, 8000, Reposition)
   }
 }
 

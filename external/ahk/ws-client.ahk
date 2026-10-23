@@ -1,13 +1,13 @@
-#Include libs/websocket.ahk
+#Include libs\websocket.ahk
 #Include stream-apps.ahk
 #Include logger.ahk
-#Include config.ahk
+#Include config\general_config.ahk
+#Include config\ports.ahk
 
 WsLogFile := "logs\ws.log"
 TrimLogFile(WsLogFile, 200000)
 LogBlank(WsLogFile)
 
-PortsFile := StreamingRepoPath "config\ports.json5"
 msgboxShown := false
 
 wsCommands := Map(
@@ -28,19 +28,12 @@ NoticeError(msg) {
 }
 
 GetRelayPort() {
-  if !FileExist(PortsFile) {
-    e := "file not found: " PortsFile
-    NoticeError(e)
-    throw Error(e)
+  try
+    return GetPort("repository", "python")
+  catch as e {
+    NoticeError(e.Message)
+    throw e
   }
-
-  ports := FileRead(PortsFile)
-  if RegExMatch(ports, 'python\s*:\s*\{[^}]*?\bport\s*:\s*(\d+)', &m)
-    return m[1]
-
-  e := "repository.python port not found in " PortsFile
-  NoticeError(e)
-  throw Error(e)
 }
 
 ws := ""

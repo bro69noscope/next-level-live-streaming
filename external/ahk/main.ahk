@@ -11,3 +11,4 @@ DirExist("logs") || DirCreate("logs")
 #Include window-helpers.ahk
 #Include stream-apps.ahk
 #Include ws-client.ahk
+#Include scripts\capture-window-obs\main.ahk

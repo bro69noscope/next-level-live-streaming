@@ -1,8 +1,8 @@
 #Include getpath.ahk
 
-SplitPath(A_LineFile, , &_ahkDir)
-_ahkDir := RealPath(_ahkDir)
-StreamingRepoPath := NormalizePath(_ahkDir "\..\..") "\"
+SplitPath(A_LineFile, , &_ahkConfigDir)
+_ahkConfigDir := RealPath(_ahkConfigDir)
+StreamingRepoPath := NormalizePath(_ahkConfigDir "\..\..\..") "\"
 
 ObsExe := "obs64.exe"
 StreamerbotExe := "Streamer.bot.exe"

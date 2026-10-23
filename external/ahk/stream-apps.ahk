@@ -1,5 +1,5 @@
 #Include window-helpers.ahk
-#Include config.ahk
+#Include config\general_config.ahk
 
 FindObsWindow(portable_profile := "") {
   for win in WinGetList("ahk_exe" ObsExe) {

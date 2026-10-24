@@ -40,6 +40,29 @@ MoveObsProduction(direction) {
   WinActivate(hwnd)
 }
 
+MoveObsFtp(direction) {
+  hwnd := FindObsWindow("ftp")
+
+  if !hwnd {
+    ToolTip "No Ftp Obs window found to move."
+    SetTimer(() => ToolTip(), -2000)
+    return
+  }
+
+  SetWinDelay 0
+
+  if WinGetMinMax(hwnd) != 0
+    WinRestore(hwnd)
+
+  WinGetPos(&x, &y, &w, &h, hwnd)
+  targetX := GetTargetX(direction)
+
+  WinMove(targetX, y, w, h, hwnd)
+  EnsureFullscreen(hwnd)
+  WinActivate(hwnd)
+}
+
+
 ActivateStreamFeedApp() {
   idMethod := () => WinExist("Activity Feed ahk_exe StreamFeedApp.exe")
   hwnd := idMethod()

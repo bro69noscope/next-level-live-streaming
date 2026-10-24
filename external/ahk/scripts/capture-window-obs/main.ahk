@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include ..\..\config\ports.ahk
+#Include ..\..\config\hotkeys_map.ahk
 
 try
   sbUrl := "http://127.0.0.1:"
@@ -13,8 +14,8 @@ catch as e {
 
 SB_ACTION_NAME := "set relevant window capture"
 
-^!+t:: CaptureWindow(WinExist("A"), 0)
-^!+x:: CaptureWindow(WinExist("A"), 2)
+Hotkey(HK["hk_capture_win_by_title"], (*) => CaptureWindow(WinExist("A"), 0))
+Hotkey(HK["hk_capture_win_by_exe"], (*) => CaptureWindow(WinExist("A"), 2))
 
 CaptureWindow(hwnd, prio) {
   if !hwnd {

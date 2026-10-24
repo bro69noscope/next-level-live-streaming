@@ -1,0 +1,31 @@
+{
+  mappings: [
+    {
+      owner: "ahk",
+      id: "hk_capture_win_by_title",
+      hotkey: "^!+t",
+      action: "retarget capture__window__dynamic_hwnd to active window (use title)",
+    },
+    {
+      owner: "ahk",
+      id: "hk_capture_win_by_exe",
+      hotkey: "^!+x",
+      action: "retarget capture__window__dynamic_hwnd to active window (use exe)",
+    },
+
+    // Right now these obs hotkey need to be synced manually with the state of the streamdeck
+    // profile that sends them. We'll do it programmatically later
+    {
+      owner: "obs",
+      id: "hk_enable_source_record",
+      hotkey: "!^+e",
+      action: "enable source_record_filter",
+    },
+    {
+      owner: "obs",
+      id: "hk_disable_source_record",
+      hotkey: "!^+d",
+      action: "disable source_record_filter",
+    },
+  ],
+}

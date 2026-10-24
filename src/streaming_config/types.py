@@ -8,6 +8,16 @@ type JsonTree = dict[str, JsonValue]
 
 Consumer = Literal["obs", "streamdeck", "streamerbot"]
 ScopeKeys = dict[Consumer | Literal["default"], str]
+HotkeyOwner = Literal["ahk", "streamdeck"]
+
+
+class HotkeyMapping(TypedDict):
+    """One entry of streaming_hotkeys.json5."""
+
+    id: str
+    hotkey: str
+    owner: HotkeyOwner
+    action: str
 
 
 class Rule(NamedTuple):

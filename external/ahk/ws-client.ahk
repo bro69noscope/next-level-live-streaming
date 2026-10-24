@@ -11,10 +11,11 @@ LogBlank(WsLogFile)
 msgboxShown := false
 
 wsCommands := Map(
-  "MoveObsProductionRight", () => MoveObsProduction("right"),
-  "MoveObsProductionCenter", () => MoveObsProduction("center"),
-  "MoveObsFtpRight", () => MoveObsFtp("right"),
-  "MoveObsFtpCenter", () => MoveObsFtp("center"),
+  "MoveObsProductionRight", () => MoveObsProduction("right", true),
+  "MoveObsProductionCenter", () => MoveObsProduction("center", true),
+  "MoveObsProductionCenterNoFocus", () => MoveObsProduction("center", false),
+  "MoveObsFtpRight", () => MoveObsFtp("right", true),
+  "MoveObsFtpCenter", () => MoveObsFtp("center", true),
   "ActivateStreamFeedApp", () => ActivateStreamFeedApp(),
   "ActivateObsProduction", () => ActivateObsProduction(true),
   "ActivateObsPortableFtp", () => ActivateObsPortable("ftp", true)

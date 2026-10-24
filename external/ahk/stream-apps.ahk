@@ -18,7 +18,7 @@ FindObsWindow(portable_profile := "") {
   return 0
 }
 
-MoveObsProduction(direction) {
+MoveObsProduction(direction, activate) {
   hwnd := FindObsWindow()
 
   if !hwnd {
@@ -37,10 +37,12 @@ MoveObsProduction(direction) {
 
   WinMove(targetX, y, w, h, hwnd)
   EnsureFullscreen(hwnd)
-  WinActivate(hwnd)
+
+  if activate
+    WinActivate(hwnd)
 }
 
-MoveObsFtp(direction) {
+MoveObsFtp(direction, activate) {
   hwnd := FindObsWindow("ftp")
 
   if !hwnd {
@@ -59,7 +61,9 @@ MoveObsFtp(direction) {
 
   WinMove(targetX, y, w, h, hwnd)
   EnsureFullscreen(hwnd)
-  WinActivate(hwnd)
+
+  if activate
+    WinActivate(hwnd)
 }
 
 

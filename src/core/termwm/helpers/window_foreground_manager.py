@@ -3,9 +3,9 @@ from typing import Optional
 
 import aiosqlite
 import pygetwindow
+import src.core.termwm.slots_db_handler as sdh
 import win32con
 import win32gui
-import src.core.termwm.slots_db_handler as sdh
 from src.core.termwm.core.constants import SERVER_WINDOW_NAME
 from src.core.termwm.helpers.window_adjuster import WindowAdjuster
 

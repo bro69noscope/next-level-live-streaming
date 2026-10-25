@@ -4,11 +4,11 @@
   alerts_overlays: {
     ftp: {
       obs_instance_key_in_ports_json5: "portable_ftp",
-      browser_source_name_in_obs: "browser_streamerbot_alerts",
+      browser_source_name_in_obs: "browser__streamerbot_alerts",
     },
     production: {
       obs_instance_key_in_ports_json5: "production",
-      browser_source_name_in_obs: "browser_streamerbot_alerts",
+      browser_source_name_in_obs: "browser__streamerbot_alerts",
     },
   },
 }

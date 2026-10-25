@@ -7,16 +7,17 @@ from src.config.settings import PROJECT_ROOT_PATH
 
 
 class ObsSourceRef(TypedDict):
-    """Which OBS instance (ports.json5 "obs" key) hosts a source, and its name."""
+    """Which OBS instance (ports.json5 "obs" key) hosts a source, and where."""
 
-    obs_instance_key_in_ports_json5: str
-    browser_source_name_in_obs: str
+    json5_cfg_key: str
+    scene: str
+    source: str
 
 
 class ObsWsTargetSourcesConfig(TypedDict):
     """Top-level shape of config/obs_ws_target_sources.json5."""
 
-    alerts_overlays: dict[str, ObsSourceRef]
+    instance: dict[str, ObsSourceRef]
 
 
 OBS_WS_TARGET_SOURCES_CFG_PATH = (
@@ -26,6 +27,4 @@ with OBS_WS_TARGET_SOURCES_CFG_PATH.open(encoding="utf-8") as file:
     OBS_WS_TARGET_SOURCES = cast(
         "ObsWsTargetSourcesConfig",
         json5.load(file),  # pyright: ignore[reportUnknownMemberType]
-    )
-
-ALERTS_OVERLAYS_OBS_WS_TARGET_SOURCES = OBS_WS_TARGET_SOURCES["alerts_overlays"]
+    )["instance"]

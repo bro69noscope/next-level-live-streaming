@@ -76,15 +76,34 @@ def obs_request(
 def refresh_browser_source(
     host: str,
     port: int,
-    input_name: str,
+    scene_name: str,
+    source_name: str,
     *,
     timeout: float = 3.0,
 ) -> None:
-    """Refresh a browser source in OBS via ws, using its unique name."""
+    """Show a browser source in OBS if hidden, then refresh it."""
+    item = obs_request(
+        host,
+        port,
+        "GetSceneItemId",
+        {"sceneName": scene_name, "sourceName": source_name},
+        timeout=timeout,
+    )
+    obs_request(
+        host,
+        port,
+        "SetSceneItemEnabled",
+        {
+            "sceneName": scene_name,
+            "sceneItemId": item["sceneItemId"],
+            "sceneItemEnabled": True,
+        },
+        timeout=timeout,
+    )
     obs_request(
         host,
         port,
         "PressInputPropertiesButton",
-        {"inputName": input_name, "propertyName": "refreshnocache"},
+        {"inputName": source_name, "propertyName": "refreshnocache"},
         timeout=timeout,
     )

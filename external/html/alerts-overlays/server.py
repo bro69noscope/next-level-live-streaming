@@ -9,9 +9,7 @@ from external.common.helpers.py.obs_ws.client import (
     ObsWebSocketError,
     refresh_browser_source,
 )
-from external.common.helpers.py.obs_ws.target_sources import (
-    ALERTS_OVERLAYS_OBS_WS_TARGET_SOURCES,
-)
+from external.common.helpers.py.obs_ws.target_sources import OBS_WS_TARGET_SOURCES
 from src.config.settings import PROJECT_ROOT_PATH
 from src.connection.constants import ALERTS_OVERLAYS_STATIC, PORTS
 
@@ -54,13 +52,14 @@ def _build_urls() -> dict[str, str]:
 def _refresh_obs_alert_sources() -> None:
     """Reload the alerts browser source in every running OBS instance."""
     print("OBS alert sources (config/obs_ws_target_sources.json5):")
-    for env, source in ALERTS_OVERLAYS_OBS_WS_TARGET_SOURCES.items():
-        instance_key = source["obs_instance_key_in_ports_json5"]
-        source_name = source["browser_source_name_in_obs"]
+    for env, ref in OBS_WS_TARGET_SOURCES.items():
+        instance_key = ref["json5_cfg_key"]
+        scene = ref["scene"]
+        source = ref["source"]
         obs = PORTS["obs"][instance_key]
-        target = f"{source_name} in obs.{instance_key} @ {obs['host']}:{obs['port']}"
+        target = f"{scene}/{source} in obs.{instance_key} @ {obs['host']}:{obs['port']}"
         try:
-            refresh_browser_source(obs["host"], obs["port"], source_name)
+            refresh_browser_source(obs["host"], obs["port"], scene, source)
         except OSError as e:
             print(f"  {env:12s} {target}  [SKIPPED: OBS not reachable: {e}]")
         except ObsWebSocketError as e:

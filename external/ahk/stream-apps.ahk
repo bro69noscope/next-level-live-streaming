@@ -32,10 +32,10 @@ MoveObsProduction(direction, activate) {
   if WinGetMinMax(hwnd) != 0
     WinRestore(hwnd)
 
-  WinGetPos(&x, &y, &w, &h, hwnd)
-  targetX := GetTargetX(direction)
+  WinGetPos(, , &w, &h, hwnd)
+  MonitorGetWorkArea(PickMonitor(direction), &mLeft, &mTop)
 
-  WinMove(targetX, y, w, h, hwnd)
+  WinMove(mLeft, mTop, w, h, hwnd)
   EnsureFullscreen(hwnd)
 
   if activate
@@ -56,10 +56,10 @@ MoveObsFtp(direction, activate) {
   if WinGetMinMax(hwnd) != 0
     WinRestore(hwnd)
 
-  WinGetPos(&x, &y, &w, &h, hwnd)
-  targetX := GetTargetX(direction)
+  WinGetPos(, , &w, &h, hwnd)
+  MonitorGetWorkArea(PickMonitor(direction), &mLeft, &mTop)
 
-  WinMove(targetX, y, w, h, hwnd)
+  WinMove(mLeft, mTop, w, h, hwnd)
   EnsureFullscreen(hwnd)
 
   if activate

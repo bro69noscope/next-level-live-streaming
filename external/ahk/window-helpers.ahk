@@ -3,16 +3,6 @@ EnsureFullscreen(hwnd) {
     WinMaximize(hwnd)
 }
 
-GetTargetX(direction) {
-  MonitorGet(MonitorGetPrimary(), &l, , &r)
-
-  switch direction {
-    case "right": return r
-    case "center": return l
-    default: throw ValueError("Unknown direction", , direction)
-  }
-}
-
 GetMonitorAt(x, y) {
   loop MonitorGetCount() {
     MonitorGetWorkArea(A_Index, &l, &t, &r, &b)

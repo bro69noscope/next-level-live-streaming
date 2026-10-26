@@ -1,6 +1,6 @@
 export interface OverlayConfig {
   WS_HOST: string;
-  WS_PORT: number | null;
+  SBOT_WS_PORT: number | null;
   WS_ENDPOINT: string;
   ALERT_BASE_DISPLAY_MS: number;
   TTS_VOLUME: number;
@@ -22,7 +22,7 @@ export interface OverlayConfig {
 
 export const OVERLAY_CONFIG: OverlayConfig = {
   WS_HOST: "127.0.0.1",
-  WS_PORT: null,
+  SBOT_WS_PORT: null,
   WS_ENDPOINT: "/",
   ALERT_BASE_DISPLAY_MS: 7000,
   TTS_VOLUME: 0.9,

@@ -24,5 +24,5 @@ export async function loadEnvOverrides(): Promise<void> {
     fatalOverlayError(`unknown env "${env}" — not found in streamerbot config`);
   }
 
-  OVERLAY_CONFIG.WS_PORT = envConfig.streamerbot_ws.port;
+  OVERLAY_CONFIG.SBOT_WS_PORT = envConfig.streamerbot_ws.port;
 }

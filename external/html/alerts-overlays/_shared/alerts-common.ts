@@ -221,11 +221,11 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   }
 
   function connect(): void {
-    if (!OVERLAY_CONFIG.WS_PORT) {
+    if (!OVERLAY_CONFIG.SBOT_WS_PORT) {
       fatalOverlayError(`no WS_PORT configured, refusing to connect`);
     }
     const ws = new WebSocket(
-      `ws://${OVERLAY_CONFIG.WS_HOST}:${OVERLAY_CONFIG.WS_PORT}${OVERLAY_CONFIG.WS_ENDPOINT}`,
+      `ws://${OVERLAY_CONFIG.WS_HOST}:${OVERLAY_CONFIG.SBOT_WS_PORT}${OVERLAY_CONFIG.WS_ENDPOINT}`,
     );
 
     ws.onopen = () => {

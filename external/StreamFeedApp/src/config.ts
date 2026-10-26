@@ -8,8 +8,11 @@ export const BUILTIN_STREAMERBOT_TWITCH_EVENTS = [
   "GiftBomb",
 ];
 
+export const STREAMERBOT_NAMES = ["production", "ftp"] as const;
+export type StreamerbotName = (typeof STREAMERBOT_NAMES)[number];
+
 export interface StreamerbotInstance {
-  name: string;
+  name: StreamerbotName;
   host: string;
   port: number;
 }
@@ -19,7 +22,6 @@ export let STREAMERBOT_INSTANCES: StreamerbotInstance[] = [];
 export async function loadStreamerbotInstances(): Promise<
   StreamerbotInstance[]
 > {
-  const envKeys = ["production", "ftp"] as const;
   const instances: StreamerbotInstance[] = [];
 
   let config;
@@ -32,7 +34,7 @@ export async function loadStreamerbotInstances(): Promise<
     return instances;
   }
 
-  for (const envKey of envKeys) {
+  for (const envKey of STREAMERBOT_NAMES) {
     const envConfig = config.streamerbot[envKey];
     if (!envConfig) {
       console.error(`StreamFeedApp: no streamerbot config found for ${envKey}`);

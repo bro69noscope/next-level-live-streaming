@@ -22,6 +22,36 @@ GetMonitorAt(x, y) {
   return MonitorGetPrimary()
 }
 
+GetMonitorsByX() {
+  mons := []
+  Loop MonitorGetCount() {
+    MonitorGetWorkArea(A_Index, &l)
+    mons.Push({ left: l, idx: A_Index })
+  }
+
+  Loop mons.Length - 1 {
+    i := A_Index + 1
+    cur := mons[i]
+    j := i - 1
+    while (j >= 1 && mons[j].left > cur.left) {
+      mons[j + 1] := mons[j]
+      j--
+    }
+    mons[j + 1] := cur
+  }
+  return mons
+}
+
+PickMonitor(position) {
+  mons := GetMonitorsByX()
+  switch position {
+    case "left": return mons[1].idx
+    case "center": return mons[Ceil(mons.Length / 2)].idx
+    case "right": return mons[mons.Length].idx
+    default: throw ValueError("Unknown position: " position)
+  }
+}
+
 CenterIfWindowed(hwnd) {
   if WinGetMinMax(hwnd) != 0
     return

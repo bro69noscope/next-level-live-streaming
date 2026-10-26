@@ -67,25 +67,22 @@ MoveObsFtp(direction, activate) {
 }
 
 
-ActivateStreamFeedApp() {
+ActivateStreamFeedApp(launchPosition := "left") {
   idMethod := () => WinExist("Activity Feed ahk_exe StreamFeedApp.exe")
   hwnd := idMethod()
+
   Reposition(hwnd) {
     if WinGetMinMax(hwnd) != 1
       WinRestore(hwnd)
 
-    targetX := -2300
-    monIdx := GetMonitorAt(targetX, 0)
-    MonitorGetWorkArea(monIdx, &mLeft, &mTop, &mRight, &mBottom)
-
-    width := (mRight - mLeft) // 1
-    height := mBottom - mTop
-    WinMove(mRight - width, mTop, width, height, hwnd)
+    MonitorGetWorkArea(PickMonitor(launchPosition), &mLeft, &mTop, &mRight, &mBottom)
+    WinMove(mLeft, mTop, mRight - mLeft, mBottom - mTop, hwnd)
     EnsureFullscreen(hwnd)
     WinActivate(hwnd)
   }
+
   if hwnd {
-    Reposition(hwnd)
+    WinActivate(hwnd)
   }
   else {
     Run("dotnet run", StreamingRepoPath "external\StreamFeedApp", "Min")

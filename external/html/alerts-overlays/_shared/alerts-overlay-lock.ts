@@ -36,6 +36,16 @@ window.addEventListener("message", (evt: MessageEvent) => {
   }
 });
 
+window.addEventListener("obsSourceVisibleChanged", (evt: Event) => {
+  const visible = !!(evt as CustomEvent<{ visible: boolean }>).detail?.visible;
+  document.querySelectorAll("iframe").forEach((frame) => {
+    frame.contentWindow?.postMessage(
+      { type: "obs-source-visible", visible },
+      "*",
+    );
+  });
+});
+
 function grantNext(): void {
   if (locked || waiting.length === 0) return;
   locked = true;

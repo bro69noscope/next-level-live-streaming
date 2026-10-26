@@ -171,6 +171,34 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   // no parent to broker a lock with — just show immediately in that case.
   const isEmbedded = window.parent !== window;
 
+  // OBS keeps playing browser source audio while the source is hidden unless
+  // told otherwise, so mute/drop alerts ourselves when it reports hidden.
+  let sourceVisible = true;
+
+  function setSourceVisible(visible: boolean): void {
+    if (visible === sourceVisible) return;
+    sourceVisible = visible;
+    log.info(`[${name}] OBS source ${visible ? "shown" : "hidden"}`);
+    if (!visible) {
+      queue = [];
+      skipCurrentAlert();
+    }
+  }
+
+  window.addEventListener("obsSourceVisibleChanged", (evt: Event) => {
+    setSourceVisible(
+      !!(evt as CustomEvent<{ visible: boolean }>).detail?.visible,
+    );
+  });
+  window.addEventListener("message", (evt: MessageEvent) => {
+    if (
+      evt.source === window.parent &&
+      evt.data?.type === "obs-source-visible"
+    ) {
+      setSourceVisible(!!evt.data.visible);
+    }
+  });
+
   function requestLockThenShow(item: AlertItem): void {
     log.debug("lock requested for", item.kind);
     if (!isEmbedded) {
@@ -273,6 +301,11 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
       const chance = payload.kind in kindChance ? kindChance[payload.kind] : 1;
       if (Math.random() >= chance) {
         log.info(`Dropped by chance roll (chance=${chance}):`, payload.kind);
+        return;
+      }
+
+      if (!sourceVisible) {
+        log.info("Dropped, OBS source is hidden:", payload.kind);
         return;
       }
 

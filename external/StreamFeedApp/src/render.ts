@@ -1,5 +1,10 @@
 import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
-import { activeSbotInstanceFilter, twitchFollowToggle } from "./filters.js";
+import {
+  activeSbotInstanceFilter,
+  ENTRY_INSTANCE_ATTR,
+  ENTRY_TYPE_ATTR,
+  twitchFollowToggle,
+} from "./filters.js";
 import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
 import { sendHistoryEntry, sendHistoryStatus } from "./history.js";
 import { replayAlert } from "./replay.js";
@@ -162,8 +167,8 @@ export function addEntry(
   row.className =
     "feed__entry" + (mapped.unknown ? " feed__entry--unknown" : "");
   row.setAttribute(ENTRY_ID_ATTR, id);
-  row.dataset.instance = inst.name;
-  row.dataset.type = eventType;
+  row.setAttribute(ENTRY_INSTANCE_ATTR, inst.name);
+  row.setAttribute(ENTRY_TYPE_ATTR, eventType);
 
   if (status) applyStatus(row, status);
 
@@ -172,7 +177,8 @@ export function addEntry(
     activeSbotInstanceFilter !== inst.name;
 
   const twitchFollowHidden =
-    !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
+    !twitchFollowToggle.shown &&
+    row.getAttribute(ENTRY_TYPE_ATTR) === "Twitch.Follow";
 
   if (instanceMismatch || twitchFollowHidden) {
     row.classList.add("feed__entry--hidden");

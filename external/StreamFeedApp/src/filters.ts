@@ -1,5 +1,9 @@
 export let activeSbotInstanceFilter = "all";
 
+const INSTANCE_FILTER_ATTR = "data-sbot-instance-filter";
+export const ENTRY_INSTANCE_ATTR = "data-instance";
+export const ENTRY_TYPE_ATTR = "data-type";
+
 export const twitchFollowToggle = {
   btn: document.getElementById("toggleTwitchFollowsBtn") as HTMLButtonElement,
   shown: true,
@@ -24,20 +28,21 @@ export function applyTwitchFollowToggleState(): void {
 export function applyFilter(): void {
   document
     .querySelectorAll<HTMLButtonElement>(
-      "#streamFeedFilterBar .filterBar__btn[data-sbot-instance-filter]",
+      `#streamFeedFilterBar .filterBar__btn[${INSTANCE_FILTER_ATTR}]`,
     )
     .forEach((b) =>
       b.classList.toggle(
         "filterBar__btn--active",
-        b.dataset.sbotInstanceFilter === activeSbotInstanceFilter,
+        b.getAttribute(INSTANCE_FILTER_ATTR) === activeSbotInstanceFilter,
       ),
     );
   document.querySelectorAll<HTMLElement>(".feed__entry").forEach((row) => {
     const instanceMismatch =
       activeSbotInstanceFilter !== "all" &&
-      row.dataset.instance !== activeSbotInstanceFilter;
+      row.getAttribute(ENTRY_INSTANCE_ATTR) !== activeSbotInstanceFilter;
     const twitchFollowHidden =
-      !twitchFollowToggle.shown && row.dataset.type === "Twitch.Follow";
+      !twitchFollowToggle.shown &&
+      row.getAttribute(ENTRY_TYPE_ATTR) === "Twitch.Follow";
     row.classList.toggle(
       "feed__entry--hidden",
       instanceMismatch || twitchFollowHidden,
@@ -47,11 +52,12 @@ export function applyFilter(): void {
 
 filterBarEl
   .querySelectorAll<HTMLButtonElement>(
-    ".filterBar__btn[data-sbot-instance-filter]",
+    `.filterBar__btn[${INSTANCE_FILTER_ATTR}]`,
   )
   .forEach((btn) => {
     btn.onclick = () => {
-      activeSbotInstanceFilter = btn.dataset.sbotInstanceFilter ?? "all";
+      activeSbotInstanceFilter =
+        btn.getAttribute(INSTANCE_FILTER_ATTR) ?? "all";
       applyFilter();
     };
   });

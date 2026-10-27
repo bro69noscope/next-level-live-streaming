@@ -166,6 +166,16 @@ body.body--hide-raw .feed__entry-raw {
   word-break: break-all;
   margin-top: calc(2px * var(--scale));
 }
+.feed__missed-icon {
+  display: none;
+  color: #ffb84d;
+  font-size: calc(18px * var(--scale));
+  line-height: 1;
+  font-family: "JetBrainsMono Nerd Font", sans-serif;
+}
+.feed__entry--missed .feed__missed-icon {
+  display: inline;
+}
 .feed__entry-replay {
   margin-left: auto;
   background: transparent;

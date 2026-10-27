@@ -11,6 +11,7 @@ export interface OverlayConfig {
   SOUND_RETRY_DELAY_MS: number;
   SOUND_CHECK_TIMEOUT_MS: number;
   SKIP_SILENCE_MS: number;
+  MISSED_ALERT_SBOT_ACTION_NAME: string;
   SITE_ROOT: string;
   SOUND_FILES: {
     common: {
@@ -33,6 +34,7 @@ export const OVERLAY_CONFIG: OverlayConfig = {
   SOUND_RETRY_DELAY_MS: 500,
   SOUND_CHECK_TIMEOUT_MS: 300,
   SKIP_SILENCE_MS: 5000,
+  MISSED_ALERT_SBOT_ACTION_NAME: "replay alert",
   SITE_ROOT: "/",
   SOUND_FILES: {
     common: {

@@ -64,6 +64,23 @@ function formatEntryTimestamp(ts?: string): string {
   return `${dayName} ${date.toLocaleTimeString()}`;
 }
 
+export function markMissed(inst: StreamerbotInstance, alert: unknown): void {
+  const serialized = JSON.stringify(alert);
+  const row = Array.from(
+    feedEl.querySelectorAll<HTMLElement>(".feed__entry"),
+  ).find(
+    (el) =>
+      el.dataset.instance === inst.name &&
+      el.dataset.overlayPayload === serialized &&
+      !el.classList.contains("feed__entry--missed"),
+  );
+  if (!row) {
+    console.warn(`[${inst.name}] no feed entry found for missed alert`, alert);
+    return;
+  }
+  row.classList.add("feed__entry--missed");
+}
+
 export function addEntry(
   inst: StreamerbotInstance,
   eventType: string,

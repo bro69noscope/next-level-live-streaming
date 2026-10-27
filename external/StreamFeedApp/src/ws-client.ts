@@ -2,7 +2,13 @@ import {
   StreamerbotInstance,
   BUILTIN_STREAMERBOT_TWITCH_EVENTS,
 } from "./config.js";
-import { state, renderStatus, clearFeed, addEntry } from "./render.js";
+import {
+  state,
+  renderStatus,
+  clearFeed,
+  addEntry,
+  markMissed,
+} from "./render.js";
 
 const connections: Record<string, WebSocket> = {};
 
@@ -34,10 +40,15 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
     if (!parsed.event) return;
 
     // General.Custom: CPH.WebsocketBroadcastJson() from Streamer.bot
-    // https://docs.streamer.bot/api/csharp/methods/core/websocket/broadcast-json
+    // https://docs.streamer.bot/api/csharp/methods/core/websocket/websocket-broadcast-json
     if (parsed.event.source === "General" && parsed.event.type === "Custom") {
       if (parsed.data?.clearStreamFeed === true) {
         clearFeed();
+        return;
+      }
+
+      if (parsed.data?.event === "AlertMissed") {
+        markMissed(inst, parsed.data.alert);
         return;
       }
 

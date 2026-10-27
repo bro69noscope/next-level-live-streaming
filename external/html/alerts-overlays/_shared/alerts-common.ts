@@ -12,6 +12,7 @@ interface AlertItem {
   giftCount?: number;
   amount?: number | string;
   currency?: string;
+  isReplay?: boolean;
 }
 
 interface AlertDef {
@@ -167,6 +168,33 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
 
   let queue: AlertItem[] = [];
   let playing = false;
+  let currentItem: AlertItem | null = null;
+  let activeWs: WebSocket | null = null;
+
+  // the "replay alert" streamerbot action just rebroadcasts whatever JSON it's
+  // given, so it doubles as the way to tell StreamFeedApp an alert never made
+  // it on stream.
+  function reportMissed(item: AlertItem): void {
+    if (item.isReplay) return;
+    if (!activeWs || activeWs.readyState !== WebSocket.OPEN) {
+      log.warn("Cannot report missed alert, WebSocket not open:", item.kind);
+      return;
+    }
+    log.info(`[${name}] reporting missed alert:`, item.kind);
+    activeWs.send(
+      JSON.stringify({
+        request: "DoAction",
+        action: { name: OVERLAY_CONFIG.MISSED_ALERT_SBOT_ACTION_NAME },
+        args: {
+          replayPayloadJson: JSON.stringify({
+            event: "AlertMissed",
+            alert: item,
+          }),
+        },
+        id: `${name}-missed-${Date.now()}`,
+      }),
+    );
+  }
 
   // no parent to broker a lock with — just show immediately in that case.
   const isEmbedded = window.parent !== window;
@@ -180,8 +208,10 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
     sourceVisible = visible;
     log.info(`[${name}] OBS source ${visible ? "shown" : "hidden"}`);
     if (!visible) {
+      const missed = currentItem ? [currentItem, ...queue] : queue;
       queue = [];
       skipCurrentAlert();
+      missed.forEach(reportMissed);
     }
   }
 
@@ -190,6 +220,7 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
       !!(evt as CustomEvent<{ visible: boolean }>).detail?.visible,
     );
   });
+
   window.addEventListener("message", (evt: MessageEvent) => {
     if (
       evt.source === window.parent &&
@@ -227,6 +258,8 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
     const ws = new WebSocket(
       `ws://${OVERLAY_CONFIG.WS_HOST}:${OVERLAY_CONFIG.SBOT_WS_PORT}${OVERLAY_CONFIG.WS_ENDPOINT}`,
     );
+
+    activeWs = ws;
 
     ws.onopen = () => {
       log.info("connected to Streamer.bot, subscribing...");
@@ -306,6 +339,7 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
 
       if (!sourceVisible) {
         log.info("Dropped, OBS source is hidden:", payload.kind);
+        reportMissed(payload);
         return;
       }
 
@@ -382,6 +416,7 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
       );
 
     activeSoundEl = soundEl;
+    currentItem = item;
     pendingMessage = item.message || null;
     let ttsDone = false;
     let minTimeElapsed = false;
@@ -390,6 +425,7 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
     function finish(delayMs?: number): void {
       if (hidden) return;
       hidden = true;
+      currentItem = null;
       activeSoundEl = null;
       activeFinish = null;
       alertBox.classList.remove("alert-box--show");

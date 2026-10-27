@@ -7,7 +7,7 @@ import {
   renderStatus,
   clearFeed,
   addEntry,
-  markMissed,
+  setAlertStatus,
 } from "./render.js";
 
 const connections: Record<string, WebSocket> = {};
@@ -47,8 +47,8 @@ export function connectStreamerbotInstance(inst: StreamerbotInstance): void {
         return;
       }
 
-      if (parsed.data?.event === "AlertMissed") {
-        markMissed(inst, parsed.data.alert);
+      if (parsed.data?.event === "AlertStatusChanged") {
+        setAlertStatus(inst, parsed.data.alert, parsed.data.status);
         return;
       }
 

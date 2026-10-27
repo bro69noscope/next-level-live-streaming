@@ -168,13 +168,19 @@ body.body--hide-raw .feed__entry-raw {
 }
 .feed__missed-icon {
   display: none;
-  color: #ffb84d;
+  color: #ff5c5c;
   font-size: calc(18px * var(--scale));
   line-height: 1;
   font-family: "JetBrainsMono Nerd Font", sans-serif;
 }
 .feed__entry--missed .feed__missed-icon {
   display: inline;
+}
+.feed__entry--replay-queued .feed__missed-icon {
+  color: #ffb84d;
+}
+.feed__entry--replayed .feed__missed-icon {
+  color: #5fd068;
 }
 .feed__entry-replay {
   margin-left: auto;

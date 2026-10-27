@@ -1,10 +1,13 @@
+import type { AlertStatus } from "@helpers/alert-status/alert-status.types.js";
+import { StreamerbotName } from "./config.js";
 import { addEntry, clearFeed } from "./render.js";
 
 export interface FeedHistoryEntry {
-  inst: string;
+  inst: StreamerbotName;
   eventType: string;
   data: unknown;
   timestamp: string;
+  status?: AlertStatus | null;
 }
 
 export function sendHistoryEntry(entry: FeedHistoryEntry): void {
@@ -13,6 +16,16 @@ export function sendHistoryEntry(entry: FeedHistoryEntry): void {
     JSON.stringify({
       type: "historyEntry",
       payload: entry,
+    }),
+  );
+}
+
+export function sendHistoryStatus(id: string, status: AlertStatus): void {
+  if (!window.chrome?.webview) return;
+  window.chrome.webview.postMessage(
+    JSON.stringify({
+      type: "historyStatus",
+      payload: { id, status },
     }),
   );
 }
@@ -49,7 +62,11 @@ export async function loadHistoryIntoFeed(): Promise<void> {
         { name: entry.inst, host: "", port: 0 },
         entry.eventType,
         entry.data,
-        { isReplay: true, timestamp: entry.timestamp },
+        {
+          isReplay: true,
+          timestamp: entry.timestamp,
+          status: entry.status,
+        },
       );
     }
   } catch (err) {

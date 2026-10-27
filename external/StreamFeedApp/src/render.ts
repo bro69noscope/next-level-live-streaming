@@ -1,11 +1,14 @@
 import { STREAMERBOT_INSTANCES, StreamerbotInstance } from "./config.js";
 import { activeSbotInstanceFilter, twitchFollowToggle } from "./filters.js";
 import { EVENT_MAP, FormattedEvent } from "./event-formatters.js";
-import { sendHistoryEntry } from "./history.js";
+import { sendHistoryEntry, sendHistoryStatus } from "./history.js";
 import { replayAlert } from "./replay.js";
+import type { AlertStatus } from "@helpers/alert-status/alert-status.types.js";
 
 export const statusEl = document.getElementById("status")!;
 export const feedEl = document.getElementById("feed")!;
+
+const ENTRY_ID_ATTR = "data-entry-id";
 export const state: Record<string, ConnState> = {};
 export const UNVERIFIED_STREAMERBOT_EVENTS = new Set(["Twitch.giftbomb"]);
 export type ConnState = "connecting" | "connected" | "disconnected";
@@ -64,21 +67,34 @@ function formatEntryTimestamp(ts?: string): string {
   return `${dayName} ${date.toLocaleTimeString()}`;
 }
 
-export function markMissed(inst: StreamerbotInstance, alert: unknown): void {
-  const serialized = JSON.stringify(alert);
-  const row = Array.from(
-    feedEl.querySelectorAll<HTMLElement>(".feed__entry"),
-  ).find(
-    (el) =>
-      el.dataset.instance === inst.name &&
-      el.dataset.overlayPayload === serialized &&
-      !el.classList.contains("feed__entry--missed"),
-  );
-  if (!row) {
-    console.warn(`[${inst.name}] no feed entry found for missed alert`, alert);
+const REPLAY_STATUS_CLASSES = {
+  queued: "feed__entry--replay-queued",
+  played: "feed__entry--replayed",
+} as const;
+
+function applyStatus(el: HTMLElement, status: AlertStatus): void {
+  el.classList.add("feed__entry--missed");
+  el.classList.toggle(REPLAY_STATUS_CLASSES.queued, status === "queued");
+  el.classList.toggle(REPLAY_STATUS_CLASSES.played, status === "played");
+}
+
+export function setAlertStatus(
+  inst: StreamerbotInstance,
+  alert: { alertId?: string },
+  status: AlertStatus,
+): void {
+  const entry = alert.alertId
+    ? feedEl.querySelector<HTMLElement>(
+        `.feed__entry[${ENTRY_ID_ATTR}="${CSS.escape(alert.alertId)}"]`,
+      )
+    : null;
+  if (!entry) {
+    console.debug(`[${inst.name}] no feed entry for ${status} alert`, alert);
     return;
   }
-  row.classList.add("feed__entry--missed");
+
+  applyStatus(entry, status);
+  sendHistoryStatus(alert.alertId!, status);
 }
 
 export function addEntry(
@@ -89,11 +105,21 @@ export function addEntry(
     isReplay?: boolean;
     isReplayEcho?: boolean;
     timestamp?: string;
+    status?: AlertStatus | null;
   } = {},
 ): void {
-  const { isReplay = false, isReplayEcho = false, timestamp } = options;
+  const { isReplay = false, isReplayEcho = false, timestamp, status } = options;
 
   if (isReplayEcho) return;
+
+  const id: string | undefined = data?.alertId;
+  if (!id) {
+    console.error(
+      `[${inst.name}] ${eventType} has no alertId, dropping entry`,
+      data,
+    );
+    return;
+  }
 
   const mapper = EVENT_MAP[eventType];
   const mapped: FormattedEvent & { unknown?: boolean } = mapper
@@ -135,8 +161,11 @@ export function addEntry(
 
   row.className =
     "feed__entry" + (mapped.unknown ? " feed__entry--unknown" : "");
+  row.setAttribute(ENTRY_ID_ATTR, id);
   row.dataset.instance = inst.name;
   row.dataset.type = eventType;
+
+  if (status) applyStatus(row, status);
 
   const instanceMismatch =
     activeSbotInstanceFilter !== "all" &&

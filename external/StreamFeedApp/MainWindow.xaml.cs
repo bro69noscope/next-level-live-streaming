@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
@@ -131,6 +132,10 @@ namespace StreamFeedApp
                         HandleHistoryEntry(root.GetProperty("payload"));
                         break;
 
+                    case "historyStatus":
+                        HandleHistoryStatus(root.GetProperty("payload"));
+                        break;
+
                     case "requestHistory":
                         HandleRequestHistory();
                         break;
@@ -192,6 +197,32 @@ namespace StreamFeedApp
 
             var serialized = JsonSerializer.Serialize(entries);
             File.WriteAllText(_historyPath, serialized);
+        }
+
+        private void HandleHistoryStatus(JsonElement payload)
+        {
+            var id = payload.GetProperty("id").GetString();
+            var status = payload.GetProperty("status").GetString();
+            if (id == null || status == null || !File.Exists(_historyPath))
+            {
+                return;
+            }
+
+            if (JsonNode.Parse(File.ReadAllText(_historyPath)) is not JsonArray entries)
+            {
+                return;
+            }
+
+            var entry = entries
+                .OfType<JsonObject>()
+                .FirstOrDefault(e => e["data"]?["alertId"]?.GetValue<string>() == id);
+            if (entry == null)
+            {
+                return;
+            }
+
+            entry["status"] = status;
+            File.WriteAllText(_historyPath, entries.ToJsonString());
         }
 
         private static int TotalBytes(List<JsonElement> entries)

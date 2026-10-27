@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "paths": {
+      "@helpers/*": ["../common/helpers/js/dist/*"],
       "https://repo.local/external/common/helpers/js/*": [
         "../common/helpers/js/*"
       ]

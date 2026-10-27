@@ -1,5 +1,9 @@
 import { OVERLAY_CONFIG } from "./alerts-constants.js";
 import { log, fatalOverlayError } from "./alerts-utils.js";
+import type {
+  AlertStatus,
+  AlertStatusMessage,
+} from "/mounted_js_helpers/alert-status/alert-status.types.js";
 
 interface AlertItem {
   kind: string;
@@ -13,6 +17,7 @@ interface AlertItem {
   amount?: number | string;
   currency?: string;
   isReplay?: boolean;
+  alertId?: string;
 }
 
 interface AlertDef {
@@ -172,28 +177,34 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   let activeWs: WebSocket | null = null;
 
   // the "replay alert" streamerbot action just rebroadcasts whatever JSON it's
-  // given, so it doubles as the way to tell StreamFeedApp an alert never made
-  // it on stream.
-  function reportMissed(item: AlertItem): void {
-    if (item.isReplay) return;
+  // given, so it doubles as the way to tell StreamFeedApp what became of an
+  // alert. isReplay is stripped so the feed can match the original entry.
+  function reportStatus(item: AlertItem, status: AlertStatus): void {
     if (!activeWs || activeWs.readyState !== WebSocket.OPEN) {
-      log.warn("Cannot report missed alert, WebSocket not open:", item.kind);
+      log.warn(`Cannot report ${status} alert, WebSocket not open:`, item.kind);
       return;
     }
-    log.info(`[${name}] reporting missed alert:`, item.kind);
+    log.info(`[${name}] reporting ${status} alert:`, item.kind);
+    const { isReplay: _isReplay, ...alert } = item;
+    const message: AlertStatusMessage<Omit<AlertItem, "isReplay">> = {
+      event: "AlertStatusChanged",
+      status,
+      alert,
+    };
     activeWs.send(
       JSON.stringify({
         request: "DoAction",
         action: { name: OVERLAY_CONFIG.MISSED_ALERT_SBOT_ACTION_NAME },
         args: {
-          replayPayloadJson: JSON.stringify({
-            event: "AlertMissed",
-            alert: item,
-          }),
+          replayPayloadJson: JSON.stringify(message),
         },
-        id: `${name}-missed-${Date.now()}`,
+        id: `${name}-${status}-${Date.now()}`,
       }),
     );
+  }
+
+  function reportMissed(item: AlertItem): void {
+    reportStatus(item, "missed");
   }
 
   // no parent to broker a lock with — just show immediately in that case.
@@ -343,6 +354,7 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
         return;
       }
 
+      if (payload.isReplay) reportStatus(payload, "queued");
       queue.push(payload);
       log.debug(`Queued. Queue length: ${queue.length}`, queue);
       processQueue();
@@ -440,7 +452,8 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
     }
 
     function maybeHide(): void {
-      if (!ttsDone || !minTimeElapsed) return;
+      if (!ttsDone || !minTimeElapsed || hidden) return;
+      if (item.isReplay) reportStatus(item, "played");
       finish();
     }
 

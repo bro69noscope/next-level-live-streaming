@@ -34,7 +34,7 @@ export const OVERLAY_CONFIG: OverlayConfig = {
   SOUND_RETRY_DELAY_MS: 500,
   SOUND_CHECK_TIMEOUT_MS: 300,
   SKIP_SILENCE_MS: 5000,
-  MISSED_ALERT_SBOT_ACTION_NAME: "replay alert",
+  MISSED_ALERT_SBOT_ACTION_NAME: "sbact__replay_alert",
   SITE_ROOT: "/",
   SOUND_FILES: {
     common: {

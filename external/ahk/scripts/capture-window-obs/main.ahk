@@ -12,7 +12,7 @@ catch as e {
   return
 }
 
-SB_ACTION_NAME := "set relevant window capture"
+SB_ACTION_NAME := "sbact__set_relevant_window_capture"
 
 Hotkey(HK["hk_capture_win_by_title"], (*) => CaptureWindow(WinExist("A"), 0))
 Hotkey(HK["hk_capture_win_by_exe"], (*) => CaptureWindow(WinExist("A"), 2))

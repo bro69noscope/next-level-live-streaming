@@ -176,7 +176,7 @@ export function createAlertOverlay(opts: CreateAlertOverlayOptions): void {
   let currentItem: AlertItem | null = null;
   let activeWs: WebSocket | null = null;
 
-  // the "replay alert" streamerbot action just rebroadcasts whatever JSON it's
+  // the "sbact__replay_alert" streamerbot action just rebroadcasts whatever JSON it's
   // given, so it doubles as the way to tell StreamFeedApp what became of an
   // alert. isReplay is stripped so the feed can match the original entry.
   function reportStatus(item: AlertItem, status: AlertStatus): void {

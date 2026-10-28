@@ -2,7 +2,7 @@
   "request": "DoAction",
   "action": {
     "id": "1a938c12-9ee1-4a94-9b4a-477c6abcc86b",
-    "name": "DSLR:: Hide (VS screen)"
+    "name": "sbact__dslr_hide_vs_screen"
   },
   "args": {
     "key": "value"

@@ -2,7 +2,7 @@
   "request": "DoAction",
   "action": {
     "id": "3b8d1ffe-3af3-4dd8-881c-ea6811122f78",
-    "name": "Switch to GameStart Scene (Found a game)"
+    "name": "sbact__switch_to_gamestart_game_found"
   },
   "args": {
     "key": "value"

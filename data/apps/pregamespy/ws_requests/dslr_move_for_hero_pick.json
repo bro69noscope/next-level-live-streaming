@@ -2,7 +2,7 @@
   "request": "DoAction",
   "action": {
     "id": "fb10f3b6-e8b0-4c46-a3f3-af4587c42332",
-    "name": "Move for hero pick"
+    "name": "sbact__dslr_move_set_visibile_hero_pick"
   },
   "args": {
     "key": "value"

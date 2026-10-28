@@ -1,6 +1,6 @@
 import { getConnection } from "./ws-client.js";
 
-const BROADCAST_ACTION_NAME = "replay alert";
+const BROADCAST_ACTION_NAME = "sbact__replay_alert";
 
 export function replayAlert(instanceName: string, payload: unknown): void {
   const ws = getConnection(instanceName);

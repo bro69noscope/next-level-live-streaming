@@ -167,3 +167,6 @@ cython_debug/
 PowerShellEditorServices.json
 requirements.txt
 node_modules/
+
+# Local-only settings (optional overrides for config/settings.defaults.ini)
+config/settings.ini

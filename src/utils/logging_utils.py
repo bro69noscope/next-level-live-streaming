@@ -44,7 +44,9 @@ def setup_logger(
         config = configparser.ConfigParser()
         config_path = PROJECT_ROOT_PATH / "config" / "settings.ini"
 
-        if config.read(config_path):
+        if config.read(
+            [config_dir / "settings.defaults.ini", config_dir / "settings.ini"]
+        ):
             level = config.get("logging", "level", fallback="DEBUG").upper()
         else:
             level = "DEBUG"

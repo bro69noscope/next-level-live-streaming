@@ -436,7 +436,7 @@ def handle_transmission_output(
             conversation_state.set_state("stubborn", random.randint(10, 15))
         else:
             logger.info(
-                f"Did not prolong stubborn (time_left {stubborn["time_left"]:.2f} was long enough)"
+                f"Did not prolong stubborn (time_left {stubborn['time_left']:.2f} was long enough)"
             )
     elif transmission_node == STOP_LISTENING_FOR_WHISPERS:
         conversation_state.context["listens"] = []

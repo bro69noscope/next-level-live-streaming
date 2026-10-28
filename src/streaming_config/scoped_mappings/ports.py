@@ -3,10 +3,10 @@
 import sys
 from typing import cast, get_args
 
-from src.config.settings import PROJECT_ROOT_PATH
+from src.core.constants import PROJECT_CONFIG_DIR_PATH
 from src.streaming_config.types import Consumer, JsonValue, Rule, ScopeKeys
 
-PORTS_SOURCE = PROJECT_ROOT_PATH / "config" / "ports.json5"
+PORTS_SOURCE = PROJECT_CONFIG_DIR_PATH / "ports.json5"
 
 VALID_SCOPE_KEYS = frozenset(get_args(Consumer)) | {"default"}
 

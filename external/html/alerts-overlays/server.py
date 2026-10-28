@@ -12,11 +12,12 @@ from external.common.helpers.py.obs_ws.client import (
 from external.common.helpers.py.obs_ws.target_sources import OBS_WS_TARGET_SOURCES
 from src.config.settings import PROJECT_ROOT_PATH
 from src.connection.constants import ALERTS_OVERLAYS_STATIC, PORTS
+from src.core.constants import PROJECT_CONFIG_DIR_PATH
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 EXTERNAL_MOUNTS: dict[str, Path] = {
-    "mounted_config": PROJECT_ROOT_PATH / "config",
+    "mounted_config": PROJECT_CONFIG_DIR_PATH,
     "mounted_node_modules": PROJECT_ROOT_PATH / "node_modules",
     "mounted_js_helpers": PROJECT_ROOT_PATH
     / "external"

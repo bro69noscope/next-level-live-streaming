@@ -3,7 +3,7 @@
 from typing import TypedDict, cast
 
 import json5
-from src.config.settings import PROJECT_ROOT_PATH
+from src.core.constants import PROJECT_CONFIG_DIR_PATH
 
 
 class ObsSourceRef(TypedDict):
@@ -20,9 +20,7 @@ class ObsWsTargetSourcesConfig(TypedDict):
     instance: dict[str, ObsSourceRef]
 
 
-OBS_WS_TARGET_SOURCES_CFG_PATH = (
-    PROJECT_ROOT_PATH / "config" / "obs_ws_target_sources.json5"
-)
+OBS_WS_TARGET_SOURCES_CFG_PATH = PROJECT_CONFIG_DIR_PATH / "obs_ws_target_sources.json5"
 with OBS_WS_TARGET_SOURCES_CFG_PATH.open(encoding="utf-8") as file:
     OBS_WS_TARGET_SOURCES = cast(
         "ObsWsTargetSourcesConfig",

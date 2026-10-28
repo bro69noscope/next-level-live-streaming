@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from src.config.settings import PROJECT_ROOT_PATH
+from src.core.constants import PROJECT_CONFIG_DIR_PATH
 from src.streaming_config.types import (
     Consumer,
     Rule,
@@ -11,9 +11,9 @@ from src.streaming_config.types import (
 )
 
 CONSUMER_OUTPUTS: dict[Consumer, Path] = {
-    "obs": PROJECT_ROOT_PATH / "config" / "scoped_generated.obs.json",
-    "streamdeck": PROJECT_ROOT_PATH / "config" / "scoped_generated.streamdeck.json",
-    "streamerbot": PROJECT_ROOT_PATH / "config" / "scoped_generated.streamerbot.json",
+    "obs": PROJECT_CONFIG_DIR_PATH / "scoped_generated.obs.json",
+    "streamdeck": PROJECT_CONFIG_DIR_PATH / "scoped_generated.streamdeck.json",
+    "streamerbot": PROJECT_CONFIG_DIR_PATH / "scoped_generated.streamerbot.json",
 }
 
 

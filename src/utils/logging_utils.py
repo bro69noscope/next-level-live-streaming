@@ -5,8 +5,11 @@ import logging
 from logging import Logger
 from pathlib import Path
 
-from src.config.settings import PROJECT_ROOT_PATH
-from src.core.constants import COMMON_LOGS_FILE_PATH, LOG_DIR_PATH
+from src.core.constants import (
+    COMMON_LOGS_FILE_PATH,
+    LOG_DIR_PATH,
+    PROJECT_CONFIG_DIR_PATH,
+)
 
 LOG_LEVELS = {
     "DEBUG": logging.DEBUG,
@@ -42,7 +45,7 @@ def setup_logger(
 
     if level is None:
         config = configparser.ConfigParser()
-        config_path = PROJECT_ROOT_PATH / "config" / "settings.ini"
+        config_dir = PROJECT_CONFIG_DIR_PATH
 
         if config.read(
             [config_dir / "settings.defaults.ini", config_dir / "settings.ini"]

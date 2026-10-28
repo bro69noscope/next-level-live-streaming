@@ -4,7 +4,7 @@ from typing import TypedDict, cast
 
 import json5
 
-from src.config.settings import PROJECT_ROOT_PATH
+from src.core.constants import PROJECT_CONFIG_DIR_PATH
 
 
 class EndpointConfig(TypedDict):
@@ -51,7 +51,7 @@ class PySubProcessesPortsConfig(TypedDict):
     repository: RepositoryConfig
 
 
-PORTS_CFG_PATH = PROJECT_ROOT_PATH / "config" / "ports.json5"
+PORTS_CFG_PATH = PROJECT_CONFIG_DIR_PATH / "ports.json5"
 with PORTS_CFG_PATH.open(encoding="utf-8") as file:
     PORTS = cast(
         "PySubProcessesPortsConfig",

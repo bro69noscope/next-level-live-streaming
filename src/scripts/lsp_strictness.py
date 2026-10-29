@@ -19,12 +19,22 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import cast
 
 BASEDPYRIGHT_FILE = "basedpyrightconfig.json"
 RUFF_FILE = "ruff.toml"
 OVERRIDE_FILES = (BASEDPYRIGHT_FILE, RUFF_FILE)
 STRICT_TYPE_CHECKING_MODE = "recommended"
 RUFF_STRICT_CONFIG = 'extend = "pyproject.toml"\n\n[lint]\nselect = ["ALL"]\n'
+
+
+class Args(argparse.Namespace):
+    """Typed view of the parsed CLI arguments."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.mode: str = ""
+        self.root: Path = Path.cwd()
 
 
 def find_root(start: Path) -> Path:
@@ -64,7 +74,7 @@ def exclude_from_git(root: Path) -> None:
     missing = [name for name in OVERRIDE_FILES if name not in existing.splitlines()]
     if missing:
         separator = "" if not existing or existing.endswith("\n") else "\n"
-        exclude.write_text(
+        _ = exclude.write_text(
             existing + separator + "\n".join(missing) + "\n", encoding="utf-8"
         )
 
@@ -72,12 +82,13 @@ def exclude_from_git(root: Path) -> None:
 def set_strict(root: Path) -> None:
     with (root / "pyproject.toml").open("rb") as f:
         pyproject = tomllib.load(f)
-    config = pyproject.get("tool", {}).get("basedpyright", {})
+    tool = cast("dict[str, object]", pyproject.get("tool", {}))
+    config = cast("dict[str, object]", tool.get("basedpyright", {}))
     config["typeCheckingMode"] = STRICT_TYPE_CHECKING_MODE
-    (root / BASEDPYRIGHT_FILE).write_text(
+    _ = (root / BASEDPYRIGHT_FILE).write_text(
         json.dumps(config, indent=2) + "\n", encoding="utf-8"
     )
-    (root / RUFF_FILE).write_text(RUFF_STRICT_CONFIG, encoding="utf-8")
+    _ = (root / RUFF_FILE).write_text(RUFF_STRICT_CONFIG, encoding="utf-8")
     exclude_from_git(root)
 
 
@@ -89,9 +100,9 @@ def set_relaxed(root: Path) -> None:
 def main() -> None:
     """Parse the CLI arguments and apply the requested mode."""
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n", 1)[0])
-    parser.add_argument("mode", choices=("strict", "relaxed", "status"))
-    parser.add_argument("--root", type=Path, default=Path.cwd())
-    args = parser.parse_args()
+    _ = parser.add_argument("mode", choices=("strict", "relaxed", "status"))
+    _ = parser.add_argument("--root", type=Path)
+    args = parser.parse_args(namespace=Args())
 
     root = find_root(args.root.resolve())
     if args.mode == "strict":

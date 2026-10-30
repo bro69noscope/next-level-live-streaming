@@ -170,3 +170,6 @@ node_modules/
 
 # Local-only settings (optional overrides for config/settings.defaults.ini)
 config/settings.ini
+
+# Generated notes by claude's qf-notes.md
+/.claude-notes.lua

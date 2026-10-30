@@ -50,11 +50,12 @@ CenterIfWindowed(hwnd) {
   WinMove(l + (r - l - w) // 2, t + (b - t - h) // 2, , , hwnd)
 }
 
-ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false) {
+ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false, activate := true) {
   end := A_TickCount + timeout
   while (A_TickCount < end) {
     if (hwnd := checkFn()) {
-      WinActivate(hwnd)
+      if activate
+        WinActivate(hwnd)
       if isLaunch
         try ; silent failing usually means an attempt to transform an elevated window failed
           CenterIfWindowed(hwnd)
@@ -67,14 +68,15 @@ ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false) {
   return false
 }
 
-ActivateOrRun(idMethod, runCommand, timeout := 3000, onFound := "") {
+ActivateOrRun(idMethod, runCommand, timeout := 3000, onFound := "", activate := true) {
   hwnd := idMethod()
   if hwnd {
-    WinActivate(hwnd)
+    if activate
+      WinActivate(hwnd)
     if onFound
       onFound(hwnd)
     return true
   }
   Run(runCommand)
-  return ActivateWhenReady(idMethod, timeout, onFound, isLaunch := true)
+  return ActivateWhenReady(idMethod, timeout, onFound, isLaunch := true, activate)
 }

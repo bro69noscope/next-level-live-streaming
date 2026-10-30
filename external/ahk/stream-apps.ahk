@@ -67,7 +67,7 @@ MoveObsFtp(direction, activate) {
 }
 
 
-ActivateStreamFeedApp(launchPosition := "left") {
+ActivateStreamFeedApp(launchPosition := "left", activate := true) {
   idMethod := () => WinExist("Activity Feed ahk_exe StreamFeedApp.exe")
   hwnd := idMethod()
 
@@ -78,15 +78,17 @@ ActivateStreamFeedApp(launchPosition := "left") {
     MonitorGetWorkArea(PickMonitor(launchPosition), &mLeft, &mTop, &mRight, &mBottom)
     WinMove(mLeft, mTop, mRight - mLeft, mBottom - mTop, hwnd)
     EnsureFullscreen(hwnd)
-    WinActivate(hwnd)
+    if activate
+      WinActivate(hwnd)
   }
 
   if hwnd {
-    WinActivate(hwnd)
+    if activate
+      WinActivate(hwnd)
   }
   else {
     Run("dotnet run", StreamingRepoPath "external\StreamFeedApp", "Min")
-    ActivateWhenReady(idMethod, 8000, Reposition)
+    ActivateWhenReady(idMethod, 8000, Reposition, , activate)
   }
 }
 
@@ -106,7 +108,7 @@ ActivateStreamFeedAppDebug() {
   }
 }
 
-ActivateObsProduction(moveChat := false) {
+ActivateObsProduction(moveChat := false, activate := true) {
   hwnd := 0
   FindObsWindow() {
     for win in WinGetList("ahk_exe obs64.exe ahk_class Qt6111QWindowIcon") {
@@ -131,7 +133,8 @@ ActivateObsProduction(moveChat := false) {
 
   hwnd := idMethod()
   if hwnd {
-    WinActivate(hwnd)
+    if activate
+      WinActivate(hwnd)
 
     if not moveChat
       return
@@ -146,16 +149,17 @@ ActivateObsProduction(moveChat := false) {
     dir := "C:\Program Files\obs-studio\bin\64bit"
     exe := dir . "\obs64.exe"
     Run('"' exe '"' ObsProductionRemoteDebugArgs, dir)
-    ActivateWhenReady(idMethod, 7000, MinMaxOnCreation)
+    ActivateWhenReady(idMethod, 7000, MinMaxOnCreation, , activate)
   }
 }
 
-ActivateObsPortable(profile, moveChat := false) {
+ActivateObsPortable(profile, moveChat := false, activate := true) {
   idMethod := () => FindObsWindow(profile)
 
   hwnd := idMethod()
   if hwnd {
-    WinActivate(hwnd)
+    if activate
+      WinActivate(hwnd)
 
     if not moveChat
       return
@@ -173,7 +177,7 @@ ActivateObsPortable(profile, moveChat := false) {
     exe := dir . "\obs64.exe"
 
     Run('"' exe '" ' ObsFtpRemoteDebugArgs, dir)
-    ActivateWhenReady(idMethod, 3000)
+    ActivateWhenReady(idMethod, 3000, , , activate)
   }
   else if profile == "vcam" {
     dir := StreamingProgramsPath "obs-studio-portable-vcam\obs-studio\bin\64bit"
@@ -181,7 +185,7 @@ ActivateObsPortable(profile, moveChat := false) {
     exe := dir . "\obs64.exe"
 
     Run('"' exe '"', dir)
-    ActivateWhenReady(idMethod, 3000)
+    ActivateWhenReady(idMethod, 3000, , , activate)
   }
   else
     MsgBox "No Obs portable profile specified and no matching window found."

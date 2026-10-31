@@ -25,6 +25,12 @@ $script:streamerbotRoots = @(
   }
 )
 
+$script:SbotCsharpSources = @(
+  "vcdata\common\csharp\SubActions\Production\General\Tests"
+)
+
+$script:SbotCsharpExcludedDirs = @("bin", "obj")
+
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SbotMappingsPath `
@@ -48,6 +54,89 @@ function Test-StreamerbotMarkerPath {
     $script:SbotFileAllowlist -contains "$baseFileName.json" -or
     "$baseFileName.json" -match $script:SbotTestSuffixPattern
   )
+}
+
+# PascalCase folder name => action name, e.g. TestBytecode => sbact__test_bytecode
+function ConvertTo-StreamerbotActionName {
+  param([Parameter(Mandatory=$true)] [string]$FolderName)
+
+  return "sbact__" + ($FolderName -creplace '(?<!^)([A-Z])', '_$1').ToLower()
+}
+
+function Set-StreamerbotCsharpBytecode {
+  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
+
+  $content = [System.IO.File]::ReadAllText($ActionsFilePath)
+  $changed = $false
+
+  $sourcePaths = foreach ($relPath in $script:SbotCsharpSources) {
+    $path = Join-Path $PSScriptRoot $relPath
+    if (Test-Path $path -PathType Container) {
+      (Get-ChildItem $path -Recurse -File -Filter "*.cs" |
+        Where-Object {
+          $parts = $_.FullName -split '\\'
+          -not ($parts | Where-Object { $script:SbotCsharpExcludedDirs -contains $_ })
+        }).FullName
+    } elseif (Test-Path $path -PathType Leaf) {
+      $path
+    } else {
+      Write-VcsMessage -Message "C# source not found, skipping: $path" -Color Yellow
+    }
+  }
+
+  foreach ($sourcePath in $sourcePaths) {
+    $folderName = Split-Path (Split-Path $sourcePath -Parent) -Leaf
+    $actionName = ConvertTo-StreamerbotActionName -FolderName $folderName
+    $subActionName = Split-Path $sourcePath -Leaf # this = SubActionExecuteCodeName from README.md
+    $b64 = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($sourcePath))
+
+    $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
+    if (-not $actionMatch.Success) {
+      Write-VcsMessage -Message "Action not found in actions file: $actionName" -Color Yellow
+      continue
+    }
+    $actionIdx = $actionMatch.Index
+
+    # "collapsedGroups" should be the last key of every action, after all its subActions
+    # (Streamer.bot generates this way). Stop the script if that no longer holds: the search span
+    # would be wrong.
+    $endIdx = $content.IndexOf('"collapsedGroups"', $actionIdx)
+    $closesAction = $endIdx -ge 0 -and
+    $content.Substring($endIdx) -match '^"collapsedGroups":\s*\[[^\]]*\]\s*\}'
+    if (-not $closesAction) {
+      $keyLine = if ($endIdx -ge 0) {
+        "line $(($content.Substring(0, $endIdx) -split "`n").Count)"
+      } else {
+        "not found"
+      }
+      $templatePath = $ActionsFilePath -replace '\.json$', '.vcs-template.json'
+      Write-ThrowContext
+      throw ("Streamer.bot actions format erroneous: ""collapsedGroups"" is not the last key " +
+        "of action '$actionName' (""collapsedGroups"" at $keyLine, template $templatePath)")
+    }
+    $span = $content.Substring($actionIdx, $endIdx - $actionIdx)
+
+    $pattern = '("name":\s*"' + [regex]::Escape($subActionName) +
+    '"[\s\S]*?"byteCode":\s*")[^"]*(")'
+    $re = [regex]::new($pattern)
+    if (-not $re.IsMatch($span)) {
+      Write-VcsMessage -Message "Sub-action $subActionName not found in action: $actionName" `
+        -Color Yellow
+      continue
+    }
+
+    $newSpan = $re.Replace($span, { param($m) $m.Groups[1].Value + $b64 + $m.Groups[2].Value }, 1)
+    if ($newSpan -ne $span) {
+      $content = $content.Substring(0, $actionIdx) + $newSpan + $content.Substring($endIdx)
+      $changed = $true
+      Write-VcsMessage -Message "Injected C# bytecode: $actionName <= $subActionName" -Color Cyan
+    }
+  }
+
+  if ($changed) {
+    [System.IO.File]::WriteAllText(
+      $ActionsFilePath, $content, [System.Text.UTF8Encoding]::new($false))
+  }
 }
 
 function ConvertTo-StreamerbotTemplate {
@@ -175,12 +264,18 @@ function ConvertFrom-StreamerbotTemplate {
       return
     }
 
+    $restoredPath = $null
     ConvertFrom-VcsTemplateFile `
       -InputFilePath $InputPath `
       -Rules $mappings `
       -Backup:$Backup `
       -ReplacedCount ([ref]$vcsReplacedCount) `
-      -FormatQueue $vcsFormatQueue
+      -FormatQueue $vcsFormatQueue `
+      -RestoredPath ([ref]$restoredPath)
+
+    if ((Split-Path $restoredPath -Leaf) -eq "actions.json") {
+      Set-StreamerbotCsharpBytecode -ActionsFilePath $restoredPath
+    }
 
   } finally {
     if ($isRootCall) {

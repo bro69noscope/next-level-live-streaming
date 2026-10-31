@@ -587,7 +587,8 @@ function ConvertFrom-VcsTemplateFile {
     [Parameter(Mandatory=$true)]  [ref]$ReplacedCount,
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
-    [System.Collections.Generic.List[string]]$FormatQueue
+    [System.Collections.Generic.List[string]]$FormatQueue,
+    [Parameter(Mandatory=$false)] [ref]$RestoredPath
   )
 
   $inputFileName = Split-Path $InputFilePath -Leaf
@@ -599,6 +600,9 @@ function ConvertFrom-VcsTemplateFile {
   }
 
   $outFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
+  if ($RestoredPath) {
+    $RestoredPath.Value = $outFilePath
+  }
 
   Write-VcsMessage -AsVerbose -Message "Restoring real config from template..."
   Write-VcsMessage -AsVerbose -Message "Input:  $InputFilePath"

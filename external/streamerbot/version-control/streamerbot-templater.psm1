@@ -142,10 +142,22 @@ function Write-StreamerbotCsharpOrphanReport {
         continue
       }
 
-      # The sub-action's "name" is the last one before its "id", the id is unique in the file.
       $idMatch = [regex]::Match($content, '"id":\s*"' + [regex]::Escape($sub.id) + '"')
-      $line = Get-StreamerbotLineNumber `
-        -Content $content -Index $content.LastIndexOf('"name"', $idMatch.Index)
+      $nameIdx = $content.LastIndexOf('"name"', $idMatch.Index)
+
+      $ownName = $nameIdx -ge 0 -and
+      $content.Substring($nameIdx, $idMatch.Index - $nameIdx) -match
+      ('^"name":\s*"' + [regex]::Escape($sub.name) + '"[^{}]*$')
+
+      $line = if ($ownName) {
+        Get-StreamerbotLineNumber -Content $content -Index $nameIdx
+      } else {
+        $idLine = Get-StreamerbotLineNumber -Content $content -Index $idMatch.Index
+        Write-VcsMessage -Message ("Could not locate the name line of sub-action " +
+          "'$($sub.name)' in '$($action.name)': ""name"" is not before ""id"" as expected. " +
+          "Showing the id line ($idLine) instead.") -Color Yellow
+        "$idLine (id line)"
+      }
       $folder = ConvertTo-StreamerbotFolderName -ActionName $action.name
       $withoutFile.Add("line $line  action '$($action.name)'  sub-action '$($sub.name)'" +
         "  (expected file: $folder\$($sub.name))")

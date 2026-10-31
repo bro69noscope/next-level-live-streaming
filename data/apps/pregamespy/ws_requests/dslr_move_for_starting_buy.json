@@ -2,7 +2,7 @@
   "request": "DoAction",
   "action": {
     "id": "2703d18d-cae8-4859-8ae6-d495284b34ab",
-    "name": "sbact__dslr_move_set_visibile_starting_buy"
+    "name": "sbact__DslrMoveSetVisibileStartingBuy"
   },
   "args": {
     "key": "value"

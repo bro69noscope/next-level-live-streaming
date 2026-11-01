@@ -253,7 +253,21 @@ function Write-StreamerbotCsharpOrphanReport {
     }
   }
 
+  $instance = (Get-StreamerbotRootFor -ActionsFilePath $ActionsFilePath).Name
+
+  $otherEnvTemplates = @{}
+  foreach ($otherRoot in ($script:streamerbotRoots | Where-Object { $_.Name -ne $instance })) {
+    $templatePath = Join-Path $PSScriptRoot (
+      "vcdata\$($otherRoot.Name)\data\actions.vcs-template.json")
+    if (Test-Path $templatePath -PathType Leaf) {
+      $otherEnvTemplates[$otherRoot.Name] = [System.IO.File]::ReadAllText($templatePath)
+    } else {
+      Write-VcsMessage -Message "Other environment template not found: $templatePath" -Color Red
+    }
+  }
+
   $withoutSubAction = [System.Collections.Generic.List[string]]::new()
+  $otherEnvOnly = [System.Collections.Generic.List[string]]::new()
   foreach ($key in $csFilePathByKey.Keys) {
     if ($jsonSubActionKeys.ContainsKey($key)) {
       continue
@@ -262,19 +276,31 @@ function Write-StreamerbotCsharpOrphanReport {
     $actionName, $subActionName = $key -split '\|', 2
     $subActionsRoot = Join-Path $PSScriptRoot $script:SbotCsharpSubActionsRoot
     $relPath = $csFilePathByKey[$key] -replace ('^' + [regex]::Escape("$subActionsRoot\")), ''
+    $namePattern = '"name":\s*"' + [regex]::Escape($actionName) + '"'
+    $actionMatch = [regex]::Match($content, $namePattern)
 
-    $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
-    $why = if ($actionMatch.Success) {
+    if ($actionMatch.Success) {
       $line = Get-StreamerbotLineNumber -Content $content -Index $actionMatch.Index
-      "action '$actionName' (line $line) has no C# sub-action named '$subActionName'"
+      $withoutSubAction.Add("$relPath  ->  action '$actionName' (line $line) has no C# sub-action" +
+        " named '$subActionName'")
+
     } else {
-      "action '$actionName' not found in actions file"
+      $presentIn = @()
+      if ($relPath -match '^Common\\') {
+        $presentIn = @($otherEnvTemplates.Keys | `
+              Where-Object { $otherEnvTemplates[$_] -match $namePattern })
+      }
+      if ($presentIn.Count -gt 0) {
+        $otherEnvOnly.Add("$relPath  ->  action '$actionName' only in: $($presentIn -join ', ')")
+      } else {
+        $withoutSubAction.Add("$relPath  ->  action '$actionName' not found in actions file")
+      }
     }
-    $withoutSubAction.Add("$relPath  ->  $why")
   }
 
   $report = @(
     "Streamer.bot C# orphans, generated $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+    "Instance: $instance"
     "Actions file: $ActionsFilePath"
     "(line numbers also apply to the matching .vcs-template.json)"
     ""
@@ -283,9 +309,12 @@ function Write-StreamerbotCsharpOrphanReport {
     ""
     "== .cs files without a matching C# sub-action ($($withoutSubAction.Count)) =="
     $withoutSubAction | Sort-Object
+    ""
+    "== Common .cs files whose action is not in this environment, not orphans " +
+    "($($otherEnvOnly.Count)) =="
+    $otherEnvOnly | Sort-Object
   )
 
-  $instance = (Get-StreamerbotRootFor -ActionsFilePath $ActionsFilePath).Name
   $reportPath = Join-Path $PSScriptRoot "logs\$instance-csharp-orphans.txt"
   New-Item -ItemType Directory -Force (Split-Path $reportPath -Parent) | Out-Null
   $report | Set-Content $reportPath -Encoding UTF8
@@ -295,8 +324,11 @@ function Write-StreamerbotCsharpOrphanReport {
   } else {
     "Green"
   }
+
   Write-VcsMessage -Message ("C# orphans: $($withoutFile.Count) sub-action(s) without file, " +
-    "$($withoutSubAction.Count) file(s) without sub-action. Report: $reportPath") -Color $color
+    "$($withoutSubAction.Count) file(s) without sub-action, " +
+    "$($otherEnvOnly.Count) Common file(s) for other environment only. " +
+    "Report: $reportPath") -Color $color
 }
 
 function Set-StreamerbotCsharpBytecode {
@@ -315,7 +347,6 @@ function Set-StreamerbotCsharpBytecode {
 
     $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
     if (-not $actionMatch.Success) {
-      Write-VcsMessage -Message "Action not found in actions file: $actionName" -Color Yellow
       continue
     }
     $actionIdx = $actionMatch.Index
@@ -343,8 +374,6 @@ function Set-StreamerbotCsharpBytecode {
     '"[\s\S]*?"byteCode":\s*")[^"]*(")'
     $re = [regex]::new($pattern)
     if (-not $re.IsMatch($span)) {
-      Write-VcsMessage -Message "Sub-action $subActionName not found in action: $actionName" `
-        -Color Yellow
       continue
     }
 

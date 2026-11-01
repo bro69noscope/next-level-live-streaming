@@ -304,11 +304,14 @@ function Write-StreamerbotCsharpOrphanReport {
     "Actions file: $ActionsFilePath"
     "(line numbers also apply to the matching .vcs-template.json)"
     ""
+    ""
     "== C# sub-actions without a matching .cs file ($($withoutFile.Count)) =="
     $withoutFile
     ""
+    ""
     "== .cs files without a matching C# sub-action ($($withoutSubAction.Count)) =="
     $withoutSubAction | Sort-Object
+    ""
     ""
     "== Common .cs files whose action is not in this environment, not orphans " +
     "($($otherEnvOnly.Count)) =="

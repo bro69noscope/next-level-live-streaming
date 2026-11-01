@@ -41,6 +41,13 @@ $script:SbotCsharpEnvDirsByRoot = @{
 
 $script:SbotCsharpExcludedDirs = @("bin", "obj")
 
+# <Name>.shadow.csproj flag => the "references" entry Streamer.bot needs to compile <Name>.cs.
+# The path is relative to the Streamer.bot folder, as Streamer.bot itself stores it.
+$script:SbotCsharpReferenceByFlag = [ordered]@{
+  SbotRefBroStreamerTools = ".\dlls\BroStreamerTools.dll"
+  SbotRefNewtonsoftJson   = ".\Newtonsoft.Json.dll"
+}
+
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
   -MappingsPath $script:SbotMappingsPath `
@@ -334,6 +341,59 @@ function Write-StreamerbotCsharpOrphanReport {
     "Report: $reportPath") -Color $color
 }
 
+# References the sub-action needs, as they are written in the JSON (backslashes escaped), read from
+# the flags in its shadow csproj.
+function Get-StreamerbotCsharpRequiredReferences {
+  param([Parameter(Mandatory=$true)] [string]$SourcePath)
+
+  $csprojName = [System.IO.Path]::GetFileNameWithoutExtension($SourcePath) + ".shadow.csproj"
+  $csprojPath = Join-Path (Split-Path $SourcePath -Parent) $csprojName
+  if (-not (Test-Path $csprojPath -PathType Leaf)) {
+    Write-VcsMessage -Message "No shadow csproj, references not managed: $csprojPath" -Color Yellow
+    return
+  }
+
+  $csproj = [xml][System.IO.File]::ReadAllText($csprojPath)
+  foreach ($flag in $script:SbotCsharpReferenceByFlag.Keys) {
+    $node = $csproj.SelectSingleNode("//$flag")
+    if (-not $node) {
+      continue
+    }
+
+    # The flag is read as plain text here, MSBuild conditions are not evaluated.
+    for ($el = $node; $el -is [System.Xml.XmlElement]; $el = $el.ParentNode) {
+      if ($el.HasAttribute("Condition")) {
+        Write-ThrowContext
+        throw ("Conditions in a shadow csproj are not supported yet : <$($el.Name) Condition=" +
+          """$($el.GetAttribute('Condition'))""> around $flag in $csprojPath")
+      }
+    }
+
+    if ($node.InnerText -eq "true") {
+      $script:SbotCsharpReferenceByFlag[$flag].Replace('\', '\\')
+    }
+  }
+}
+
+function Get-StreamerbotJsonObjectBounds {
+  param(
+    [Parameter(Mandatory=$true)] [string]$Text,
+    [Parameter(Mandatory=$true)] [int]$Index
+  )
+
+  $starts = [System.Collections.Generic.Stack[int]]::new()
+  foreach ($token in [regex]::Matches($Text, '"[^"\\]*(?:\\.[^"\\]*)*"|[{}]')) {
+    if ($token.Value -eq "{") {
+      $starts.Push($token.Index)
+    } elseif ($token.Value -eq "}" -and $starts.Count -gt 0) {
+      $start = $starts.Pop()
+      if ($start -lt $Index -and $Index -lt $token.Index) {
+        return [pscustomobject]@{ Start = $start; End = $token.Index }
+      }
+    }
+  }
+}
+
 function Set-StreamerbotCsharpBytecode {
   param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
 
@@ -373,18 +433,87 @@ function Set-StreamerbotCsharpBytecode {
     }
     $span = $content.Substring($actionIdx, $endIdx - $actionIdx)
 
-    $pattern = '("name":\s*"' + [regex]::Escape($subActionName) +
-    '"[\s\S]*?"byteCode":\s*")[^"]*(")'
-    $re = [regex]::new($pattern)
-    if (-not $re.IsMatch($span)) {
+    $nameMatch = [regex]::Match($span, '"name":\s*"' + [regex]::Escape($subActionName) + '"')
+    if (-not $nameMatch.Success) {
+      # We will handle this in the orphan report
+      continue
+    }
+    $bounds = Get-StreamerbotJsonObjectBounds -Text $span -Index $nameMatch.Index
+    if (-not $bounds) {
+      Write-VcsMessage -Message ("No enclosing JSON object found around sub-action" +
+        " '$subActionName' of action '$actionName' in $ActionsFilePath" +
+        " : bytecode not injected") -Color Red
+      continue
+    }
+    $subObject = $span.Substring($bounds.Start, $bounds.End - $bounds.Start + 1)
+
+    $referencesRe = [regex]::new('("references":\s*\[)([^\]]*)(\])')
+    $byteCodeRe = [regex]::new('("byteCode":\s*")[^"]*(")')
+    # Type 99900 is a group (holds nested subActions)
+    if ($subObject -match '"type":\s*99900') {
+      continue
+    }
+    $missingKeys = @(
+      if (-not $referencesRe.IsMatch($subObject)) {
+        '"references"'
+      }
+      if (-not $byteCodeRe.IsMatch($subObject)) {
+        '"byteCode"'
+      }
+    )
+    if ($missingKeys.Count -gt 0) {
+      Write-VcsMessage -Message ("Sub-action '$subActionName' of action '$actionName' in " +
+        "$ActionsFilePath is missing $($missingKeys -join ' and ') : bytecode not injected") `
+        -Color Red
       continue
     }
 
-    $newSpan = $re.Replace($span, { param($m) $m.Groups[1].Value + $b64 + $m.Groups[2].Value }, 1)
+    # Only ever adds missing references: ones added in the GUI are kept.
+    $requiredRefs = @(Get-StreamerbotCsharpRequiredReferences -SourcePath $sourcePath)
+    $addedRefs = [System.Collections.Generic.List[string]]::new()
+    $nl = if ($content.Contains("`r`n")) {
+      "`r`n"
+    } else {
+      "`n"
+    }
+
+    $newObject = $byteCodeRe.Replace($subObject, {
+        param($m) $m.Groups[1].Value + $b64 + $m.Groups[2].Value
+      }, 1)
+
+    $newObject = $referencesRe.Replace($newObject, {
+        param($m)
+        $refs = $m.Groups[2].Value
+        foreach ($ref in $requiredRefs) {
+          $quoted = '"' + $ref + '"'
+          if ($refs.Contains($quoted)) {
+            continue
+          }
+
+          if ($refs.Contains('"')) {
+            $indent = [regex]::Match($refs, '\r?\n([ \t]*)"').Groups[1].Value
+            $trailing = [regex]::Match($refs, '\s*$').Value
+            $refs = $refs.Substring(0, $refs.Length - $trailing.Length) + "," + $nl + $indent + $quoted +
+            $trailing
+          } else {
+            $refs = $nl + (" " * 12) + $quoted + $nl + (" " * 10)
+          }
+          $addedRefs.Add($ref)
+        }
+        $m.Groups[1].Value + $refs + $m.Groups[3].Value
+      }, 1)
+
+    $newSpan = $span.Substring(0, $bounds.Start) + $newObject + $span.Substring($bounds.End + 1)
     if ($newSpan -ne $span) {
       $content = $content.Substring(0, $actionIdx) + $newSpan + $content.Substring($endIdx)
       $changed = $true
-      Write-VcsMessage -Message "Injected C# bytecode: $actionName <= $subActionName" -Color Cyan
+      $refsNote = if ($addedRefs.Count -gt 0) {
+        " (+ references: $(($addedRefs | ForEach-Object { $_.Replace('\\', '\') }) -join ', '))"
+      } else {
+        ""
+      }
+      Write-VcsMessage -Message "Injected C# bytecode: $actionName <= $subActionName$refsNote" `
+        -Color Cyan
     }
   }
 

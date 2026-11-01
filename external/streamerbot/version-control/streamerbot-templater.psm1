@@ -25,7 +25,7 @@ $script:streamerbotRoots = @(
   }
 )
 
-$script:SbotCsharpTestMode = $true
+$script:SbotCsharpTestMode = $false
 $script:SbotCsharpTestSources = @(
   "vcdata\common\csharp\SubActions\Production\General\Tests"
 )
@@ -66,11 +66,11 @@ function Test-StreamerbotMarkerPath {
   )
 }
 
-# PascalCase folder name => action name, e.g. TestBytecode => sbact__test_bytecode
+# PascalCase folder name => action name, e.g. TestBytecode => sbact__TestBytecode
 function ConvertTo-StreamerbotActionName {
   param([Parameter(Mandatory=$true)] [string]$FolderName)
 
-  return "sbact__" + ($FolderName -creplace '(?<!^)([A-Z])', '_$1').ToLower()
+  return "sbact__$FolderName"
 }
 
 function Get-StreamerbotCsharpSearchPaths {
@@ -88,12 +88,18 @@ function Get-StreamerbotCsharpSearchPaths {
   }
 }
 
+function Get-StreamerbotRootFor {
+  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
+
+  return $script:streamerbotRoots | Where-Object {
+    $ActionsFilePath.StartsWith("$($_.Path)\", [System.StringComparison]::OrdinalIgnoreCase)
+  } | Select-Object -First 1
+}
+
 function Get-StreamerbotCsharpEnvDirsFor {
   param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
 
-  $root = $script:streamerbotRoots | Where-Object {
-    $ActionsFilePath.StartsWith("$($_.Path)\", [System.StringComparison]::OrdinalIgnoreCase)
-  } | Select-Object -First 1
+  $root = Get-StreamerbotRootFor -ActionsFilePath $ActionsFilePath
 
   if (-not $root -or -not $script:SbotCsharpEnvDirsByRoot.ContainsKey($root.Name)) {
     Write-ThrowContext
@@ -164,12 +170,11 @@ function Get-StreamerbotCsharpSourcePaths {
   }
 }
 
-# Action name => PascalCase folder name, e.g. sbact__test_bytecode => TestBytecode
+# Action name => PascalCase folder name, e.g. sbact__TestBytecode => TestBytecode
 function ConvertTo-StreamerbotFolderName {
   param([Parameter(Mandatory=$true)] [string]$ActionName)
 
-  $words = ($ActionName -replace '^sbact__', '') -split '_' | Where-Object { $_ }
-  return ($words | ForEach-Object { $_.Substring(0, 1).ToUpper() + $_.Substring(1) }) -join ''
+  return $ActionName -replace '^sbact__', ''
 }
 
 function Get-StreamerbotLineNumber {
@@ -280,7 +285,8 @@ function Write-StreamerbotCsharpOrphanReport {
     $withoutSubAction | Sort-Object
   )
 
-  $reportPath = Join-Path $PSScriptRoot "logs\streamerbot-csharp-orphans.txt"
+  $instance = (Get-StreamerbotRootFor -ActionsFilePath $ActionsFilePath).Name
+  $reportPath = Join-Path $PSScriptRoot "logs\$instance-csharp-orphans.txt"
   New-Item -ItemType Directory -Force (Split-Path $reportPath -Parent) | Out-Null
   $report | Set-Content $reportPath -Encoding UTF8
 

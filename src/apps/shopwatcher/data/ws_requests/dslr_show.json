@@ -2,7 +2,7 @@
   "request": "DoAction",
   "action": {
     "id": "6cba2fc5-205f-4e51-9b35-7b0d5331cc7b",
-    "name": "sbact__show_cam_and_hide_shop_msgs"
+    "name": "sbact__ShowCamAndHideShopMsgs"
   },
   "args": {
     "key": "value"

@@ -120,14 +120,14 @@ function Write-StreamerbotCsharpOrphanReport {
   $content = [System.IO.File]::ReadAllText($RealActionsFilePath)
   $actions = ($content | ConvertFrom-Json).actions
 
-  $sourceByKey = @{}
+  $csFilePathByKey = @{}
   foreach ($sourcePath in $SourcePaths) {
     $folderName = Split-Path (Split-Path $sourcePath -Parent) -Leaf
     $actionName = ConvertTo-StreamerbotActionName -FolderName $folderName
-    $sourceByKey["$actionName|$(Split-Path $sourcePath -Leaf)"] = $sourcePath
+    $csFilePathByKey["$actionName|$(Split-Path $sourcePath -Leaf)"] = $sourcePath
   }
 
-  $jsonKeys = @{}
+  $jsonSubActionKeys = @{}
   $withoutFile = [System.Collections.Generic.List[string]]::new()
 
   foreach ($action in $actions) {
@@ -137,8 +137,8 @@ function Write-StreamerbotCsharpOrphanReport {
 
     foreach ($sub in (Get-StreamerbotCsharpSubActions -SubActions $action.subActions)) {
       $key = "$($action.name)|$($sub.name)"
-      $jsonKeys[$key] = $true
-      if ($sourceByKey.ContainsKey($key)) {
+      $jsonSubActionKeys[$key] = $true
+      if ($csFilePathByKey.ContainsKey($key)) {
         continue
       }
 
@@ -164,14 +164,14 @@ function Write-StreamerbotCsharpOrphanReport {
     }
   }
 
-  $withoutSub = [System.Collections.Generic.List[string]]::new()
-  foreach ($key in $sourceByKey.Keys) {
-    if ($jsonKeys.ContainsKey($key)) {
+  $withoutSubAction = [System.Collections.Generic.List[string]]::new()
+  foreach ($key in $csFilePathByKey.Keys) {
+    if ($jsonSubActionKeys.ContainsKey($key)) {
       continue
     }
 
     $actionName, $subActionName = $key -split '\|', 2
-    $relPath = $sourceByKey[$key] -replace ('^' + [regex]::Escape("$PSScriptRoot\")), ''
+    $relPath = $csFilePathByKey[$key] -replace ('^' + [regex]::Escape("$PSScriptRoot\")), ''
     $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
     $why = if ($actionMatch.Success) {
       $line = Get-StreamerbotLineNumber -Content $content -Index $actionMatch.Index
@@ -179,7 +179,7 @@ function Write-StreamerbotCsharpOrphanReport {
     } else {
       "action '$actionName' not found in actions file"
     }
-    $withoutSub.Add("$relPath  ->  $why")
+    $withoutSubAction.Add("$relPath  ->  $why")
   }
 
   $report = @(
@@ -190,21 +190,21 @@ function Write-StreamerbotCsharpOrphanReport {
     "== C# sub-actions without a matching .cs file ($($withoutFile.Count)) =="
     $withoutFile
     ""
-    "== .cs files without a matching C# sub-action ($($withoutSub.Count)) =="
-    $withoutSub | Sort-Object
+    "== .cs files without a matching C# sub-action ($($withoutSubAction.Count)) =="
+    $withoutSubAction | Sort-Object
   )
 
-  $reportPath = Join-Path $PSScriptRoot "log\streamerbot-csharp-orphans.txt"
+  $reportPath = Join-Path $PSScriptRoot "logs\streamerbot-csharp-orphans.txt"
   New-Item -ItemType Directory -Force (Split-Path $reportPath -Parent) | Out-Null
   $report | Set-Content $reportPath -Encoding UTF8
 
-  $color = if ($withoutFile.Count + $withoutSub.Count -gt 0) {
+  $color = if ($withoutFile.Count + $withoutSubAction.Count -gt 0) {
     "Yellow"
   } else {
     "Green"
   }
   Write-VcsMessage -Message ("C# orphans: $($withoutFile.Count) sub-action(s) without file, " +
-    "$($withoutSub.Count) file(s) without sub-action. Report: $reportPath") -Color $color
+    "$($withoutSubAction.Count) file(s) without sub-action. Report: $reportPath") -Color $color
 }
 
 function Set-StreamerbotCsharpBytecode {
@@ -269,7 +269,8 @@ function Set-StreamerbotCsharpBytecode {
       $RealActionsFilePath, $content, [System.Text.UTF8Encoding]::new($false))
   }
 
-  Write-StreamerbotCsharpOrphanReport -RealActionsFilePath $RealActionsFilePath -SourcePaths $sourcePaths
+  Write-StreamerbotCsharpOrphanReport `
+    -RealActionsFilePath $RealActionsFilePath -SourcePaths $sourcePaths
 }
 
 function ConvertTo-StreamerbotTemplate {

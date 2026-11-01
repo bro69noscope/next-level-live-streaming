@@ -25,9 +25,19 @@ $script:streamerbotRoots = @(
   }
 )
 
-$script:SbotCsharpSources = @(
+$script:SbotCsharpTestMode = $true
+$script:SbotCsharpTestSources = @(
   "vcdata\common\csharp\SubActions\Production\General\Tests"
 )
+
+# Every .cs files source must live under <SubActionsRoot>\<one of the environment folders>\.
+$script:SbotCsharpSubActionsRoot = "vcdata\common\csharp\SubActions"
+$script:SbotCsharpEnvDirs = @("Common", "Ftp", "Production")
+
+$script:SbotCsharpEnvDirsByRoot = @{
+  ftp        = @("Common", "Ftp")
+  production = @("Common", "Production")
+}
 
 $script:SbotCsharpExcludedDirs = @("bin", "obj")
 
@@ -63,8 +73,82 @@ function ConvertTo-StreamerbotActionName {
   return "sbact__" + ($FolderName -creplace '(?<!^)([A-Z])', '_$1').ToLower()
 }
 
+function Get-StreamerbotCsharpSearchPaths {
+  param(
+    [Parameter(Mandatory=$true)] [bool]$TestMode,
+    [Parameter(Mandatory=$true)] [AllowEmptyCollection()] [string[]]$EnvDirs
+  )
+
+  if ($TestMode) {
+    return $script:SbotCsharpTestSources
+  }
+
+  return $EnvDirs | ForEach-Object {
+    Join-Path $script:SbotCsharpSubActionsRoot $_
+  }
+}
+
+function Get-StreamerbotCsharpEnvDirsFor {
+  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
+
+  $root = $script:streamerbotRoots | Where-Object {
+    $ActionsFilePath.StartsWith("$($_.Path)\", [System.StringComparison]::OrdinalIgnoreCase)
+  } | Select-Object -First 1
+
+  if (-not $root -or -not $script:SbotCsharpEnvDirsByRoot.ContainsKey($root.Name)) {
+    Write-ThrowContext
+    throw ("C# directory structure mismatch: no environment folders known for '$ActionsFilePath'" +
+      " (it must be under one of: $(($script:streamerbotRoots.Path) -join ', '))")
+  }
+
+  return $script:SbotCsharpEnvDirsByRoot[$root.Name]
+}
+
+function Assert-StreamerbotCsharpLayout {
+  param([Parameter(Mandatory=$true)] [string[]]$SearchPaths)
+
+  $root = Join-Path $PSScriptRoot $script:SbotCsharpSubActionsRoot
+  $expected = $script:SbotCsharpEnvDirs -join ", "
+
+  if (-not (Test-Path $root -PathType Container)) {
+    Write-ThrowContext
+    throw "C# directory structure mismatch: SubActions folder not found: $root"
+  }
+
+  $children = (Get-ChildItem $root -Directory).Name
+  $missing = $script:SbotCsharpEnvDirs | Where-Object { $children -notcontains $_ }
+  if ($missing) {
+    Write-ThrowContext
+    throw ("C# directory structure mismatch: $root must contain $expected, " +
+      "missing: $($missing -join ', ')")
+  }
+
+  foreach ($relPath in $SearchPaths) {
+    $path = Join-Path $PSScriptRoot $relPath
+    $underEnv = $script:SbotCsharpEnvDirs | Where-Object {
+      ("$path\").StartsWith("$root\$_\", [System.StringComparison]::OrdinalIgnoreCase)
+    }
+    if (-not $underEnv) {
+      Write-ThrowContext
+      throw "C# directory structure mismatch: source '$relPath' is not under $root\<$expected>"
+    }
+  }
+}
+
 function Get-StreamerbotCsharpSourcePaths {
-  foreach ($relPath in $script:SbotCsharpSources) {
+  param(
+    [Parameter(Mandatory=$true)] [string]$ActionsFilePath,
+    [bool]$TestMode = $script:SbotCsharpTestMode
+  )
+
+  $envDirs = @()
+  if (-not $TestMode) {
+    $envDirs = @(Get-StreamerbotCsharpEnvDirsFor -ActionsFilePath $ActionsFilePath)
+  }
+  $searchPaths = @(Get-StreamerbotCsharpSearchPaths -TestMode $TestMode -EnvDirs $envDirs)
+  Assert-StreamerbotCsharpLayout -SearchPaths $searchPaths
+
+  foreach ($relPath in $searchPaths) {
     $path = Join-Path $PSScriptRoot $relPath
     if (Test-Path $path -PathType Container) {
       (Get-ChildItem $path -Recurse -File -Filter "*.cs" |
@@ -171,7 +255,9 @@ function Write-StreamerbotCsharpOrphanReport {
     }
 
     $actionName, $subActionName = $key -split '\|', 2
-    $relPath = $csFilePathByKey[$key] -replace ('^' + [regex]::Escape("$PSScriptRoot\")), ''
+    $subActionsRoot = Join-Path $PSScriptRoot $script:SbotCsharpSubActionsRoot
+    $relPath = $csFilePathByKey[$key] -replace ('^' + [regex]::Escape("$subActionsRoot\")), ''
+
     $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
     $why = if ($actionMatch.Success) {
       $line = Get-StreamerbotLineNumber -Content $content -Index $actionMatch.Index
@@ -213,7 +299,7 @@ function Set-StreamerbotCsharpBytecode {
   $content = [System.IO.File]::ReadAllText($RealActionsFilePath)
   $changed = $false
 
-  $sourcePaths = @(Get-StreamerbotCsharpSourcePaths)
+  $sourcePaths = @(Get-StreamerbotCsharpSourcePaths -ActionsFilePath $ActionsFilePath)
 
   foreach ($sourcePath in $sourcePaths) {
     $folderName = Split-Path (Split-Path $sourcePath -Parent) -Leaf

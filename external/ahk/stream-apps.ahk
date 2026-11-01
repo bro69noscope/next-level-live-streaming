@@ -67,8 +67,12 @@ MoveObsFtp(direction, activate) {
 }
 
 
+FindStreamFeedAppWindow() {
+  return WinExist("Activity Feed ahk_exe StreamFeedApp.exe")
+}
+
 ActivateStreamFeedApp(launchPosition := "left", activate := true) {
-  idMethod := () => WinExist("Activity Feed ahk_exe StreamFeedApp.exe")
+  idMethod := FindStreamFeedAppWindow
   hwnd := idMethod()
 
   Reposition(hwnd) {

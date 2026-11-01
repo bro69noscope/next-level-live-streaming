@@ -197,11 +197,11 @@ function Get-StreamerbotCsharpSubActions {
 
 function Write-StreamerbotCsharpOrphanReport {
   param(
-    [Parameter(Mandatory=$true)] [string]$RealActionsFilePath,
+    [Parameter(Mandatory=$true)] [string]$ActionsFilePath,
     [Parameter(Mandatory=$true)] [AllowEmptyCollection()] [string[]]$SourcePaths
   )
 
-  $content = [System.IO.File]::ReadAllText($RealActionsFilePath)
+  $content = [System.IO.File]::ReadAllText($ActionsFilePath)
   $actions = ($content | ConvertFrom-Json).actions
 
   $csFilePathByKey = @{}
@@ -270,7 +270,7 @@ function Write-StreamerbotCsharpOrphanReport {
 
   $report = @(
     "Streamer.bot C# orphans, generated $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-    "Actions file: $RealActionsFilePath"
+    "Actions file: $ActionsFilePath"
     "(line numbers also apply to the matching .vcs-template.json)"
     ""
     "== C# sub-actions without a matching .cs file ($($withoutFile.Count)) =="
@@ -294,9 +294,9 @@ function Write-StreamerbotCsharpOrphanReport {
 }
 
 function Set-StreamerbotCsharpBytecode {
-  param([Parameter(Mandatory=$true)] [string]$RealActionsFilePath)
+  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
 
-  $content = [System.IO.File]::ReadAllText($RealActionsFilePath)
+  $content = [System.IO.File]::ReadAllText($ActionsFilePath)
   $changed = $false
 
   $sourcePaths = @(Get-StreamerbotCsharpSourcePaths -ActionsFilePath $ActionsFilePath)
@@ -326,7 +326,7 @@ function Set-StreamerbotCsharpBytecode {
       } else {
         "not found"
       }
-      $templatePath = $RealActionsFilePath -replace '\.json$', '.vcs-template.json'
+      $templatePath = $ActionsFilePath -replace '\.json$', '.vcs-template.json'
       Write-ThrowContext
       throw ("Streamer.bot actions format erroneous: ""collapsedGroups"" is not the last key " +
         "of action '$actionName' (""collapsedGroups"" at $keyLine, template $templatePath)")
@@ -352,11 +352,11 @@ function Set-StreamerbotCsharpBytecode {
 
   if ($changed) {
     [System.IO.File]::WriteAllText(
-      $RealActionsFilePath, $content, [System.Text.UTF8Encoding]::new($false))
+      $ActionsFilePath, $content, [System.Text.UTF8Encoding]::new($false))
   }
 
   Write-StreamerbotCsharpOrphanReport `
-    -RealActionsFilePath $RealActionsFilePath -SourcePaths $sourcePaths
+    -ActionsFilePath $ActionsFilePath -SourcePaths $sourcePaths
 }
 
 function ConvertTo-StreamerbotTemplate {
@@ -494,7 +494,7 @@ function ConvertFrom-StreamerbotTemplate {
       -RestoredPath ([ref]$restoredPath)
 
     if ((Split-Path $restoredPath -Leaf) -eq "actions.json") {
-      Set-StreamerbotCsharpBytecode -RealActionsFilePath $restoredPath
+      Set-StreamerbotCsharpBytecode -ActionsFilePath $restoredPath
     }
 
   } finally {

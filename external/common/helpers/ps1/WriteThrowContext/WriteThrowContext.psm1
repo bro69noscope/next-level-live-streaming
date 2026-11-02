@@ -1,3 +1,4 @@
+# TODO: make this prettier. have the throw msg in bold ideally. space before the msg for sure.
 function Write-ThrowContext {
   <#
     .SYNOPSIS

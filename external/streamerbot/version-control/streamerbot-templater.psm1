@@ -373,21 +373,21 @@ function Write-StreamerbotCsharpOrphanReport {
     }
     ""
     ""
-    "== C# sub-actions without a matching .cs file ($($withoutFile.Count)) =="
+    "== ($($withoutFile.Count)) C# sub-actions without a matching .cs file =="
     $withoutFile
     ""
     ""
-    "== .cs files without a matching C# sub-action ($($withoutSubAction.Count)) =="
+    "== ($($withoutSubAction.Count)) .cs files without a matching C# sub-action =="
     $withoutSubAction | Sort-Object
     ""
     ""
-    "== Common .cs files whose action is not in this environment, not orphans " +
-    "($($otherEnvOnly.Count)) =="
-    $otherEnvOnly | Sort-Object
-    ""
-    ""
-    "== .cs files without a .shadow.csproj, references not managed ($($withoutCsproj.Count)) =="
+    "== ($($withoutCsproj.Count)) .cs files without a .shadow.csproj, references not managed =="
     $withoutCsproj | Sort-Object
+    ""
+    ""
+    "== ($($otherEnvOnly.Count)) Common .cs files whose action is not in this environment, " +
+    "not orphans =="
+    $otherEnvOnly | Sort-Object
   )
 
   $reportPath = Join-Path $PSScriptRoot "logs\$instance-csharp-orphans.txt"
@@ -404,8 +404,8 @@ function Write-StreamerbotCsharpOrphanReport {
     "C# orphans:"
     "  $($withoutFile.Count) sub-action(s) without file"
     "  $($withoutSubAction.Count) file(s) without sub-action"
-    "  $($otherEnvOnly.Count) Common file(s) for other environment only"
     "  $($withoutCsproj.Count) file(s) without shadow csproj"
+    "  $($otherEnvOnly.Count) Common file(s) for other environment only"
     "  Report: $reportPath"
   )
   foreach ($summaryLine in $summary) {
@@ -573,19 +573,19 @@ function Set-StreamerbotCsharpBytecode {
         " : bytecode not injected") -Color Red
       continue
     }
-    $subObject = $span.Substring($bounds.Start, $bounds.End - $bounds.Start + 1)
+    $subActionObject = $span.Substring($bounds.Start, $bounds.End - $bounds.Start + 1)
 
     $referencesRe = [regex]::new('("references":\s*\[)([^\]]*)(\])')
     $byteCodeRe = [regex]::new('("byteCode":\s*")[^"]*(")')
     # Type 99900 is a group (holds nested subActions)
-    if ($subObject -match '"type":\s*99900') {
+    if ($subActionObject -match '"type":\s*99900') {
       continue
     }
     $missingKeys = @(
-      if (-not $referencesRe.IsMatch($subObject)) {
+      if (-not $referencesRe.IsMatch($subActionObject)) {
         '"references"'
       }
-      if (-not $byteCodeRe.IsMatch($subObject)) {
+      if (-not $byteCodeRe.IsMatch($subActionObject)) {
         '"byteCode"'
       }
     )
@@ -596,64 +596,70 @@ function Set-StreamerbotCsharpBytecode {
       continue
     }
 
-    $requiredRefs = @(Get-StreamerbotCsharpRequiredReferences -SourcePath $sourcePath `
-        -FrameworkRefDir $frameworkRefDir)
+    $requiredRefs = @(Get-StreamerbotCsharpRequiredReferences `
+        -SourcePath $sourcePath -FrameworkRefDir $frameworkRefDir)
+
     $addedRefs = [System.Collections.Generic.List[string]]::new()
-    $fixedRefs = [System.Collections.Generic.List[string]]::new()
+    $frameworkPathsUpdated = [ref]$false
+
     $nl = if ($content.Contains("`r`n")) {
       "`r`n"
     } else {
       "`n"
     }
 
-    $newObject = $byteCodeRe.Replace($subObject, {
+    $newSubActionObject = $byteCodeRe.Replace($subActionObject, {
         param($m) $m.Groups[1].Value + $b64 + $m.Groups[2].Value
       }, 1)
 
-    $newObject = $referencesRe.Replace($newObject, {
+    $newSubActionObject = $referencesRe.Replace($newSubActionObject, {
         param($m)
         $refs = $m.Groups[2].Value
+
         if ($frameworkPathRe) {
           $movedRefs = $frameworkPathRe.Replace($refs, $frameworkPathNew)
           if ($movedRefs -cne $refs) {
-            $fixedRefs.Add("framework paths")
+            $frameworkPathsUpdated.Value = $true
             $refs = $movedRefs
           }
         }
+
         foreach ($ref in $requiredRefs) {
           $quoted = '"' + $ref + '"'
           if ($refs.IndexOf($quoted, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             continue
           }
-
-          if ($refs.Contains('"')) {
-            $indent = [regex]::Match($refs, '\r?\n([ \t]*)"').Groups[1].Value
-            $trailing = [regex]::Match($refs, '\s*$').Value
-            $refs = $refs.Substring(0, $refs.Length - $trailing.Length) + "," + $nl + $indent + `
-              $quoted + $trailing
+          $entries = [regex]::Matches($refs, '"(?:[^"\\]|\\.)*"') | Where-Object { $_.Length -gt 2 }
+          $refs = if ($entries) {
+            $refs.TrimEnd() + "," + $nl + $quoted + $nl
           } else {
-            $refs = $nl + (" " * 12) + $quoted + $nl + (" " * 10)
+            $nl + $quoted + $nl
           }
           $addedRefs.Add($ref)
         }
         $m.Groups[1].Value + $refs + $m.Groups[3].Value
       }, 1)
 
-    $newSpan = $span.Substring(0, $bounds.Start) + $newObject + $span.Substring($bounds.End + 1)
+    $newSpan = $span.Substring(0, $bounds.Start) `
+      + $newSubActionObject + $span.Substring($bounds.End + 1)
+
     if ($newSpan -ne $span) {
-      $content = $content.Substring(0, $actionStart) + $newSpan +
-      $content.Substring($actionEnd + 1)
+      $content = $content.Substring(0, $actionStart) + $newSpan `
+        + $content.Substring($actionEnd + 1)
       $changed = $true
       $notes = @()
+
       if ($addedRefs.Count -gt 0) {
         $addedNames = $addedRefs | ForEach-Object { $_.Replace('\\', '\') }
-        $notes += "+ references: $($addedNames -join ', ')"
+        foreach ($addedName in $addedNames) {
+          $notes += "+ reference: $addedName"
+        }
       }
-      if ($fixedRefs.Count -gt 0) {
-        $notes += "framework paths updated"
+      if ($frameworkPathsUpdated.Value) {
+        $notes += ".net framework paths updated"
       }
       $refsNote = if ($notes) {
-        " ($($notes -join '; '))"
+        "`n  " + ($notes -join "`n  ")
       } else {
         ""
       }

@@ -467,15 +467,18 @@ function Get-StreamerbotCsharpRequiredReferences {
 
   $frameworkProperty = $script:SbotCsharpFrameworkRefProperty
   $node = $csproj.SelectSingleNode("//$frameworkProperty")
+
   if ($node) {
     Assert-StreamerbotCsharpNoCondition -Node $node -Name $frameworkProperty `
       -CsprojPath $csprojPath
     $names = $node.InnerText -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+
     if ($names -and -not $FrameworkRefDir) {
       Write-ThrowContext
       throw (".NET Framework folder not found, or not reachable with a relative path (see the " +
         "message above), needed by $frameworkProperty in $csprojPath")
     }
+
     foreach ($name in $names) {
       if ($name -notmatch '^[A-Za-z0-9_.]+$' -or $name -match '\.dll$') {
         Write-ThrowContext

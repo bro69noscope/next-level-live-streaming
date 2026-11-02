@@ -637,10 +637,6 @@ function ConvertTo-StreamerbotTemplate {
     $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
     $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
 
-    # TODO: warn here when the exported actions.json breaks the layout that
-    # Set-StreamerbotCsharpBytecode relies on ("collapsedGroups" last key of an action, "name"
-    # before "subActions"). The restore is a pure token substitution, so a bad layout is
-    # committed into the template and only throws on the next restore.
     ConvertTo-VcsTemplateFile `
       -InputFilePath $InputPath `
       -VcsOutDirPath $vcsOutDirPath `

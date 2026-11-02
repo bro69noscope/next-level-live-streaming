@@ -341,8 +341,6 @@ function Write-StreamerbotCsharpOrphanReport {
     "Report: $reportPath") -Color $color
 }
 
-# References the sub-action needs, as they are written in the JSON (backslashes escaped), read from
-# the flags in its shadow csproj.
 function Get-StreamerbotCsharpRequiredReferences {
   param([Parameter(Mandatory=$true)] [string]$SourcePath)
 
@@ -426,12 +424,20 @@ function Set-StreamerbotCsharpBytecode {
       } else {
         "not found"
       }
-      $templatePath = $ActionsFilePath -replace '\.json$', '.vcs-template.json'
       Write-ThrowContext
       throw ("Streamer.bot actions format erroneous: ""collapsedGroups"" is not the last key " +
-        "of action '$actionName' (""collapsedGroups"" at $keyLine, template $templatePath)")
+        "of action '$actionName' (""collapsedGroups"" at $keyLine of $ActionsFilePath)")
     }
     $span = $content.Substring($actionIdx, $endIdx - $actionIdx)
+
+    # The span starts at the action's "name": its "subActions" must come after, else the
+    # sub-actions would be outside the span.
+    if ($span.IndexOf('"subActions"') -lt 0) {
+      $nameLine = Get-StreamerbotLineNumber -Content $content -Index $actionIdx
+      Write-ThrowContext
+      throw ("Streamer.bot actions format erroneous: ""subActions"" does not come after " +
+        """name"" in action '$actionName' (""name"" at line $nameLine of $ActionsFilePath)")
+    }
 
     $nameMatch = [regex]::Match($span, '"name":\s*"' + [regex]::Escape($subActionName) + '"')
     if (-not $nameMatch.Success) {
@@ -493,8 +499,8 @@ function Set-StreamerbotCsharpBytecode {
           if ($refs.Contains('"')) {
             $indent = [regex]::Match($refs, '\r?\n([ \t]*)"').Groups[1].Value
             $trailing = [regex]::Match($refs, '\s*$').Value
-            $refs = $refs.Substring(0, $refs.Length - $trailing.Length) + "," + $nl + $indent + $quoted +
-            $trailing
+            $refs = $refs.Substring(0, $refs.Length - $trailing.Length) + "," + $nl + $indent + `
+              $quoted + $trailing
           } else {
             $refs = $nl + (" " * 12) + $quoted + $nl + (" " * 10)
           }
@@ -587,6 +593,10 @@ function ConvertTo-StreamerbotTemplate {
     $vcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
     $vcsOutDirPath = Join-Path $vcsOutDirPath $VcsRelativePath
 
+    # TODO: warn here when the exported actions.json breaks the layout that
+    # Set-StreamerbotCsharpBytecode relies on ("collapsedGroups" last key of an action, "name"
+    # before "subActions"). The restore is a pure token substitution, so a bad layout is
+    # committed into the template and only throws on the next restore.
     ConvertTo-VcsTemplateFile `
       -InputFilePath $InputPath `
       -VcsOutDirPath $vcsOutDirPath `

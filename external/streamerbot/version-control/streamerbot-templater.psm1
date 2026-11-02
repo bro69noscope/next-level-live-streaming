@@ -453,13 +453,17 @@ function Write-StreamerbotCsharpOrphanReport {
   }
 }
 
+function Get-StreamerbotFrameworkDir {
+  $windowsDir = Join-Path (Split-Path $env:windir -Qualifier) "Windows"
+  return Join-Path $windowsDir $script:SbotCsharpFrameworkDirUnderWindows
+}
+
 function Get-StreamerbotFrameworkRefDir {
   param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
 
   # <Streamer.bot>\data\actions.json
   $streamerbotDir = Split-Path (Split-Path $ActionsFilePath -Parent) -Parent
-  $windowsDir = Join-Path (Split-Path $env:windir -Qualifier) "Windows"
-  $frameworkDir = Join-Path $windowsDir $script:SbotCsharpFrameworkDirUnderWindows
+  $frameworkDir = Get-StreamerbotFrameworkDir
   if (-not (Test-Path $frameworkDir -PathType Container)) {
     Write-VcsMessage -Message (".NET Framework folder not found: $frameworkDir : existing " +
       "framework reference paths are left as they are") -Color Red
@@ -524,6 +528,11 @@ function Get-StreamerbotCsharpRequiredReferences {
         Write-ThrowContext
         throw ("Invalid framework reference '$name' in $frameworkProperty of $csprojPath : " +
           "use the assembly name without .dll, separated by ';' (e.g. System.Core;System.Data)")
+      }
+      if (-not (Test-Path (Join-Path (Get-StreamerbotFrameworkDir) "$name.dll") -PathType Leaf)) {
+        Write-ThrowContext
+        throw ("Framework reference '$name' in $frameworkProperty of $csprojPath : " +
+          "$name.dll not found in $(Get-StreamerbotFrameworkDir) (not a .NET Framework assembly?)")
       }
       "$FrameworkRefDir\$name.dll".Replace('\', '\\')
     }
@@ -608,9 +617,11 @@ function Set-StreamerbotCsharpBytecode {
     }
     $bounds = Get-StreamerbotJsonObjectBounds -Text $span -Index $nameMatch.Index
     if (-not $bounds) {
+      $subNameLine = Get-StreamerbotLineNumber -Content $content `
+        -Index ($actionStart + $nameMatch.Index)
       Write-VcsMessage -Message ("No enclosing JSON object found around sub-action" +
-        " '$subActionName' of action '$actionName' in $ActionsFilePath" +
-        " : bytecode not injected") -Color Red
+        " '$subActionName' of action '$actionName' (""name"" at line $subNameLine of" +
+        " $ActionsFilePath) : bytecode not injected") -Color Red
       continue
     }
     $subActionObject = $span.Substring($bounds.Start, $bounds.End - $bounds.Start + 1)

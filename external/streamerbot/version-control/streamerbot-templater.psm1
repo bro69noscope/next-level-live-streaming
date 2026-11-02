@@ -78,11 +78,33 @@ function Test-StreamerbotMarkerPath {
   )
 }
 
-# PascalCase folder name => action name, e.g. TestBytecode => sbact__TestBytecode
 function ConvertTo-StreamerbotActionName {
   param([Parameter(Mandatory=$true)] [string]$FolderName)
 
   return "sbact__$FolderName"
+}
+
+function ConvertTo-StreamerbotFolderName {
+  param([Parameter(Mandatory=$true)] [string]$ActionName)
+
+  return $ActionName -replace '^sbact__', ''
+}
+
+function Get-StreamerbotRootFor {
+  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
+
+  return $script:streamerbotRoots | Where-Object {
+    $ActionsFilePath.StartsWith("$($_.Path)\", [System.StringComparison]::OrdinalIgnoreCase)
+  } | Select-Object -First 1
+}
+
+function Get-StreamerbotCsharpFiles {
+  param([Parameter(Mandatory=$true)] [string]$Path)
+
+  Get-ChildItem $Path -Recurse -File -Filter "*.cs" | Where-Object {
+    $parts = $_.FullName -split '\\'
+    -not ($parts | Where-Object { $script:SbotCsharpExcludedDirs -contains $_ })
+  }
 }
 
 function Get-StreamerbotCsharpSearchPaths {
@@ -98,14 +120,6 @@ function Get-StreamerbotCsharpSearchPaths {
   return $EnvDirs | ForEach-Object {
     Join-Path $script:SbotCsharpSubActionsRoot $_
   }
-}
-
-function Get-StreamerbotRootFor {
-  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
-
-  return $script:streamerbotRoots | Where-Object {
-    $ActionsFilePath.StartsWith("$($_.Path)\", [System.StringComparison]::OrdinalIgnoreCase)
-  } | Select-Object -First 1
 }
 
 function Get-StreamerbotCsharpEnvDirsFor {
@@ -150,15 +164,6 @@ function Assert-StreamerbotCsharpLayout {
       Write-ThrowContext
       throw "C# directory structure mismatch: source '$relPath' is not under $root\<$expected>"
     }
-  }
-}
-
-function Get-StreamerbotCsharpFiles {
-  param([Parameter(Mandatory=$true)] [string]$Path)
-
-  Get-ChildItem $Path -Recurse -File -Filter "*.cs" | Where-Object {
-    $parts = $_.FullName -split '\\'
-    -not ($parts | Where-Object { $script:SbotCsharpExcludedDirs -contains $_ })
   }
 }
 
@@ -222,13 +227,6 @@ function Get-StreamerbotCsharpSourcePaths {
   }
 }
 
-# Action name => PascalCase folder name, e.g. sbact__TestBytecode => TestBytecode
-function ConvertTo-StreamerbotFolderName {
-  param([Parameter(Mandatory=$true)] [string]$ActionName)
-
-  return $ActionName -replace '^sbact__', ''
-}
-
 function Get-StreamerbotLineNumber {
   param(
     [Parameter(Mandatory=$true)] [string]$Content,
@@ -252,7 +250,6 @@ function Get-StreamerbotCsharpSubActions {
   }
 }
 
-# The csproj is read as plain text here, MSBuild conditions are not evaluated.
 function Assert-StreamerbotCsharpNoCondition {
   param(
     [Parameter(Mandatory=$true)] [System.Xml.XmlElement]$Node,
@@ -285,7 +282,6 @@ function Write-StreamerbotCsharpOrphanReport {
     $csFilePathByKey["$actionName|$(Split-Path $sourcePath -Leaf)"] = $sourcePath
   }
 
-  # Test mode: only flag actions that have a folder under the test sources (Tests\...).
   $testActionNames = @()
   if ($script:SbotCsharpTestMode) {
     $testActionNames = @($script:SbotCsharpTestSources | ForEach-Object {
@@ -592,7 +588,6 @@ function Set-StreamerbotCsharpBytecode {
       continue
     }
 
-    # The action's own { } : the span is the whole action object, whatever its key order.
     # TODO: perf. This rescans $content from position 0 for every .cs file (~130 ms per call
     # on a 2.3 MB file, so ~130 s for 1000 files). Scan once up front into a lookup of
     # object start -> end, collect the edits against the original text, and apply them

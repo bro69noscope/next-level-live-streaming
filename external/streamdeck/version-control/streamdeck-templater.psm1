@@ -652,7 +652,7 @@ function ConvertTo-StreamDeckTemplate {
       $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       $vcsReplacedCount = 0
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "logs") -AppName "streamdeck"
       Write-VcsLogSeparator
     }
 
@@ -831,7 +831,7 @@ function ConvertFrom-StreamDeckTemplate {
       $vcsReplacedCount = 0
       $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamdeck"
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "logs") -AppName "streamdeck"
       Write-VcsLogSeparator
     }
 

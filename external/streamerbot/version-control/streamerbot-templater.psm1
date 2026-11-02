@@ -63,7 +63,7 @@ function ConvertTo-StreamerbotTemplate {
       $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       $vcsReplacedCount = 0
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "logs") -AppName "streamerbot"
       Write-VcsLogSeparator
     }
 
@@ -143,7 +143,7 @@ function ConvertFrom-StreamerbotTemplate {
       $vcsReplacedCount = 0
       $vcsFormatQueue = [System.Collections.Generic.List[string]]::new()
       Set-VcsVerbose -Enabled:$PSBoundParameters.ContainsKey('Verbose')
-      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "log") -AppName "streamerbot"
+      Set-VcsLogFilePath -LogDirPath (Join-Path $PSScriptRoot "logs") -AppName "streamerbot"
       Write-VcsLogSeparator
     }
 

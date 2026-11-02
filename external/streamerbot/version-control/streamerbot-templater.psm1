@@ -454,7 +454,10 @@ function Set-StreamerbotCsharpBytecode {
     $folderName = Split-Path (Split-Path $sourcePath -Parent) -Leaf
     $actionName = ConvertTo-StreamerbotActionName -FolderName $folderName
     $subActionName = Split-Path $sourcePath -Leaf # this = SubActionExecuteCodeName from README.md
-    $b64 = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($sourcePath))
+
+    # Always CRLF so the bytecode is the same. UTF-8 BOM-less.
+    $sourceText = [System.IO.File]::ReadAllText($sourcePath) -replace '\r?\n', "`r`n"
+    $b64 = [Convert]::ToBase64String([System.Text.UTF8Encoding]::new($false).GetBytes($sourceText))
 
     $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
     if (-not $actionMatch.Success) {

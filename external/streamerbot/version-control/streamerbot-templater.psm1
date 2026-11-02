@@ -25,7 +25,7 @@ $script:streamerbotRoots = @(
   }
 )
 
-$script:SbotCsharpTestMode = $true
+$script:SbotCsharpTestMode = $false
 $script:SbotCsharpTestSources = @(
   "vcdata\common\csharp\SubActions\Production\General\Tests"
 )
@@ -47,6 +47,11 @@ $script:SbotCsharpReferenceByFlag = [ordered]@{
   SbotRefBroStreamerTools = ".\dlls\BroStreamerTools.dll"
   SbotRefNewtonsoftJson   = ".\Newtonsoft.Json.dll"
 }
+
+# .NET Framework assemblies (System.Core, System.Net.Http ...) are listed by name in one property,
+# in the shadow csproj, e.g. <SbotRefFramework>System.Core;System.Net.Http</SbotRefFramework>
+$script:SbotCsharpFrameworkRefProperty = "SbotRefFramework"
+$script:SbotCsharpFrameworkDirUnderWindows = "Microsoft.NET\Framework64\v4.0.30319"
 
 $mappings = Read-ReplacementMappings `
   -CommonMappingsPath $script:CommonUserMappingsPath `
@@ -203,6 +208,23 @@ function Get-StreamerbotCsharpSubActions {
     }
     if ($sub.subActions) {
       Get-StreamerbotCsharpSubActions -SubActions $sub.subActions
+    }
+  }
+}
+
+# The csproj is read as plain text here, MSBuild conditions are not evaluated.
+function Assert-StreamerbotCsharpNoCondition {
+  param(
+    [Parameter(Mandatory=$true)] [System.Xml.XmlElement]$Node,
+    [Parameter(Mandatory=$true)] [string]$Name,
+    [Parameter(Mandatory=$true)] [string]$CsprojPath
+  )
+
+  for ($el = $Node; $el -is [System.Xml.XmlElement]; $el = $el.ParentNode) {
+    if ($el.HasAttribute("Condition")) {
+      Write-ThrowContext
+      throw ("Conditions in a shadow csproj are not supported yet : <$($el.Name) Condition=" +
+        """$($el.GetAttribute('Condition'))""> around $Name in $CsprojPath")
     }
   }
 }
@@ -391,8 +413,37 @@ function Write-StreamerbotCsharpOrphanReport {
   }
 }
 
+function Get-StreamerbotFrameworkRefDir {
+  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
+
+  # <Streamer.bot>\data\actions.json
+  $streamerbotDir = Split-Path (Split-Path $ActionsFilePath -Parent) -Parent
+  $windowsDir = Join-Path (Split-Path $env:windir -Qualifier) "Windows"
+  $frameworkDir = Join-Path $windowsDir $script:SbotCsharpFrameworkDirUnderWindows
+  if (-not (Test-Path $frameworkDir -PathType Container)) {
+    Write-VcsMessage -Message (".NET Framework folder not found: $frameworkDir : existing " +
+      "framework reference paths are left as they are") -Color Red
+    return $null
+  }
+
+  # On another drive GetRelativePath returns an absolute path. Only relative references are
+  # currently supported: it is not known if Streamer.bot accepts an absolute one.
+  $relativeDir = [System.IO.Path]::GetRelativePath($streamerbotDir, $frameworkDir)
+  if ([System.IO.Path]::IsPathRooted($relativeDir)) {
+    Write-VcsMessage -Message ("Streamer.bot ($streamerbotDir) and the .NET Framework folder " +
+      "($frameworkDir) are on different drives : no relative path possible, framework " +
+      "reference paths are left as they are") -Color Red
+    return $null
+  }
+
+  return $relativeDir
+}
+
 function Get-StreamerbotCsharpRequiredReferences {
-  param([Parameter(Mandatory=$true)] [string]$SourcePath)
+  param(
+    [Parameter(Mandatory=$true)] [string]$SourcePath,
+    [Parameter(Mandatory=$true)] [AllowNull()] [AllowEmptyString()] [string]$FrameworkRefDir
+  )
 
   $csprojName = [System.IO.Path]::GetFileNameWithoutExtension($SourcePath) + ".shadow.csproj"
   $csprojPath = Join-Path (Split-Path $SourcePath -Parent) $csprojName
@@ -408,17 +459,30 @@ function Get-StreamerbotCsharpRequiredReferences {
       continue
     }
 
-    # The flag is read as plain text here, MSBuild conditions are not evaluated.
-    for ($el = $node; $el -is [System.Xml.XmlElement]; $el = $el.ParentNode) {
-      if ($el.HasAttribute("Condition")) {
-        Write-ThrowContext
-        throw ("Conditions in a shadow csproj are not supported yet : <$($el.Name) Condition=" +
-          """$($el.GetAttribute('Condition'))""> around $flag in $csprojPath")
-      }
-    }
-
+    Assert-StreamerbotCsharpNoCondition -Node $node -Name $flag -CsprojPath $csprojPath
     if ($node.InnerText -eq "true") {
       $script:SbotCsharpReferenceByFlag[$flag].Replace('\', '\\')
+    }
+  }
+
+  $frameworkProperty = $script:SbotCsharpFrameworkRefProperty
+  $node = $csproj.SelectSingleNode("//$frameworkProperty")
+  if ($node) {
+    Assert-StreamerbotCsharpNoCondition -Node $node -Name $frameworkProperty `
+      -CsprojPath $csprojPath
+    $names = $node.InnerText -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    if ($names -and -not $FrameworkRefDir) {
+      Write-ThrowContext
+      throw (".NET Framework folder not found, or not reachable with a relative path (see the " +
+        "message above), needed by $frameworkProperty in $csprojPath")
+    }
+    foreach ($name in $names) {
+      if ($name -notmatch '^[A-Za-z0-9_.]+$' -or $name -match '\.dll$') {
+        Write-ThrowContext
+        throw ("Invalid framework reference '$name' in $frameworkProperty of $csprojPath : " +
+          "use the assembly name without .dll, separated by ';' (e.g. System.Core;System.Data)")
+      }
+      "$FrameworkRefDir\$name.dll".Replace('\', '\\')
     }
   }
 }
@@ -449,6 +513,18 @@ function Set-StreamerbotCsharpBytecode {
   $changed = $false
 
   $sourcePaths = @(Get-StreamerbotCsharpSourcePaths -ActionsFilePath $ActionsFilePath)
+
+  $frameworkRefDir = Get-StreamerbotFrameworkRefDir -ActionsFilePath $ActionsFilePath
+  $frameworkPathRe = $null
+  $frameworkPathNew = $null
+  if ($frameworkRefDir) {
+    $frameworkTail = [regex]::Escape(
+      ("Windows\" + $script:SbotCsharpFrameworkDirUnderWindows).Replace('\', '\\') + '\\')
+    $frameworkPathRe = [regex]::new(
+      '"(?:\.\.\\\\)+' + $frameworkTail,
+      [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $frameworkPathNew = '"' + $frameworkRefDir.Replace('\', '\\') + '\\'
+  }
 
   foreach ($sourcePath in $sourcePaths) {
     $folderName = Split-Path (Split-Path $sourcePath -Parent) -Leaf
@@ -517,9 +593,10 @@ function Set-StreamerbotCsharpBytecode {
       continue
     }
 
-    # Only ever adds missing references: ones added in the GUI are kept.
-    $requiredRefs = @(Get-StreamerbotCsharpRequiredReferences -SourcePath $sourcePath)
+    $requiredRefs = @(Get-StreamerbotCsharpRequiredReferences -SourcePath $sourcePath `
+        -FrameworkRefDir $frameworkRefDir)
     $addedRefs = [System.Collections.Generic.List[string]]::new()
+    $fixedRefs = [System.Collections.Generic.List[string]]::new()
     $nl = if ($content.Contains("`r`n")) {
       "`r`n"
     } else {
@@ -533,9 +610,16 @@ function Set-StreamerbotCsharpBytecode {
     $newObject = $referencesRe.Replace($newObject, {
         param($m)
         $refs = $m.Groups[2].Value
+        if ($frameworkPathRe) {
+          $movedRefs = $frameworkPathRe.Replace($refs, $frameworkPathNew)
+          if ($movedRefs -cne $refs) {
+            $fixedRefs.Add("framework paths")
+            $refs = $movedRefs
+          }
+        }
         foreach ($ref in $requiredRefs) {
           $quoted = '"' + $ref + '"'
-          if ($refs.Contains($quoted)) {
+          if ($refs.IndexOf($quoted, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             continue
           }
 
@@ -557,8 +641,16 @@ function Set-StreamerbotCsharpBytecode {
       $content = $content.Substring(0, $actionStart) + $newSpan +
       $content.Substring($actionEnd + 1)
       $changed = $true
-      $refsNote = if ($addedRefs.Count -gt 0) {
-        " (+ references: $(($addedRefs | ForEach-Object { $_.Replace('\\', '\') }) -join ', '))"
+      $notes = @()
+      if ($addedRefs.Count -gt 0) {
+        $addedNames = $addedRefs | ForEach-Object { $_.Replace('\\', '\') }
+        $notes += "+ references: $($addedNames -join ', ')"
+      }
+      if ($fixedRefs.Count -gt 0) {
+        $notes += "framework paths updated"
+      }
+      $refsNote = if ($notes) {
+        " ($($notes -join '; '))"
       } else {
         ""
       }

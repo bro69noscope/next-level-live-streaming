@@ -153,6 +153,49 @@ function Assert-StreamerbotCsharpLayout {
   }
 }
 
+function Get-StreamerbotCsharpFiles {
+  param([Parameter(Mandatory=$true)] [string]$Path)
+
+  Get-ChildItem $Path -Recurse -File -Filter "*.cs" | Where-Object {
+    $parts = $_.FullName -split '\\'
+    -not ($parts | Where-Object { $script:SbotCsharpExcludedDirs -contains $_ })
+  }
+}
+
+function Assert-StreamerbotCsharpNoDuplicateActions {
+  $root = Join-Path $PSScriptRoot $script:SbotCsharpSubActionsRoot
+  $pathsByKey = @{}
+
+  foreach ($envDir in $script:SbotCsharpEnvDirs) {
+    $envPath = Join-Path $root $envDir
+    if (-not (Test-Path $envPath -PathType Container)) {
+      continue
+    }
+    foreach ($file in Get-StreamerbotCsharpFiles -Path $envPath) {
+      $action = Split-Path $file.DirectoryName -Leaf
+      $key = "$action|$($file.Name)"
+      if (-not $pathsByKey.ContainsKey($key)) {
+        $pathsByKey[$key] = @()
+      }
+      $pathsByKey[$key] += $file.FullName
+    }
+  }
+
+  $duplicates = $pathsByKey.GetEnumerator() | Where-Object { $_.Value.Count -gt 1 } |
+    Sort-Object Name
+  if ($duplicates) {
+    $lines = foreach ($dup in $duplicates) {
+      $action, $subAction = $dup.Name -split '\|', 2
+      "  action '$action', sub-action '$subAction':"
+      $dup.Value | ForEach-Object { "    $_" }
+    }
+    Write-ThrowContext
+    throw ("C# directory structure mismatch: an action's sub-action must live in only one of" +
+      " $($script:SbotCsharpEnvDirs -join ', '), never in two at once (this includes" +
+      " Ftp and Production):`n" + ($lines -join "`n"))
+  }
+}
+
 function Get-StreamerbotCsharpSourcePaths {
   param(
     [Parameter(Mandatory=$true)] [string]$ActionsFilePath,
@@ -165,15 +208,12 @@ function Get-StreamerbotCsharpSourcePaths {
   }
   $searchPaths = @(Get-StreamerbotCsharpSearchPaths -TestMode $TestMode -EnvDirs $envDirs)
   Assert-StreamerbotCsharpLayout -SearchPaths $searchPaths
+  Assert-StreamerbotCsharpNoDuplicateActions
 
   foreach ($relPath in $searchPaths) {
     $path = Join-Path $PSScriptRoot $relPath
     if (Test-Path $path -PathType Container) {
-      (Get-ChildItem $path -Recurse -File -Filter "*.cs" |
-        Where-Object {
-          $parts = $_.FullName -split '\\'
-          -not ($parts | Where-Object { $script:SbotCsharpExcludedDirs -contains $_ })
-        }).FullName
+      (Get-StreamerbotCsharpFiles -Path $path).FullName
     } elseif (Test-Path $path -PathType Leaf) {
       $path
     } else {

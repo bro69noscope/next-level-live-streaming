@@ -25,7 +25,7 @@ $script:streamerbotRoots = @(
   }
 )
 
-$script:SbotCsharpTestMode = $false
+$script:SbotCsharpTestMode = $true
 $script:SbotCsharpTestSources = @(
   "vcdata\common\csharp\SubActions\Production\General\Tests"
 )
@@ -223,6 +223,16 @@ function Write-StreamerbotCsharpOrphanReport {
     $csFilePathByKey["$actionName|$(Split-Path $sourcePath -Leaf)"] = $sourcePath
   }
 
+  # Test mode: only flag actions that have a folder under the test sources (Tests\...).
+  $testActionNames = @()
+  if ($script:SbotCsharpTestMode) {
+    $testActionNames = @($script:SbotCsharpTestSources | ForEach-Object {
+        Get-ChildItem (Join-Path $PSScriptRoot $_) -Directory -Recurse -ErrorAction SilentlyContinue
+      } | ForEach-Object {
+        ConvertTo-StreamerbotActionName -FolderName $_.Name
+      })
+  }
+
   $jsonSubActionKeys = @{}
   $withoutFile = [System.Collections.Generic.List[string]]::new()
 
@@ -232,6 +242,21 @@ function Write-StreamerbotCsharpOrphanReport {
     }
 
     foreach ($sub in (Get-StreamerbotCsharpSubActions -SubActions $action.subActions)) {
+      if ([string]::IsNullOrEmpty($action.name)) {
+        $actionIdMatch = [regex]::Match($content, '"id":\s*"' + [regex]::Escape($action.id) + '"')
+        $actionLine = if ($action.id -and $actionIdMatch.Success) {
+          "$(Get-StreamerbotLineNumber -Content $content -Index $actionIdMatch.Index) (id line)"
+        } else {
+          "unknown"
+        }
+        $withoutFile.Add("line $actionLine  action <no name>  sub-action '$($sub.name)'")
+        continue
+      }
+
+      if ($script:SbotCsharpTestMode -and $action.name -notin $testActionNames) {
+        continue
+      }
+
       $key = "$($action.name)|$($sub.name)"
       $jsonSubActionKeys[$key] = $true
       if ($csFilePathByKey.ContainsKey($key)) {
@@ -305,11 +330,25 @@ function Write-StreamerbotCsharpOrphanReport {
     }
   }
 
+  $withoutCsproj = [System.Collections.Generic.List[string]]::new()
+  $subActionsRoot = Join-Path $PSScriptRoot $script:SbotCsharpSubActionsRoot
+  foreach ($sourcePath in $SourcePaths) {
+    $csprojPath = [System.IO.Path]::ChangeExtension($sourcePath, ".shadow.csproj")
+    if (-not (Test-Path $csprojPath -PathType Leaf)) {
+      $withoutCsproj.Add(($sourcePath -replace ('^' + [regex]::Escape("$subActionsRoot\")), ''))
+    }
+  }
+
   $report = @(
     "Streamer.bot C# orphans, generated $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     "Instance: $instance"
     "Actions file: $ActionsFilePath"
     "(line numbers also apply to the matching .vcs-template.json)"
+    if ($script:SbotCsharpTestMode) {
+      ""
+      "=== TEST MODE: only actions with a folder in list below: ==="
+      $script:SbotCsharpTestSources | ForEach-Object { "  $_" }
+    }
     ""
     ""
     "== C# sub-actions without a matching .cs file ($($withoutFile.Count)) =="
@@ -323,6 +362,10 @@ function Write-StreamerbotCsharpOrphanReport {
     "== Common .cs files whose action is not in this environment, not orphans " +
     "($($otherEnvOnly.Count)) =="
     $otherEnvOnly | Sort-Object
+    ""
+    ""
+    "== .cs files without a .shadow.csproj, references not managed ($($withoutCsproj.Count)) =="
+    $withoutCsproj | Sort-Object
   )
 
   $reportPath = Join-Path $PSScriptRoot "logs\$instance-csharp-orphans.txt"
@@ -337,7 +380,8 @@ function Write-StreamerbotCsharpOrphanReport {
 
   Write-VcsMessage -Message ("C# orphans: $($withoutFile.Count) sub-action(s) without file, " +
     "$($withoutSubAction.Count) file(s) without sub-action, " +
-    "$($otherEnvOnly.Count) Common file(s) for other environment only. " +
+    "$($otherEnvOnly.Count) Common file(s) for other environment only, " +
+    "$($withoutCsproj.Count) file(s) without shadow csproj. " +
     "Report: $reportPath") -Color $color
 }
 
@@ -347,7 +391,7 @@ function Get-StreamerbotCsharpRequiredReferences {
   $csprojName = [System.IO.Path]::GetFileNameWithoutExtension($SourcePath) + ".shadow.csproj"
   $csprojPath = Join-Path (Split-Path $SourcePath -Parent) $csprojName
   if (-not (Test-Path $csprojPath -PathType Leaf)) {
-    Write-VcsMessage -Message "No shadow csproj, references not managed: $csprojPath" -Color Yellow
+    # Reported in the orphan report: references are simply not managed for this file.
     return
   }
 
@@ -410,34 +454,24 @@ function Set-StreamerbotCsharpBytecode {
     if (-not $actionMatch.Success) {
       continue
     }
-    $actionIdx = $actionMatch.Index
 
-    # "collapsedGroups" should be the last key of every action, after all its subActions
-    # (Streamer.bot generates this way). Stop the script if that no longer holds: the search span
-    # would be wrong.
-    $endIdx = $content.IndexOf('"collapsedGroups"', $actionIdx)
-    $closesAction = $endIdx -ge 0 -and
-    $content.Substring($endIdx) -match '^"collapsedGroups":\s*\[[^\]]*\]\s*\}'
-    if (-not $closesAction) {
-      $keyLine = if ($endIdx -ge 0) {
-        "line $(($content.Substring(0, $endIdx) -split "`n").Count)"
-      } else {
-        "not found"
-      }
-      Write-ThrowContext
-      throw ("Streamer.bot actions format erroneous: ""collapsedGroups"" is not the last key " +
-        "of action '$actionName' (""collapsedGroups"" at $keyLine of $ActionsFilePath)")
+    # The action's own { } : the span is the whole action object, whatever its key order.
+    # TODO: perf. This rescans $content from position 0 for every .cs file (~130 ms per call
+    # on a 2.3 MB file, so ~130 s for 1000 files). Scan once up front into a lookup of
+    # object start -> end, collect the edits against the original text, and apply them
+    # last-to-first at the end.
+    $actionBounds = Get-StreamerbotJsonObjectBounds -Text $content -Index $actionMatch.Index
+    if (-not $actionBounds) {
+      $nameLine = Get-StreamerbotLineNumber -Content $content -Index $actionMatch.Index
+      Write-VcsMessage -Message ("No enclosing JSON object found around action '$actionName'" +
+        " (""name"" at line $nameLine of $ActionsFilePath) : bytecode not injected") `
+        -Color Red
+      continue
     }
-    $span = $content.Substring($actionIdx, $endIdx - $actionIdx)
 
-    # The span starts at the action's "name": its "subActions" must come after, else the
-    # sub-actions would be outside the span.
-    if ($span.IndexOf('"subActions"') -lt 0) {
-      $nameLine = Get-StreamerbotLineNumber -Content $content -Index $actionIdx
-      Write-ThrowContext
-      throw ("Streamer.bot actions format erroneous: ""subActions"" does not come after " +
-        """name"" in action '$actionName' (""name"" at line $nameLine of $ActionsFilePath)")
-    }
+    $actionStart = $actionBounds.Start
+    $actionEnd = $actionBounds.End
+    $span = $content.Substring($actionStart, $actionEnd - $actionStart + 1)
 
     $nameMatch = [regex]::Match($span, '"name":\s*"' + [regex]::Escape($subActionName) + '"')
     if (-not $nameMatch.Success) {
@@ -511,7 +545,8 @@ function Set-StreamerbotCsharpBytecode {
 
     $newSpan = $span.Substring(0, $bounds.Start) + $newObject + $span.Substring($bounds.End + 1)
     if ($newSpan -ne $span) {
-      $content = $content.Substring(0, $actionIdx) + $newSpan + $content.Substring($endIdx)
+      $content = $content.Substring(0, $actionStart) + $newSpan +
+      $content.Substring($actionEnd + 1)
       $changed = $true
       $refsNote = if ($addedRefs.Count -gt 0) {
         " (+ references: $(($addedRefs | ForEach-Object { $_.Replace('\\', '\') }) -join ', '))"

@@ -640,8 +640,6 @@ function ConvertFrom-VcsTemplateFile {
   $content | Set-Content $outFilePath -Encoding UTF8
   $FormatQueue.Add($outFilePath)
   Write-VcsMessage -AsVerbose -Message "Real config saved: $outFilePath"
-
-  return $outFilePath
 }
 
 $FunctionsToExport = @(

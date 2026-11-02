@@ -378,11 +378,17 @@ function Write-StreamerbotCsharpOrphanReport {
     "Green"
   }
 
-  Write-VcsMessage -Message ("C# orphans: $($withoutFile.Count) sub-action(s) without file, " +
-    "$($withoutSubAction.Count) file(s) without sub-action, " +
-    "$($otherEnvOnly.Count) Common file(s) for other environment only, " +
-    "$($withoutCsproj.Count) file(s) without shadow csproj. " +
-    "Report: $reportPath") -Color $color
+  $summary = @(
+    "C# orphans:"
+    "  $($withoutFile.Count) sub-action(s) without file"
+    "  $($withoutSubAction.Count) file(s) without sub-action"
+    "  $($otherEnvOnly.Count) Common file(s) for other environment only"
+    "  $($withoutCsproj.Count) file(s) without shadow csproj"
+    "  Report: $reportPath"
+  )
+  foreach ($summaryLine in $summary) {
+    Write-VcsMessage -Message $summaryLine -Color $color
+  }
 }
 
 function Get-StreamerbotCsharpRequiredReferences {

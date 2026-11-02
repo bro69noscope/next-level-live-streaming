@@ -535,22 +535,54 @@ function Get-StreamerbotCsharpRequiredReferences {
   }
 }
 
+# One pass over the JSON text, listing every { } object. Strings are matched first, so braces
+# inside strings are ignored. Starts is ascending; Ends[i] is -1 when object i is never closed;
+# Parents[i] is the index of the object around object i (-1 at the top).
+function Get-StreamerbotJsonObjectIndex {
+  param([Parameter(Mandatory=$true)] [string]$Text)
+
+  $starts = [System.Collections.Generic.List[int]]::new()
+  $ends = [System.Collections.Generic.List[int]]::new()
+  $parents = [System.Collections.Generic.List[int]]::new()
+  $open = [System.Collections.Generic.Stack[int]]::new()
+
+  foreach ($token in [regex]::Matches($Text, '"[^"\\]*(?:\\.[^"\\]*)*"|[{}]')) {
+    if ($token.Value -eq "{") {
+      $parents.Add($(if ($open.Count -gt 0) {
+            $open.Peek()
+          } else {
+            -1
+          }))
+      $starts.Add($token.Index)
+      $ends.Add(-1)
+      $open.Push($starts.Count - 1)
+    } elseif ($token.Value -eq "}" -and $open.Count -gt 0) {
+      $ends[$open.Pop()] = $token.Index
+    }
+  }
+
+  return [pscustomobject]@{ Starts = $starts; Ends = $ends; Parents = $parents }
+}
+
+# The innermost closed { } around $Index, from the index above. The last object opened before
+# $Index is either around it or inside a sibling that closed already, so walk up the parents.
 function Get-StreamerbotJsonObjectBounds {
   param(
-    [Parameter(Mandatory=$true)] [string]$Text,
+    [Parameter(Mandatory=$true)] [object]$ObjectIndex,
     [Parameter(Mandatory=$true)] [int]$Index
   )
 
-  $starts = [System.Collections.Generic.Stack[int]]::new()
-  foreach ($token in [regex]::Matches($Text, '"[^"\\]*(?:\\.[^"\\]*)*"|[{}]')) {
-    if ($token.Value -eq "{") {
-      $starts.Push($token.Index)
-    } elseif ($token.Value -eq "}" -and $starts.Count -gt 0) {
-      $start = $starts.Pop()
-      if ($start -lt $Index -and $Index -lt $token.Index) {
-        return [pscustomobject]@{ Start = $start; End = $token.Index }
-      }
+  $found = $ObjectIndex.Starts.BinarySearch($Index)
+  $obj = $(if ($found -lt 0) {
+      -bnot $found
+    } else {
+      $found
+    }) - 1
+  while ($obj -ge 0) {
+    if ($ObjectIndex.Ends[$obj] -gt $Index) {
+      return [pscustomobject]@{ Start = $ObjectIndex.Starts[$obj]; End = $ObjectIndex.Ends[$obj] }
     }
+    $obj = $ObjectIndex.Parents[$obj]
   }
 }
 
@@ -558,7 +590,6 @@ function Set-StreamerbotCsharpBytecode {
   param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
 
   $content = [System.IO.File]::ReadAllText($ActionsFilePath)
-  $changed = $false
 
   $sourcePaths = @(Get-StreamerbotCsharpSourcePaths -ActionsFilePath $ActionsFilePath)
 
@@ -574,6 +605,23 @@ function Set-StreamerbotCsharpBytecode {
     $frameworkPathNew = '"' + $frameworkRefDir.Replace('\', '\\') + '\\'
   }
 
+  # Scanned once. Every edit below is made against this original text, and spliced in at the end,
+  # so the offsets stay valid.
+  $objectIndex = Get-StreamerbotJsonObjectIndex -Text $content
+  $actionNameIndexes = [System.Collections.Generic.Dictionary[string, int]]::new(
+    [System.StringComparer]::Ordinal)
+  foreach ($nameHit in [regex]::Matches($content, '"name":\s*"(sbact__[^"\\]*)"')) {
+    if (-not $actionNameIndexes.ContainsKey($nameHit.Groups[1].Value)) {
+      $actionNameIndexes[$nameHit.Groups[1].Value] = $nameHit.Index
+    }
+  }
+  $edits = @{}
+  $nl = if ($content.Contains("`r`n")) {
+    "`r`n"
+  } else {
+    "`n"
+  }
+
   foreach ($sourcePath in $sourcePaths) {
     $folderName = Split-Path (Split-Path $sourcePath -Parent) -Leaf
     $actionName = ConvertTo-StreamerbotActionName -FolderName $folderName
@@ -583,18 +631,14 @@ function Set-StreamerbotCsharpBytecode {
     $sourceText = [System.IO.File]::ReadAllText($sourcePath) -replace '\r?\n', "`r`n"
     $b64 = [Convert]::ToBase64String([System.Text.UTF8Encoding]::new($false).GetBytes($sourceText))
 
-    $actionMatch = [regex]::Match($content, '"name":\s*"' + [regex]::Escape($actionName) + '"')
-    if (-not $actionMatch.Success) {
+    if (-not $actionNameIndexes.ContainsKey($actionName)) {
       continue
     }
+    $actionNameAt = $actionNameIndexes[$actionName]
 
-    # TODO: perf. This rescans $content from position 0 for every .cs file (~130 ms per call
-    # on a 2.3 MB file, so ~130 s for 1000 files). Scan once up front into a lookup of
-    # object start -> end, collect the edits against the original text, and apply them
-    # last-to-first at the end.
-    $actionBounds = Get-StreamerbotJsonObjectBounds -Text $content -Index $actionMatch.Index
+    $actionBounds = Get-StreamerbotJsonObjectBounds -ObjectIndex $objectIndex -Index $actionNameAt
     if (-not $actionBounds) {
-      $nameLine = Get-StreamerbotLineNumber -Content $content -Index $actionMatch.Index
+      $nameLine = Get-StreamerbotLineNumber -Content $content -Index $actionNameAt
       Write-VcsMessage -Message ("No enclosing JSON object found around action '$actionName'" +
         " (""name"" at line $nameLine of $ActionsFilePath) : bytecode not injected") `
         -Color Red
@@ -610,16 +654,16 @@ function Set-StreamerbotCsharpBytecode {
       # We will handle this in the orphan report
       continue
     }
-    $bounds = Get-StreamerbotJsonObjectBounds -Text $span -Index $nameMatch.Index
+    $subNameAt = $actionStart + $nameMatch.Index
+    $bounds = Get-StreamerbotJsonObjectBounds -ObjectIndex $objectIndex -Index $subNameAt
     if (-not $bounds) {
-      $subNameLine = Get-StreamerbotLineNumber -Content $content `
-        -Index ($actionStart + $nameMatch.Index)
+      $subNameLine = Get-StreamerbotLineNumber -Content $content -Index $subNameAt
       Write-VcsMessage -Message ("No enclosing JSON object found around sub-action" +
         " '$subActionName' of action '$actionName' (""name"" at line $subNameLine of" +
         " $ActionsFilePath) : bytecode not injected") -Color Red
       continue
     }
-    $subActionObject = $span.Substring($bounds.Start, $bounds.End - $bounds.Start + 1)
+    $subActionObject = $content.Substring($bounds.Start, $bounds.End - $bounds.Start + 1)
 
     $referencesRe = [regex]::new('("references":\s*\[)([^\]]*)(\])')
     $byteCodeRe = [regex]::new('("byteCode":\s*")[^"]*(")')
@@ -647,12 +691,6 @@ function Set-StreamerbotCsharpBytecode {
 
     $addedRefs = [System.Collections.Generic.List[string]]::new()
     $frameworkPathsUpdated = [ref]$false
-
-    $nl = if ($content.Contains("`r`n")) {
-      "`r`n"
-    } else {
-      "`n"
-    }
 
     $newSubActionObject = $byteCodeRe.Replace($subActionObject, {
         param($m) $m.Groups[1].Value + $b64 + $m.Groups[2].Value
@@ -686,13 +724,12 @@ function Set-StreamerbotCsharpBytecode {
         $m.Groups[1].Value + $refs + $m.Groups[3].Value
       }, 1)
 
-    $newSpan = $span.Substring(0, $bounds.Start) `
-      + $newSubActionObject + $span.Substring($bounds.End + 1)
-
-    if ($newSpan -ne $span) {
-      $content = $content.Substring(0, $actionStart) + $newSpan `
-        + $content.Substring($actionEnd + 1)
-      $changed = $true
+    if ($newSubActionObject -cne $subActionObject) {
+      $edits[$bounds.Start] = @{
+        Start = $bounds.Start
+        End = $bounds.End
+        Text = $newSubActionObject
+      }
       $notes = @()
 
       if ($addedRefs.Count -gt 0) {
@@ -714,9 +751,24 @@ function Set-StreamerbotCsharpBytecode {
     }
   }
 
-  if ($changed) {
+  if ($edits.Count -gt 0) {
+    $result = [System.Text.StringBuilder]::new($content.Length)
+    $position = 0
+    foreach ($edit in $edits.Values | Sort-Object { $_.Start }) {
+      if ($edit.Start -lt $position) {
+        Write-ThrowContext
+        throw "Overlapping C# bytecode edits at offset $($edit.Start) of $ActionsFilePath"
+      }
+      # Substring, not Append($content, $position, $count): that one binds to a char[] overload
+      # and copies the whole text on every call.
+      [void]$result.Append($content.Substring($position, $edit.Start - $position))
+      [void]$result.Append($edit.Text)
+      $position = $edit.End + 1
+    }
+    [void]$result.Append($content.Substring($position))
+
     [System.IO.File]::WriteAllText(
-      $ActionsFilePath, $content, [System.Text.UTF8Encoding]::new($false))
+      $ActionsFilePath, $result.ToString(), [System.Text.UTF8Encoding]::new($false))
   }
 
   Write-StreamerbotCsharpOrphanReport `

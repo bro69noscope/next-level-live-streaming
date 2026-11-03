@@ -114,9 +114,8 @@ function ConvertTo-ObsTemplate {
         }
 
       if (-not $candidates) {
-        Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
-        Write-VcsMessage -Message "  (must live under one of: $($script:ObsMarkers -join ', '))" `
-          -Color Yellow
+        Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow `
+          -Bold
         return
       }
 
@@ -127,8 +126,8 @@ function ConvertTo-ObsTemplate {
         try {
           ConvertTo-ObsTemplate -InputFilePath $candidate.FullName
         } catch {
-          Write-VcsMessage -Message "  Failed to convert: $($candidate.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert: $($candidate.FullName)`n" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
           Write-ThrowContext
           throw "Failed to convert $($candidate.FullName) to vcs-template"
         }
@@ -194,20 +193,21 @@ function ConvertFrom-ObsTemplate {
 
       if (-not $templates) {
         Write-VcsMessage -Message "No matching *.vcs-template.json files found under: $InputPath" `
-          -Color Yellow
+          -Color Yellow -Bold
         return
       }
 
       Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) matching " `
           + "*.vcs-template.json file(s) under: $InputPath")
+
       foreach ($template in $templates) {
         try {
           ConvertFrom-ObsTemplate `
             -InputFilePath $template.FullName `
             -Backup:$Backup
         } catch {
-          Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName):`n" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
         }
       }
       return

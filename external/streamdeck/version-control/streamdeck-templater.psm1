@@ -175,15 +175,13 @@ function Get-StreamDeckPageIndex {
   $deviceRoot = Find-StreamDeckDeviceRoot -StartDirectory $MarkerDirectory
   $homeManifestPath = Join-Path $deviceRoot "manifest.json"
   if (-not (Test-Path $homeManifestPath)) {
-    Write-VcsMessage -Message "Home manifest not found: $homeManifestPath" -Color Red
     Write-ThrowContext
     throw "Home manifest not found: $homeManifestPath"
   }
 
   $homeManifest = Get-Content $homeManifestPath -Raw | ConvertFrom-Json -AsHashtable
-  if (-not $homeManifest.ContainsKey("Pages") -or -not $homeManifest["Pages"].ContainsKey("Pages")) {
-    Write-VcsMessage -Message "Home manifest does not have a 'Pages' section: $homeManifestPath" `
-      -Color Red
+  if (-not $homeManifest.ContainsKey("Pages") -or `
+      -not $homeManifest["Pages"].ContainsKey("Pages")) {
     Write-ThrowContext
     throw "Home manifest does not have a 'Pages' section: $homeManifestPath"
   }
@@ -459,7 +457,7 @@ function Copy-StreamDeckMarkerFile {
 
   $rawContent = Get-Content $InputPath -Raw
   if ($null -eq $rawContent) {
-    Write-Warning "Marker file is empty: $InputPath"
+    Write-VcsMessage -Message "Marker file is empty: $InputPath" -Color Yellow -Bold
     $rawContent = ""
   }
 
@@ -472,6 +470,7 @@ function Copy-StreamDeckMarkerFile {
 
   foreach ($field in @("name", "type")) {
     if (-not $marker.ContainsKey($field) -or -not $marker[$field]) {
+      Write-ThrowContext
       throw "Marker file has missing/empty required '$field' field: $InputPath"
     }
   }
@@ -510,7 +509,8 @@ function Copy-StreamDeckMarkerFile {
     $newFlag = Get-FileContentHash -FilePath $manifestTemplatePath
     $homeChanged = ($isHome -and $newFlag -ne $existingFlag)
   } else {
-    Write-Warning "  No manifest template found: $manifestTemplatePath falling back to random flag"
+    Write-VcsMessage -Message ("  No manifest template found: $manifestTemplatePath" +
+      " falling back to random flag") -Color Yellow -Bold
     $newFlag = "ERROR-NO-MANIFEST-" + (Get-Guid)
     $homeChanged = $false
   }
@@ -663,7 +663,8 @@ function ConvertTo-StreamDeckTemplate {
       $manifests = Get-ChildItem $InputPath -Recurse -File -Filter $manifestStr
 
       if (-not $manifests) {
-        Write-VcsMessage -Message "No $manifestStr files found under: $InputPath" -Color Yellow
+        Write-VcsMessage -Message "No $manifestStr files found under: $InputPath" -Color Yellow `
+          -Bold
         return
       }
 
@@ -686,9 +687,9 @@ function ConvertTo-StreamDeckTemplate {
               $unexpectedPaths += $initResult.Path
             }
           } catch {
-            Write-VcsMessage -Message "  Failed to initialize: $($jsonMarkerFile.FullName)" `
+            Write-VcsMessage -Message "  Failed to initialize: $($jsonMarkerFile.FullName)`n" `
               -Color Red
-            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
             Write-ThrowContext
             throw "Failed initializing marker file: $($jsonMarkerFile.FullName)"
           }
@@ -706,8 +707,9 @@ function ConvertTo-StreamDeckTemplate {
           $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
 
           if ($unexpectedPaths.Count -gt 0) {
-            Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
-            $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
+            Write-VcsMessage -Message "Found $($unexpectedPaths.Count) unexpected marker(s):" `
+              -Color Yellow
+            $unexpectedPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
           }
           return
         }
@@ -721,8 +723,8 @@ function ConvertTo-StreamDeckTemplate {
           ConvertTo-StreamDeckTemplate -InputFilePath $manifest.FullName `
             -RelativeOutPath $RelativeOutPath
         } catch {
-          Write-VcsMessage -Message "  Failed to convert: $($manifest.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert: $($manifest.FullName)`n" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
           Write-ThrowContext
           throw "Failed converting manifest: $($manifest.FullName)"
         }
@@ -758,8 +760,8 @@ function ConvertTo-StreamDeckTemplate {
               $childChanged = $true
             }
           } catch {
-            Write-VcsMessage -Message "  Failed copying: $($jsonMarkerFile.FullName)" -Color Red
-            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+            Write-VcsMessage -Message "  Failed copying: $($jsonMarkerFile.FullName)`n" -Color Red
+            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
             Write-ThrowContext
             throw "Failed copying marker file: $($jsonMarkerFile.FullName)"
           }
@@ -771,8 +773,8 @@ function ConvertTo-StreamDeckTemplate {
               -RelativeOutPath $RelativeOutPath `
               -ChildChanged:$childChanged | Out-Null
           } catch {
-            Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)" -Color Red
-            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+            Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)`n" -Color Red
+            Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
             Write-ThrowContext
             throw "Failed copying home marker file: $($homeMarkerFile.FullName)"
           }
@@ -780,8 +782,9 @@ function ConvertTo-StreamDeckTemplate {
       }
 
       if ($unexpectedPaths.Count -gt 0) {
-        Write-Warning "Found $($unexpectedPaths.Count) unexpected marker(s):"
-        $unexpectedPaths | ForEach-Object { Write-Warning "  $_" }
+        Write-VcsMessage -Message "Found $($unexpectedPaths.Count) unexpected marker(s):" `
+          -Color Yellow
+        $unexpectedPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
       }
 
       $deviceVcsOutPath = Get-StreamDeckVcsOutDirPath `
@@ -881,8 +884,8 @@ function ConvertFrom-StreamDeckTemplate {
             -InputFilePath $template.FullName `
             -Backup:$Backup
         } catch {
-          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName):`n" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
           Write-ThrowContext
           throw "Failed converting from template: $($template.FullName)"
         }

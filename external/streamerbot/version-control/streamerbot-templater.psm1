@@ -589,9 +589,18 @@ function Get-StreamerbotJsonObjectBounds {
 }
 
 function Set-StreamerbotCsharpBytecode {
-  param([Parameter(Mandatory=$true)] [string]$ActionsFilePath)
+  param(
+    [Parameter(Mandatory=$true)] [string]$ActionsFilePath,
+    [string]$TemplateFilePath
+  )
 
   $content = [System.IO.File]::ReadAllText($ActionsFilePath)
+
+  $fileLabel = if ($TemplateFilePath) {
+    $TemplateFilePath
+  } else {
+    $ActionsFilePath
+  }
 
   $sourcePaths = @(Get-StreamerbotCsharpSourcePaths -ActionsFilePath $ActionsFilePath)
 
@@ -624,7 +633,7 @@ function Set-StreamerbotCsharpBytecode {
   }
   if ($repeatedNames) {
     Write-ThrowContext
-    throw ("Duplicate action names in ${ActionsFilePath}: $($repeatedNames -join '; ')." +
+    throw ("Duplicate action names in ${fileLabel}: $($repeatedNames -join '; ')." +
       " Streamer.bot does not allow two actions with the same name.")
   }
   $edits = @{}
@@ -654,7 +663,7 @@ function Set-StreamerbotCsharpBytecode {
     if (-not $actionBounds) {
       $nameLine = Get-StreamerbotLineNumber -Content $content -Index $actionNameAt
       Write-VcsMessage -Message ("No enclosing JSON object found around action '$actionName'" +
-        " (""name"" at line $nameLine of $ActionsFilePath) : bytecode not injected") -Color Red
+        " (""name"" at line $nameLine of $fileLabel) : bytecode not injected") -Color Red
       continue
     }
 
@@ -675,7 +684,7 @@ function Set-StreamerbotCsharpBytecode {
       }
       Write-ThrowContext
       throw ("Sub-action '$subActionName' appears $($nameMatches.Count) times in action" +
-        " '$actionName' (""name"" at lines $($nameLines -join ', ') of $ActionsFilePath)." +
+        " '$actionName' (""name"" at lines $($nameLines -join ', ') of $fileLabel)." +
         " One .cs file feeds one sub-action: move the shared code to its own Streamer.bot" +
         " action and call that action from each place.")
     }
@@ -688,7 +697,7 @@ function Set-StreamerbotCsharpBytecode {
       $subNameLine = Get-StreamerbotLineNumber -Content $content -Index $subNameAt
       Write-VcsMessage -Message ("No enclosing JSON object found around sub-action" +
         " '$subActionName' of action '$actionName' (""name"" at line $subNameLine of" +
-        " $ActionsFilePath) : bytecode not injected") -Color Red
+        " $fileLabel) : bytecode not injected") -Color Red
       continue
     }
 
@@ -710,7 +719,7 @@ function Set-StreamerbotCsharpBytecode {
     )
     if ($missingKeys.Count -gt 0) {
       Write-VcsMessage -Message ("Sub-action '$subActionName' of action '$actionName' in " +
-        "$ActionsFilePath is missing $($missingKeys -join ' and ') : bytecode not injected") `
+        "$fileLabel is missing $($missingKeys -join ' and ') : bytecode not injected") `
         -Color Red
       continue
     }
@@ -839,20 +848,20 @@ function ConvertTo-StreamerbotTemplate {
         }
 
       if (-not $candidates) {
-        Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow
-        Write-VcsMessage -Message "  (must live under one of: $($script:SbotMarkers -join ', '))" `
-          -Color Yellow
+        Write-VcsMessage -Message "No matching .json files found under: $InputPath" -Color Yellow `
+          -Bold
         return
       }
 
-      Write-VcsMessage -Message "Found $($candidates.Count) matching .json file(s) under: $InputPath"
+      Write-VcsMessage -AsVerbose -Message ("Found $($candidates.Count) matching .json file(s)" +
+        "under: $InputPath")
 
       foreach ($candidate in $candidates) {
         try {
           ConvertTo-StreamerbotTemplate -InputFilePath $candidate.FullName
         } catch {
-          Write-VcsMessage -Message "  Failed to convert: $($candidate.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert: $($candidate.FullName)`n" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
           Write-ThrowContext
           throw "Failed to convert $($candidate.FullName) to vcs-template"
         }
@@ -917,20 +926,21 @@ function ConvertFrom-StreamerbotTemplate {
 
       if (-not $templates) {
         Write-VcsMessage -Message "No matching *.vcs-template.json files found under: $InputPath" `
-          -Color Yellow
+          -Color Yellow -Bold
         return
       }
 
-      Write-VcsMessage -Message ("Found $($templates.Count) matching *.vcs-template.json file(s) " `
-          + "under: $InputPath")
+      Write-VcsMessage -AsVerbose -Message ("Found $($templates.Count) matching" +
+        "*.vcs-template.json file(s) under: $InputPath")
+
       foreach ($template in $templates) {
         try {
           ConvertFrom-StreamerbotTemplate `
             -InputFilePath $template.FullName `
             -Backup:$Backup
         } catch {
-          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName)" -Color Red
-          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName):`n" -Color Red
+          Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
         }
       }
       return
@@ -946,7 +956,7 @@ function ConvertFrom-StreamerbotTemplate {
       -RestoredPath ([ref]$restoredPath)
 
     if ((Split-Path $restoredPath -Leaf) -eq "actions.json") {
-      Set-StreamerbotCsharpBytecode -ActionsFilePath $restoredPath
+      Set-StreamerbotCsharpBytecode -ActionsFilePath $restoredPath -TemplateFilePath $InputPath
     }
 
   } finally {

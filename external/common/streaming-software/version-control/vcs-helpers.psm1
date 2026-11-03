@@ -119,16 +119,22 @@ function Write-VcsMessage {
     [Parameter(Mandatory=$true)] [AllowEmptyString()] [string]$Message,
     [string]$Color,
     [switch]$AsVerbose,
-    [switch]$NoLog
+    [switch]$NoLog,
+    [switch]$Bold
   )
+  $shown = if ($Bold) {
+    "$($PSStyle.Bold)$Message$($PSStyle.BoldOff)"
+  } else {
+    $Message
+  }
   if ($AsVerbose) {
     if ($script:VcsVerboseEnabled) {
-      Write-Host $Message -ForegroundColor DarkGray
+      Write-Host $shown -ForegroundColor DarkGray
     }
   } elseif ($Color) {
-    Write-Host $Message -ForegroundColor $Color
+    Write-Host $shown -ForegroundColor $Color
   } else {
-    Write-Host $Message
+    Write-Host $shown
   }
   if ($script:VcsLogFilePath -and -not $NoLog) {
     try {

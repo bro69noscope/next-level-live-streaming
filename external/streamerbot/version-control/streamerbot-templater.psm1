@@ -784,8 +784,16 @@ function Set-StreamerbotCsharpBytecode {
     }
     [void]$result.Append($content.Substring($position))
 
-    [System.IO.File]::WriteAllText(
-      $ActionsFilePath, $result.ToString(), [System.Text.UTF8Encoding]::new($false))
+    $tempPath = "$ActionsFilePath.vcs-tmp"
+    try {
+      [System.IO.File]::WriteAllText(
+        $tempPath, $result.ToString(), [System.Text.UTF8Encoding]::new($false))
+      [System.IO.File]::Move($tempPath, $ActionsFilePath, $true)
+    } finally {
+      if (Test-Path $tempPath) {
+        Remove-Item $tempPath -Force
+      }
+    }
   }
 
   Write-StreamerbotCsharpOrphanReport `

@@ -650,13 +650,25 @@ function Set-StreamerbotCsharpBytecode {
     $actionObject = $content.Substring(
       $actionBounds.Start, $actionBounds.End - $actionBounds.Start + 1)
 
-    $nameMatch = [regex]::Match(
+    $nameMatches = [regex]::Matches(
       $actionObject, '"name":\s*"' + [regex]::Escape($subActionName) + '"')
 
-    if (-not $nameMatch.Success) {
+    if ($nameMatches.Count -eq 0) {
       # We will handle this in the orphan report
       continue
     }
+
+    if ($nameMatches.Count -gt 1) {
+      $nameLines = $nameMatches | ForEach-Object {
+        Get-StreamerbotLineNumber -Content $content -Index ($actionBounds.Start + $_.Index)
+      }
+      Write-ThrowContext
+      throw ("Sub-action '$subActionName' appears $($nameMatches.Count) times in action" +
+        " '$actionName' (""name"" at lines $($nameLines -join ', ') of $ActionsFilePath)." +
+        " One .cs file feeds one sub-action: move the shared code to its own Streamer.bot" +
+        " action and call that action from each place.")
+    }
+    $nameMatch = $nameMatches[0]
 
     $subNameAt = $actionBounds.Start + $nameMatch.Index
     $subBounds = Get-StreamerbotJsonObjectBounds -ObjectIndex $objectIndex -Index $subNameAt

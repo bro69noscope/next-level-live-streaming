@@ -594,7 +594,7 @@ function ConvertFrom-VcsTemplateFile {
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
     [System.Collections.Generic.List[string]]$FormatQueue,
-    [Parameter(Mandatory=$false)] [ref]$RestoredPath
+    [Parameter(Mandatory=$false)] [string]$TmpOutPath
   )
 
   $inputFileName = Split-Path $InputFilePath -Leaf
@@ -605,18 +605,21 @@ function ConvertFrom-VcsTemplateFile {
     throw "Input filename must be like **.vcs-template.json, got: $inputFileName"
   }
 
-  $outFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
-  if ($RestoredPath) {
-    $RestoredPath.Value = $outFilePath
+  $liveFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
+
+  $outPath = if ($TmpOutPath) {
+    $TmpOutPath
+  } else {
+    $liveFilePath
   }
 
   Write-VcsMessage -AsVerbose -Message "Restoring real config from template..."
   Write-VcsMessage -AsVerbose -Message "Input:  $InputFilePath"
-  Write-VcsMessage -AsVerbose -Message "Output: $outFilePath"
+  Write-VcsMessage -AsVerbose -Message "Output: $outPath"
 
-  if ($Backup -and (Test-Path $outFilePath)) {
-    $backupPath = "$outFilePath.bak"
-    Copy-Item $outFilePath $backupPath -Force
+  if ($Backup -and (Test-Path $liveFilePath)) {
+    $backupPath = "$liveFilePath.bak"
+    Copy-Item $liveFilePath $backupPath -Force
     Write-VcsMessage -Message "Backup saved: $backupPath" -Color Magenta
   }
 
@@ -647,9 +650,12 @@ function ConvertFrom-VcsTemplateFile {
       -Color Yellow
   }
 
-  $content | Set-Content $outFilePath -Encoding UTF8
-  $FormatQueue.Add($outFilePath)
-  Write-VcsMessage -AsVerbose -Message "Real config saved: $outFilePath"
+  $content | Set-Content $outPath -Encoding UTF8
+  if (-not $TmpOutPath) {
+    # callers who provided a TmpOutPath handle the formatting themselves
+    $FormatQueue.Add($outPath)
+  }
+  Write-VcsMessage -AsVerbose -Message "Real config saved: $outPath"
 }
 
 $FunctionsToExport = @(
@@ -671,21 +677,4 @@ $FunctionsToExport = @(
 
 Assert-HelpersPaths
 Export-ModuleMember -Function $FunctionsToExport
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -946,17 +946,31 @@ function ConvertFrom-StreamerbotTemplate {
       return
     }
 
-    $restoredPath = $null
-    ConvertFrom-VcsTemplateFile `
-      -InputFilePath $InputPath `
-      -Rules $mappings `
-      -Backup:$Backup `
-      -ReplacedCount ([ref]$vcsReplacedCount) `
-      -FormatQueue $vcsFormatQueue `
-      -RestoredPath ([ref]$restoredPath)
+    $liveFilePath = $InputPath -replace '\.vcs-template\.json$', '.json'
+    $tmpPath = $null
 
-    if ((Split-Path $restoredPath -Leaf) -eq "actions.json") {
-      Set-StreamerbotCsharpBytecode -ActionsFilePath $restoredPath -TemplateFilePath $InputPath
+    if ((Split-Path $liveFilePath -Leaf) -eq "actions.json") {
+      $tmpPath = $liveFilePath -replace '\.json$', '.vcs-tmp.json'
+    }
+
+    try {
+      ConvertFrom-VcsTemplateFile `
+        -InputFilePath $InputPath `
+        -Rules $mappings `
+        -Backup:$Backup `
+        -ReplacedCount ([ref]$vcsReplacedCount) `
+        -FormatQueue $vcsFormatQueue `
+        -TmpOutPath $tmpPath
+
+      if ($tmpPath) {
+        Set-StreamerbotCsharpBytecode -ActionsFilePath $tmpPath -TemplateFilePath $InputPath
+        [System.IO.File]::Move($tmpPath, $liveFilePath, $true)
+        $vcsFormatQueue.Add($liveFilePath)
+      }
+    } finally {
+      if ($tmpPath -and (Test-Path -LiteralPath $tmpPath)) {
+        Remove-Item -LiteralPath $tmpPath -Force -ErrorAction SilentlyContinue
+      }
     }
 
   } finally {

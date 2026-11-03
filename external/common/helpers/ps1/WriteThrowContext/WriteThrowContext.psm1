@@ -1,4 +1,3 @@
-# TODO: make this prettier. have the throw msg in bold ideally. space before the msg for sure.
 function Write-ThrowContext {
   <#
     .SYNOPSIS
@@ -14,16 +13,15 @@ function Write-ThrowContext {
   $message = ("Error thrown from: $($caller.FunctionName) in " + `
       "$($callerFile):$($caller.ScriptLineNumber)")
 
-  $bold = ("**$message**" | ConvertFrom-Markdown `
-      -AsVT100EncodedString).VT100EncodedString.Replace("`n", '')
+  $bold = "$($PSStyle.Bold)$message$($PSStyle.BoldOff)"
 
-  Write-Host ""
   Write-Host $bold -ForegroundColor Red
   Write-Host "  Call stack:" -ForegroundColor Red
   $callStack | Select-Object -Skip 1 | ForEach-Object { # 1 is always this module function, skipped
     Write-Host "    at $($_.FunctionName) in $($_.ScriptName):$($_.ScriptLineNumber)" `
       -ForegroundColor Red
   }
+  Write-Host ""
 }
 
 Export-ModuleMember -Function Write-ThrowContext

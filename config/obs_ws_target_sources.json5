@@ -3,12 +3,12 @@
   instance: {
     ftp: {
       json5_cfg_key: "portable_ftp",
-      scene: "scene__alerts",
+      scene: "scene__layer__alerts",
       source: "browser__streamerbot_alerts",
     },
     production: {
       json5_cfg_key: "production",
-      scene: "scene__alerts",
+      scene: "scene__layer__alerts",
       source: "browser__streamerbot_alerts",
     },
   },

@@ -30,7 +30,8 @@ function Remove-EmptyVcsDirectories {
     [Parameter(Mandatory=$false)][string]$RequiredAncestorPattern
   )
   if (-not (Test-Path $RootPath -PathType Container)) {
-    Write-Warning "Remove-EmptyVcsDirectories: RootPath does not exist or is not a directory: $RootPath"
+    Write-Warning ("Remove-EmptyVcsDirectories: RootPath does not exist or is not a " +
+      "directory: $RootPath")
     return
   }
 
@@ -287,7 +288,8 @@ function Read-ReplacementMappings {
 
   if ($rules.Count -eq 0) {
     Write-ThrowContext
-    throw "Read-ReplacementMappings produced zero rules — check your mapping file paths and contents."
+    throw ("Read-ReplacementMappings produced zero rules — check your mapping file paths " +
+      "and contents.")
   }
 
   # Longest value first — so a full URL is matched before a bare port
@@ -299,12 +301,14 @@ function Format-JsonWithPrettier {
   param([string[]]$FilePaths)
 
   if (-not $Script:PrettierPath) {
-    Write-VcsMessage -Message "Warning: Prettier path is not set. Skipping formatting." -Color Yellow
+    Write-VcsMessage -Message "Warning: Prettier path is not set. Skipping formatting." `
+      -Color Yellow
     return
   }
 
   if (-not (Test-Path $script:PrettierPath)) {
-    Write-VcsMessage -Message "Warning: Prettier not found at $script:PrettierPath. Skipping formatting." `
+    Write-VcsMessage `
+      -Message "Warning: Prettier not found at $script:PrettierPath. Skipping formatting." `
       -Color Yellow
     return
   }
@@ -658,7 +662,8 @@ function ConvertFrom-VcsTemplateFile {
       # keep only the last output, earlier ones are noise
       if ($verdict.Count -eq 0 -or $verdict[-1] -ne $true) {
         Write-ThrowContext
-        throw "Validation did not accept the restored file, live file left untouched: $InputFilePath"
+        throw ("Validation did not accept the restored file, live file left untouched: " +
+          "$InputFilePath")
       }
     }
     [System.IO.File]::Move($tmpOutPath, $liveFilePath, $true)

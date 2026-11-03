@@ -611,10 +611,21 @@ function Set-StreamerbotCsharpBytecode {
   $actionNameIndexes = [System.Collections.Generic.Dictionary[string, int]]::new(
     [System.StringComparer]::Ordinal)
 
+  $repeatedNames = @()
   foreach ($nameHit in [regex]::Matches($content, '"name":\s*"(sbact__[^"\\]*)"')) {
-    if (-not $actionNameIndexes.ContainsKey($nameHit.Groups[1].Value)) {
-      $actionNameIndexes[$nameHit.Groups[1].Value] = $nameHit.Index
+    $hitName = $nameHit.Groups[1].Value
+    if ($actionNameIndexes.ContainsKey($hitName)) {
+      $firstLine = Get-StreamerbotLineNumber -Content $content -Index $actionNameIndexes[$hitName]
+      $line = Get-StreamerbotLineNumber -Content $content -Index $nameHit.Index
+      $repeatedNames += "'$hitName' at lines $firstLine and $line"
+    } else {
+      $actionNameIndexes[$hitName] = $nameHit.Index
     }
+  }
+  if ($repeatedNames) {
+    Write-ThrowContext
+    throw ("Duplicate action names in ${ActionsFilePath}: $($repeatedNames -join '; ')." +
+      " Streamer.bot does not allow two actions with the same name.")
   }
   $edits = @{}
   $nl = if ($content.Contains("`r`n")) {

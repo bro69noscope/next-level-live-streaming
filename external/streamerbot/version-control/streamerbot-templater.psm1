@@ -929,7 +929,7 @@ function ConvertFrom-StreamerbotTemplate {
             -InputFilePath $template.FullName `
             -Backup:$Backup
         } catch {
-          Write-VcsMessage -Message "  Failed: $($template.FullName)" -Color Red
+          Write-VcsMessage -Message "  Failed to convert from: $($template.FullName)" -Color Red
           Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red
         }
       }

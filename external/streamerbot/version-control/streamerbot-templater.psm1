@@ -946,32 +946,24 @@ function ConvertFrom-StreamerbotTemplate {
       return
     }
 
-    $liveFilePath = $InputPath -replace '\.vcs-template\.json$', '.json'
-    $tmpPath = $null
-
-    if ((Split-Path $liveFilePath -Leaf) -eq "actions.json") {
-      $tmpPath = $liveFilePath -replace '\.json$', '.vcs-tmp.json'
-    }
-
-    try {
-      ConvertFrom-VcsTemplateFile `
-        -InputFilePath $InputPath `
-        -Rules $mappings `
-        -Backup:$Backup `
-        -ReplacedCount ([ref]$vcsReplacedCount) `
-        -FormatQueue $vcsFormatQueue `
-        -TmpOutPath $tmpPath
-
-      if ($tmpPath) {
-        Set-StreamerbotCsharpBytecode -ActionsFilePath $tmpPath -TemplateFilePath $InputPath
-        [System.IO.File]::Move($tmpPath, $liveFilePath, $true)
-        $vcsFormatQueue.Add($liveFilePath)
-      }
-    } finally {
-      if ($tmpPath -and (Test-Path -LiteralPath $tmpPath)) {
-        Remove-Item -LiteralPath $tmpPath -Force -ErrorAction SilentlyContinue
+    $validate = $null
+    # only validating csharp sub-actions code right now (present in actions.json)
+    if ((Split-Path $InputPath -Leaf) -eq "actions.vcs-template.json") {
+      $validate = {
+        param($tmpTemplate, $vcsTemplate)
+        Set-StreamerbotCsharpBytecode `
+          -ActionsFilePath $tmpTemplate -TemplateFilePath $vcsTemplate
+        $true
       }
     }
+
+    ConvertFrom-VcsTemplateFile `
+      -InputFilePath $InputPath `
+      -Rules $mappings `
+      -Backup:$Backup `
+      -ReplacedCount ([ref]$vcsReplacedCount) `
+      -FormatQueue $vcsFormatQueue `
+      -Validate $validate
 
   } finally {
     if ($isRootCall) {

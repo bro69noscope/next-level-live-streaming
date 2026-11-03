@@ -594,7 +594,12 @@ function ConvertFrom-VcsTemplateFile {
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
     [System.Collections.Generic.List[string]]$FormatQueue,
-    [Parameter(Mandatory=$false)] [string]$TmpOutPath
+
+    # Check on the restored file before it goes live. The file is first written to a temp path; this
+    # code block gets that path as its 1st arg and the template path as its 2nd. It is meant to:
+    # 1. Conduct any validation logic on the temp file
+    # 2. Finally output $true to accept overwriting the live file with it
+    [Parameter(Mandatory=$false)] [scriptblock]$Validate
   )
 
   $inputFileName = Split-Path $InputFilePath -Leaf
@@ -607,15 +612,11 @@ function ConvertFrom-VcsTemplateFile {
 
   $liveFilePath = $InputFilePath -replace '\.vcs-template\.json$', '.json'
 
-  $outPath = if ($TmpOutPath) {
-    $TmpOutPath
-  } else {
-    $liveFilePath
-  }
+  $tmpOutPath = $liveFilePath -replace '\.json$', '.vcs-tmp.json'
 
   Write-VcsMessage -AsVerbose -Message "Restoring real config from template..."
   Write-VcsMessage -AsVerbose -Message "Input:  $InputFilePath"
-  Write-VcsMessage -AsVerbose -Message "Output: $outPath"
+  Write-VcsMessage -AsVerbose -Message "Output: $liveFilePath"
 
   if ($Backup -and (Test-Path $liveFilePath)) {
     $backupPath = "$liveFilePath.bak"
@@ -650,12 +651,24 @@ function ConvertFrom-VcsTemplateFile {
       -Color Yellow
   }
 
-  $content | Set-Content $outPath -Encoding UTF8
-  if (-not $TmpOutPath) {
-    # callers who provided a TmpOutPath handle the formatting themselves
-    $FormatQueue.Add($outPath)
+  try {
+    $content | Set-Content $tmpOutPath -Encoding UTF8
+    if ($Validate) {
+      $verdict = @(& $Validate $tmpOutPath $InputFilePath)
+      # keep only the last output, earlier ones are noise
+      if ($verdict.Count -eq 0 -or $verdict[-1] -ne $true) {
+        Write-ThrowContext
+        throw "Validation did not accept the restored file, live file left untouched: $InputFilePath"
+      }
+    }
+    [System.IO.File]::Move($tmpOutPath, $liveFilePath, $true)
+  } finally {
+    if (Test-Path -LiteralPath $tmpOutPath) {
+      Remove-Item -LiteralPath $tmpOutPath -Force -ErrorAction SilentlyContinue
+    }
   }
-  Write-VcsMessage -AsVerbose -Message "Real config saved: $outPath"
+  $FormatQueue.Add($liveFilePath)
+  Write-VcsMessage -AsVerbose -Message "Real config saved: $liveFilePath"
 }
 
 $FunctionsToExport = @(

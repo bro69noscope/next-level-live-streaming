@@ -13,8 +13,6 @@ try {
 }
 
 $script:VcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
-$script:VcsFlagSnapshotDirPath = Join-Path $PSScriptRoot "logs\flag-snapshots"
-$script:VcsFlagSnapshotKeepCount = 3
 
 $markerFormatPath = Join-Path $PSScriptRoot "..\shared\marker-format.json"
 $script:MarkerFormat = Get-Content ($markerFormatPath) -Raw | ConvertFrom-Json
@@ -542,59 +540,23 @@ function Copy-StreamDeckMarkerFile {
 
   if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath) `
       -and -not ($isHome -and $ChildChanged)) {
-    if (-not (Test-Path $script:VcsFlagSnapshotDirPath)) {
-      New-Item -ItemType Directory -Path $script:VcsFlagSnapshotDirPath -Force | Out-Null
-    }
-
-    $pageSuffix = if ($null -ne $marker['pageIndex']) {
-      "-$($marker['pageIndex'])"
-    } else {
-      ""
-    }
-
-    $snapshotDir = Join-Path `
-      $script:VcsFlagSnapshotDirPath "$($marker['name'])--$($marker['type'])$pageSuffix"
-
-    if (-not (Test-Path $snapshotDir)) {
-      New-Item -ItemType Directory -Path $snapshotDir -Force | Out-Null
-    }
-    $stamp = Get-Date -Format "yyyy-MM-ddTHHmmss"
-    $newSnapshotPath = Join-Path $snapshotDir "$stamp--$($newFlag.Substring(0,8)).json"
-
     $relManifest = $manifestTemplatePath.Substring(
       $script:VcsOutDirPath.Length).TrimStart('\') -replace '\\', '/'
 
-    $headLines = git -C $script:VcsOutDirPath show "HEAD:$relManifest" 2>$null
-    $headOk = ($LASTEXITCODE -eq 0)
-
-    Copy-Item -Path $manifestTemplatePath -Destination $newSnapshotPath -Force
-
-    $diffNote = if (-not $headOk) {
-      "no committed version in vcdata HEAD to compare against"
+    git -C $script:VcsOutDirPath cat-file -e "HEAD:$relManifest" 2>$null
+    $diffNote = if ($LASTEXITCODE -ne 0) {
+      "not in vcdata HEAD yet"
     } else {
-      $diffLines = Compare-Object @($headLines) @(Get-Content $manifestTemplatePath)
-      if ($diffLines) {
-        "$($diffLines.Count) line(s) differ from committed HEAD"
+      $numstat = git -C $script:VcsOutDirPath diff --numstat HEAD -- $relManifest 2>$null
+      if ($numstat) {
+        $added, $removed = ($numstat -split "\s+")[0, 1]
+        "+$added/-$removed line(s) vs committed HEAD"
       } else {
-        "content is LINE-IDENTICAL to committed HEAD - flag change is likely EOL/BOM only"
+        "identical to committed HEAD - flag change is likely EOL/BOM only"
       }
     }
 
-    $truncated = $newSnapshotPath.Substring($Global:RepoPath.Length).TrimStart('\')
-    Write-VcsMessage -Message "  Snapshot saved: $truncated ($diffNote)" -Color DarkGray
-
-    # Prune every snapshot folder, not just the one written to.
-    foreach ($dir in Get-ChildItem $script:VcsFlagSnapshotDirPath -Directory) {
-      $pruned = 0
-      $files = Get-ChildItem $dir.FullName -File -Filter "*.json" | Sort-Object Name -Descending
-      for ($i = $script:VcsFlagSnapshotKeepCount; $i -lt $files.Count; $i++) {
-        Remove-Item $files[$i].FullName -Force
-        $pruned++
-      }
-      if ($pruned -gt 0) {
-        Write-VcsMessage -Message "  Pruned $pruned old snapshot(s) from $($dir.Name)" -AsVerbose
-      }
-    }
+    Write-VcsMessage -Message "  Template differs: $relManifest ($diffNote)" -Color DarkGray
   }
 
   $metadataChanged = $true

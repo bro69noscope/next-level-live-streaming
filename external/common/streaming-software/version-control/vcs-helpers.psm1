@@ -65,13 +65,19 @@ function Test-DanglingVcsSymlink {
   return -not (Test-Path $target)
 }
 
+function Add-VcsLogLines {
+  param([Parameter(Mandatory=$true)] [AllowEmptyString()] [string[]]$Lines)
+  $text = ($Lines -join "`n") + "`n"
+  [System.IO.File]::AppendAllText(
+    $script:VcsLogFilePath, $text, [System.Text.UTF8Encoding]::new($false))
+}
+
 function Write-VcsLogSeparator {
-  param([int]$Lines = 5)
+  param([int]$Lines = 1)
   if ($script:VcsLogFilePath) {
     try {
       $blankLines = 1..$Lines | ForEach-Object { "" }
-      $blankLines + "new_run_started" |
-        Add-Content -Path $script:VcsLogFilePath -Encoding UTF8
+      Add-VcsLogLines -Lines ($blankLines + "new_run_started")
     } catch {
       Write-Warning "VCS logging failed: $_"
     }
@@ -108,7 +114,9 @@ function Set-VcsLogFilePath {
     (Get-Item $logPath).Length -gt $script:VcsMaxLogSizeBytes) {
     $lines = Get-Content $logPath
     $keepFrom = [Math]::Floor($lines.Count / 2)
-    $lines | Select-Object -Skip $keepFrom | Set-Content $logPath -Encoding UTF8
+    [System.IO.File]::WriteAllText($logPath,
+      (($lines | Select-Object -Skip $keepFrom) -join "`n") + "`n",
+      [System.Text.UTF8Encoding]::new($false))
   }
 
   $script:VcsLogDirPath  = $resolvedDir
@@ -140,8 +148,7 @@ function Write-VcsMessage {
   if ($script:VcsLogFilePath -and -not $NoLog) {
     try {
       $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-      "[$timestamp] $Message" |
-        Add-Content -Path $script:VcsLogFilePath -Encoding UTF8
+      Add-VcsLogLines -Lines "[$timestamp] $Message"
     } catch {
       Write-Warning "VCS logging failed: $_"
     }

@@ -842,8 +842,10 @@ function ConvertFrom-StreamDeckTemplate {
         $symlinkFile = Get-Item $template.FullName -Force
 
         if (Test-DanglingVcsSymlink -SymlinkFile $symlinkFile) {
-          Write-VcsMessage -Message ("  This folder's manifest.json symlink no longer resolves to a" +
-            " valid path in the vcs repository:") -Color Yellow
+          Write-VcsMessage -Message (
+            "  This folder's manifest.json symlink no longer resolves to a valid path in the vcs" +
+            " repository:") -Color Yellow
+
           $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
           if ($markerFile) {
             Write-VcsMessage -Message "  Marker file: $($markerFile.Name):" -Color Yellow
@@ -851,8 +853,9 @@ function ConvertFrom-StreamDeckTemplate {
             Write-VcsMessage -Message "  Marker file: none found:" -Color Yellow
           }
           Write-VcsMessage -Message "    $inputDirectory" -Color Yellow
-          Write-VcsMessage -Message ("  This may be due to intentional deletion of a no longer used" +
-            " ressource.") -Color Yellow
+          Write-VcsMessage -Message (
+            "  This may be due to intentional deletion of a no longer used ressource.") `
+            -Color Yellow
 
           $response = Read-Host "  Delete this local folder? (y/N)"
 

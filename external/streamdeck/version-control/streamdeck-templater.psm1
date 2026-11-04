@@ -13,7 +13,6 @@ try {
 }
 
 $script:VcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
-$script:VcsFlagSnapshotDirPath = Join-Path $PSScriptRoot "logs\flag-snapshots"
 
 $markerFormatPath = Join-Path $PSScriptRoot "..\shared\marker-format.json"
 $script:MarkerFormat = Get-Content ($markerFormatPath) -Raw | ConvertFrom-Json
@@ -37,11 +36,20 @@ Function Get-Guid (){
   return [guid]::NewGuid().ToString("N")
 }
 
+function Get-BytesHash {
+  param([Parameter(Mandatory=$true)] [byte[]]$Bytes)
+  $hash = [System.Security.Cryptography.SHA256]::HashData($Bytes)
+  return ([System.BitConverter]::ToString($hash) -replace "-").ToLower().Substring(0, 32)
+}
+
+function Get-StringHash {
+  param([Parameter(Mandatory=$true)] [string]$Text)
+  return Get-BytesHash -Bytes ([System.Text.Encoding]::UTF8.GetBytes($Text))
+}
+
 function Get-FileContentHash {
   param([Parameter(Mandatory=$true)] [string]$FilePath)
-  $bytes = [System.IO.File]::ReadAllBytes($FilePath)
-  $hash = [System.Security.Cryptography.SHA256]::HashData($bytes)
-  return ([System.BitConverter]::ToString($hash) -replace "-").ToLower().Substring(0, 32)
+  return Get-BytesHash -Bytes ([System.IO.File]::ReadAllBytes($FilePath))
 }
 
 function Find-StreamDeckDeviceRoot {
@@ -449,7 +457,8 @@ function Copy-StreamDeckMarkerFile {
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
     [Parameter(Mandatory=$false)] [string]$RelativeOutPath,
-    [Parameter(Mandatory=$false)] [switch]$ChildChanged
+    [Parameter(Mandatory=$false)] [switch]$ChildChanged,
+    [Parameter(Mandatory=$false)] [string]$ChildFlagSeed = ""
   )
 
   $InputPath = (Resolve-Path $InputFilePath).Path
@@ -507,6 +516,9 @@ function Copy-StreamDeckMarkerFile {
 
   if (Test-Path $manifestTemplatePath) {
     $newFlag = Get-FileContentHash -FilePath $manifestTemplatePath
+    if ($isHome -and $ChildFlagSeed) {
+      $newFlag = Get-StringHash -Text "$newFlag|$ChildFlagSeed"
+    }
     $homeChanged = ($isHome -and $newFlag -ne $existingFlag)
   } else {
     Write-VcsMessage -Message ("  No manifest template found: $manifestTemplatePath" +
@@ -522,60 +534,34 @@ function Copy-StreamDeckMarkerFile {
         + "$($templateInfo.LastWriteTime.ToString('o')), flag $($newFlag.Substring(0,6))...")
   }
 
+  if (-not $isHome) {
+    $script:VcsChildFlags.Add("$destFileName=$newFlag")
+  }
+
   if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath)) {
-    if (-not (Test-Path $script:VcsFlagSnapshotDirPath)) {
-      New-Item -ItemType Directory -Path $script:VcsFlagSnapshotDirPath -Force | Out-Null
-    }
+    $relManifest = $manifestTemplatePath.Substring(
+      $script:VcsOutDirPath.Length).TrimStart('\') -replace '\\', '/'
 
-    $pageSuffix = if ($null -ne $marker['pageIndex']) {
-      "-$($marker['pageIndex'])"
+    git -C $script:VcsOutDirPath cat-file -e "HEAD:$relManifest" 2>$null
+    $diffNote = if ($LASTEXITCODE -ne 0) {
+      "not in vcdata HEAD yet"
     } else {
-      ""
-    }
-
-    $snapshotBaseName = "$($marker['name'])--$($marker['type'])$pageSuffix"
-    $oldSnapshotPath = Join-Path $script:VcsFlagSnapshotDirPath `
-      "$snapshotBaseName--$($existingFlag.Substring(0,8)).json"
-    $newSnapshotPath = Join-Path $script:VcsFlagSnapshotDirPath `
-      "$snapshotBaseName--$($newFlag.Substring(0,8)).json"
-
-    Copy-Item -Path $manifestTemplatePath -Destination $newSnapshotPath -Force
-
-    $diffNote = if (Test-Path $oldSnapshotPath) {
-      $diffLines = Compare-Object (Get-Content $oldSnapshotPath) (Get-Content $manifestTemplatePath)
-      if ($diffLines) {
-        "$($diffLines.Count) line(s) differ from previous snapshot"
-
+      $numstat = git -C $script:VcsOutDirPath diff --numstat HEAD -- $relManifest 2>$null
+      if ($numstat) {
+        $added, $removed = ($numstat -split "\s+")[0, 1]
+        $note = "+$added/-$removed line(s) vs committed HEAD"
+        if ($isHome -and $ChildChanged) {
+          $note += "; child manifest also changed"
+        }
+        $note
+      } elseif ($isHome -and $ChildChanged) {
+        "home template identical to committed HEAD; flag moved because a child manifest changed"
       } else {
-        $oldText = [System.IO.File]::ReadAllText($oldSnapshotPath)
-        $newText = [System.IO.File]::ReadAllText($manifestTemplatePath)
-        $oldEol = if ($oldText.Contains("`r`n")) {
-          "crlf"
-        } else {
-          "lf"
-        }
-        $newEol = if ($newText.Contains("`r`n")) {
-          "crlf"
-        } else {
-          "lf"
-        }
-
-        $bomBytes = @(0xEF, 0xBB, 0xBF)
-        $oldFirst3 = [System.IO.File]::ReadAllBytes($oldSnapshotPath)[0..2]
-        $newFirst3 = [System.IO.File]::ReadAllBytes($manifestTemplatePath)[0..2]
-        $oldBom = -not (Compare-Object $bomBytes $oldFirst3)
-        $newBom = -not (Compare-Object $bomBytes $newFirst3)
-
-        "content is LINE-IDENTICAL to previous snapshot — flag change is spurious " `
-          + "(eol: $oldEol -> $newEol, bom: $oldBom -> $newBom, " `
-          + "bytes: $($oldText.Length) -> $($newText.Length))"
+        "identical to committed HEAD - flag change is likely EOL/BOM only"
       }
-    } else {
-      "no previous snapshot on disk to compare against"
     }
 
-    $truncated = $newSnapshotPath.Substring($Global:RepoPath.Length).TrimStart('\')
-    Write-VcsMessage -Message "  Snapshot saved: $truncated ($diffNote)" -Color DarkGray
+    Write-VcsMessage -Message "  Template differs: $relManifest ($diffNote)" -Color DarkGray
   }
 
   $metadataChanged = $true
@@ -600,9 +586,7 @@ function Copy-StreamDeckMarkerFile {
 
   if ($isHome) {
     if ($flagChanged) {
-      $reason = if ($homeChanged -and $ChildChanged) {
-        "home and child manifest have changes"
-      } elseif ($ChildChanged) {
+      $reason = if ($ChildChanged) {
         "child manifest has changes"
       } elseif ($homeChanged) {
         "home manifest has changes"
@@ -702,9 +686,9 @@ function ConvertTo-StreamDeckTemplate {
             -SkipSeeding
 
           Write-VcsMessage -Message ""
-          Write-VcsMessage -Message ("Seeded $($seededPaths.Count) new marker template(s) — " `
-              + "add desc if needed.") -Color Yellow
-          $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
+          Write-VcsMessage -Message (
+            "Seeded $($seededPaths.Count) new marker template(s) — add desc if needed.") -Color Cyan
+          $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" }
 
           if ($unexpectedPaths.Count -gt 0) {
             Write-VcsMessage -Message "Found $($unexpectedPaths.Count) unexpected marker(s):" `
@@ -743,6 +727,7 @@ function ConvertTo-StreamDeckTemplate {
       foreach ($group in $markerGroups) {
         $homeMarkerFiles = @()
         $childChanged = $false
+        $script:VcsChildFlags = [System.Collections.Generic.List[string]]::new()
 
         foreach ($jsonMarkerFile in $group.Group) {
           $markerType = (Get-Content $jsonMarkerFile.FullName -Raw |
@@ -771,7 +756,8 @@ function ConvertTo-StreamDeckTemplate {
           try {
             Copy-StreamDeckMarkerFile -InputFilePath $homeMarkerFile.FullName `
               -RelativeOutPath $RelativeOutPath `
-              -ChildChanged:$childChanged | Out-Null
+              -ChildChanged:$childChanged `
+              -ChildFlagSeed (($script:VcsChildFlags | Sort-Object) -join '|') | Out-Null
           } catch {
             Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)`n" -Color Red
             Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold
@@ -856,8 +842,10 @@ function ConvertFrom-StreamDeckTemplate {
         $symlinkFile = Get-Item $template.FullName -Force
 
         if (Test-DanglingVcsSymlink -SymlinkFile $symlinkFile) {
-          Write-VcsMessage -Message ("  This folder's manifest.json symlink no longer resolves to a" +
-            " valid path in the vcs repository:") -Color Yellow
+          Write-VcsMessage -Message (
+            "  This folder's manifest.json symlink no longer resolves to a valid path in the vcs" +
+            " repository:") -Color Yellow
+
           $markerFile = Get-VcsMarkerFile -DirectoryPath $inputDirectory
           if ($markerFile) {
             Write-VcsMessage -Message "  Marker file: $($markerFile.Name):" -Color Yellow
@@ -865,8 +853,9 @@ function ConvertFrom-StreamDeckTemplate {
             Write-VcsMessage -Message "  Marker file: none found:" -Color Yellow
           }
           Write-VcsMessage -Message "    $inputDirectory" -Color Yellow
-          Write-VcsMessage -Message ("  This may be due to intentional deletion of a no longer used" +
-            " ressource.") -Color Yellow
+          Write-VcsMessage -Message (
+            "  This may be due to intentional deletion of a no longer used ressource.") `
+            -Color Yellow
 
           $response = Read-Host "  Delete this local folder? (y/N)"
 

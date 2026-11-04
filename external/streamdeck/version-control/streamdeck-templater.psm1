@@ -13,7 +13,7 @@ try {
 }
 
 $script:VcsOutDirPath = Join-Path $PSScriptRoot "vcdata"
-$script:VcsFlagSnapshotDirPath = Join-Path $PSScriptRoot "log\flag-snapshots"
+$script:VcsFlagSnapshotDirPath = Join-Path $PSScriptRoot "logs\flag-snapshots"
 
 $markerFormatPath = Join-Path $PSScriptRoot "..\shared\marker-format.json"
 $script:MarkerFormat = Get-Content ($markerFormatPath) -Raw | ConvertFrom-Json

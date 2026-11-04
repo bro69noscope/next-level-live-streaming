@@ -38,11 +38,20 @@ Function Get-Guid (){
   return [guid]::NewGuid().ToString("N")
 }
 
+function Get-BytesHash {
+  param([Parameter(Mandatory=$true)] [byte[]]$Bytes)
+  $hash = [System.Security.Cryptography.SHA256]::HashData($Bytes)
+  return ([System.BitConverter]::ToString($hash) -replace "-").ToLower().Substring(0, 32)
+}
+
+function Get-StringHash {
+  param([Parameter(Mandatory=$true)] [string]$Text)
+  return Get-BytesHash -Bytes ([System.Text.Encoding]::UTF8.GetBytes($Text))
+}
+
 function Get-FileContentHash {
   param([Parameter(Mandatory=$true)] [string]$FilePath)
-  $bytes = [System.IO.File]::ReadAllBytes($FilePath)
-  $hash = [System.Security.Cryptography.SHA256]::HashData($bytes)
-  return ([System.BitConverter]::ToString($hash) -replace "-").ToLower().Substring(0, 32)
+  return Get-BytesHash -Bytes ([System.IO.File]::ReadAllBytes($FilePath))
 }
 
 function Find-StreamDeckDeviceRoot {
@@ -450,7 +459,8 @@ function Copy-StreamDeckMarkerFile {
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
     [Parameter(Mandatory=$false)] [string]$RelativeOutPath,
-    [Parameter(Mandatory=$false)] [switch]$ChildChanged
+    [Parameter(Mandatory=$false)] [switch]$ChildChanged,
+    [Parameter(Mandatory=$false)] [string]$ChildFlagSeed = ""
   )
 
   $InputPath = (Resolve-Path $InputFilePath).Path
@@ -508,6 +518,9 @@ function Copy-StreamDeckMarkerFile {
 
   if (Test-Path $manifestTemplatePath) {
     $newFlag = Get-FileContentHash -FilePath $manifestTemplatePath
+    if ($isHome -and $ChildFlagSeed) {
+      $newFlag = Get-StringHash -Text "$newFlag|$ChildFlagSeed"
+    }
     $homeChanged = ($isHome -and $newFlag -ne $existingFlag)
   } else {
     Write-VcsMessage -Message ("  No manifest template found: $manifestTemplatePath" +
@@ -523,7 +536,12 @@ function Copy-StreamDeckMarkerFile {
         + "$($templateInfo.LastWriteTime.ToString('o')), flag $($newFlag.Substring(0,6))...")
   }
 
-  if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath)) {
+  if (-not $isHome) {
+    $script:VcsChildFlags.Add("$destFileName=$newFlag")
+  }
+
+  if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath) `
+      -and -not ($isHome -and $ChildChanged)) {
     if (-not (Test-Path $script:VcsFlagSnapshotDirPath)) {
       New-Item -ItemType Directory -Path $script:VcsFlagSnapshotDirPath -Force | Out-Null
     }
@@ -601,9 +619,7 @@ function Copy-StreamDeckMarkerFile {
 
   if ($isHome) {
     if ($flagChanged) {
-      $reason = if ($homeChanged -and $ChildChanged) {
-        "home and child manifest have changes"
-      } elseif ($ChildChanged) {
+      $reason = if ($ChildChanged) {
         "child manifest has changes"
       } elseif ($homeChanged) {
         "home manifest has changes"
@@ -744,6 +760,7 @@ function ConvertTo-StreamDeckTemplate {
       foreach ($group in $markerGroups) {
         $homeMarkerFiles = @()
         $childChanged = $false
+        $script:VcsChildFlags = [System.Collections.Generic.List[string]]::new()
 
         foreach ($jsonMarkerFile in $group.Group) {
           $markerType = (Get-Content $jsonMarkerFile.FullName -Raw |
@@ -772,7 +789,8 @@ function ConvertTo-StreamDeckTemplate {
           try {
             Copy-StreamDeckMarkerFile -InputFilePath $homeMarkerFile.FullName `
               -RelativeOutPath $RelativeOutPath `
-              -ChildChanged:$childChanged | Out-Null
+              -ChildChanged:$childChanged `
+              -ChildFlagSeed (($script:VcsChildFlags | Sort-Object) -join '|') | Out-Null
           } catch {
             Write-VcsMessage -Message "  Failed copying: $($homeMarkerFile.FullName)`n" -Color Red
             Write-VcsMessage -Message "  $($_.Exception.Message)" -Color Red -Bold

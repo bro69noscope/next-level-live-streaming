@@ -538,8 +538,7 @@ function Copy-StreamDeckMarkerFile {
     $script:VcsChildFlags.Add("$destFileName=$newFlag")
   }
 
-  if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath) `
-      -and -not ($isHome -and $ChildChanged)) {
+  if ($existingFlag -and $existingFlag -ne $newFlag -and (Test-Path $manifestTemplatePath)) {
     $relManifest = $manifestTemplatePath.Substring(
       $script:VcsOutDirPath.Length).TrimStart('\') -replace '\\', '/'
 
@@ -550,7 +549,13 @@ function Copy-StreamDeckMarkerFile {
       $numstat = git -C $script:VcsOutDirPath diff --numstat HEAD -- $relManifest 2>$null
       if ($numstat) {
         $added, $removed = ($numstat -split "\s+")[0, 1]
-        "+$added/-$removed line(s) vs committed HEAD"
+        $note = "+$added/-$removed line(s) vs committed HEAD"
+        if ($isHome -and $ChildChanged) {
+          $note += "; child manifest also changed"
+        }
+        $note
+      } elseif ($isHome -and $ChildChanged) {
+        "home template identical to committed HEAD; flag moved because a child manifest changed"
       } else {
         "identical to committed HEAD - flag change is likely EOL/BOM only"
       }
@@ -681,9 +686,9 @@ function ConvertTo-StreamDeckTemplate {
             -SkipSeeding
 
           Write-VcsMessage -Message ""
-          Write-VcsMessage -Message ("Seeded $($seededPaths.Count) new marker template(s) — " `
-              + "add desc if needed.") -Color Yellow
-          $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" -Color Yellow }
+          Write-VcsMessage -Message (
+            "Seeded $($seededPaths.Count) new marker template(s) — add desc if needed.") -Color Cyan
+          $seededPaths | ForEach-Object { Write-VcsMessage -Message "  $_" }
 
           if ($unexpectedPaths.Count -gt 0) {
             Write-VcsMessage -Message "Found $($unexpectedPaths.Count) unexpected marker(s):" `

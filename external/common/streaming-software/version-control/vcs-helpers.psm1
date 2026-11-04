@@ -538,7 +538,7 @@ function ConvertTo-VcsTemplateFile {
 
   if (-not (Test-Path $VcsOutDirPath)) {
     New-Item -ItemType Directory -Path $VcsOutDirPath -Force | Out-Null
-    Write-VcsMessage -Message "Created VCS directory: $VcsOutDirPath" -Color Yellow
+    Write-VcsMessage -Message "Created VCS directory: $VcsOutDirPath"
   }
 
   $symlinkPath = Join-Path $inputDirectory $templateFileName

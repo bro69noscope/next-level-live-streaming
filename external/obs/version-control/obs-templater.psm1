@@ -32,6 +32,27 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:ObsMappingsPath `
   -ScopedMappingsPaths @($script:ObsScopedPath)
 
+# Volatile values OBS rewrites constantly (active scene, preview zoom level). Pinned in templates to
+# avoid diff noise. The active scene defaults to scene__metascene (fine if a collection has no such
+# scene).
+$script:templateNormalizers = @(
+  @{ Pattern = '("scaling_level"\s*:\s*)-?\d+'; Replacement = '${1}0' }
+)
+$script:ObsPinnedScenes = [ordered]@{
+  ""                         = "scene__metascene"
+  'ftp_collection__main\.json$'  = "scene__center_monitor"
+  'vcam_collection__main\.json$' = "scene__vcam_facecam"
+}
+foreach ($pinnedScene in $script:ObsPinnedScenes.GetEnumerator()) {
+  foreach ($sceneKey in @("current_scene", "current_program_scene")) {
+    $script:templateNormalizers += @{
+      Pattern     = "(`"$sceneKey`"\s*:\s*)`"[^`"]*`""
+      Replacement = "`${1}`"$($pinnedScene.Value)`""
+      PathPattern = $pinnedScene.Key
+    }
+  }
+}
+
 $script:ObsMarkers = @("scenes", "plugin_config")
 $script:ObsPluginAllowlist = @("obs-websocket")
 $script:ObsSceneAllowlist = @(
@@ -153,7 +174,8 @@ function ConvertTo-ObsTemplate {
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
       -FormatQueue $vcsFormatQueue `
-      -ReplacedCount ([ref]$vcsReplacedCount)
+      -ReplacedCount ([ref]$vcsReplacedCount) `
+      -Normalizers $script:templateNormalizers
 
   } finally {
     if ($isRootCall) {

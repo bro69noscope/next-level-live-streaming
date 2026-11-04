@@ -29,6 +29,17 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:SdeckMappingsPath `
   -ScopedMappingsPaths @($script:SdeckScopedPath)
 
+# Volatile values that Stream Deck / plugins rewrite constantly and that do not affect behavior.
+# Pinned in templates to avoid diff noise and false vcs-flag changes.
+# NOTE: we are not 100% sure this wont ever break something.
+$script:templateNormalizers = @(
+  @{ Pattern = '("State"\s*:\s*)\d+'; Replacement = '${1}1' },
+
+  @{ Pattern = '("_uuid"\s*:\s*)"[^"]*"';
+    Replacement = '${1}"00000000-0000-0000-0000-000000000000"'
+  }
+)
+
 $Script:manifestStr = "manifest.json"
 $Script:jsonMarkerStr = "*-marker.json"
 
@@ -795,7 +806,8 @@ function ConvertTo-StreamDeckTemplate {
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
       -FormatQueue:$vcsFormatQueue `
-      -ReplacedCount ([ref]$vcsReplacedCount)
+      -ReplacedCount ([ref]$vcsReplacedCount) `
+      -Normalizers $script:templateNormalizers
 
   } finally {
     if ($isRootCall) {

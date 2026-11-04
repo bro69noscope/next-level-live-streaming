@@ -518,7 +518,13 @@ function ConvertTo-VcsTemplateFile {
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
     [System.Collections.Generic.List[string]]$FormatQueue,
-    [Parameter(Mandatory=$true)] [ref]$ReplacedCount
+    [Parameter(Mandatory=$true)] [ref]$ReplacedCount,
+
+    # Optional list of @{ Pattern = <regex>; Replacement = <string>; PathPattern = <regex> } applied
+    # to the content after the mapping rules. Used to pin volatile values (e.g. toggle state, random
+    # ids) so they do not create diff noise or change the template hash. PathPattern is optional: if
+    # given, the normalizer only applies to input files whose full path matches it.
+    [Parameter(Mandatory=$false)] [array]$Normalizers = @()
   )
 
   $inputFileName  = Split-Path $InputFilePath -Leaf
@@ -572,6 +578,13 @@ function ConvertTo-VcsTemplateFile {
         }
       }
     }
+  }
+
+  foreach ($normalizer in $Normalizers) {
+    if ($normalizer.PathPattern -and $InputFilePath -notmatch $normalizer.PathPattern) {
+      continue
+    }
+    $content = [regex]::Replace($content, $normalizer.Pattern, $normalizer.Replacement)
   }
 
   $needsWrite = $true

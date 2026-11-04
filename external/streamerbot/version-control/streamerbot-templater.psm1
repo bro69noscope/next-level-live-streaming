@@ -58,6 +58,14 @@ $mappings = Read-ReplacementMappings `
   -MappingsPath $script:SbotMappingsPath `
   -ScopedMappingsPaths @($script:SbotScopedPath)
 
+# Volatile values that Streamer.bot rewrites on every save. Pinned in templates to avoid diff noise.
+$script:templateNormalizers = @(
+  @{
+    Pattern = '("t"\s*:\s*)"\d{4}-\d{2}-\d{2}T[^"]*"'
+    Replacement = '${1}"1970-01-01T00:00:00.0000000+00:00"'
+  }
+)
+
 $script:SbotMarkers = @("data")
 $script:SbotFileAllowlist = @("obs.json", "settings.json", "actions.json")
 $script:SbotTestSuffixPattern = '_(fake|test)\.json$'
@@ -886,7 +894,8 @@ function ConvertTo-StreamerbotTemplate {
       -VcsOutDirPath $vcsOutDirPath `
       -Rules $mappings `
       -FormatQueue $vcsFormatQueue `
-      -ReplacedCount ([ref]$vcsReplacedCount)
+      -ReplacedCount ([ref]$vcsReplacedCount) `
+      -Normalizers $script:templateNormalizers
 
   } finally {
     if ($isRootCall) {

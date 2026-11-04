@@ -73,7 +73,7 @@ function Add-VcsLogLines {
 }
 
 function Write-VcsLogSeparator {
-  param([int]$Lines = 1)
+  param([int]$Lines = 2)
   if ($script:VcsLogFilePath) {
     try {
       $blankLines = 1..$Lines | ForEach-Object { "" }

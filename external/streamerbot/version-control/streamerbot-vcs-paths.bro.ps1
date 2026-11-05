@@ -1,4 +1,4 @@
-. (Join-Path $env:STREAMING_REPO_PATH `
+. (Join-Path $env:BRO_NLLS_REPO_PATH `
     "external\common\streaming-software\version-control\dotsource-common-paths.ps1")
 
 $script:SbotMappingsPath = "$PSScriptRoot\streamerbot-vcs-mappings.bro.json5"
@@ -9,6 +9,6 @@ $script:SbotProductionPath = Join-Path $env:MYFILES_PATH `
 $script:SbotFtpPath = Join-Path $env:MYFILES_PATH `
   "streaming-programs\streamerbot-portable-ftp\Streamer.bot"
 
-$script:SbotScopedPath = Join-Path $env:STREAMING_REPO_PATH `
+$script:SbotScopedPath = Join-Path $env:BRO_NLLS_REPO_PATH `
   "config\scoped_generated.streamerbot.json"
 

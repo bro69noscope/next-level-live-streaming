@@ -1,9 +1,9 @@
-. (Join-Path $env:STREAMING_REPO_PATH `
+. (Join-Path $env:BRO_NLLS_REPO_PATH `
     "external\common\streaming-software\version-control\dotsource-common-paths.ps1")
 
 $script:SdeckBasePath = Join-Path $env:APPDATA "Elgato\StreamDeck\ProfilesV3"
 
-$script:SdeckScopedPath = Join-Path $env:STREAMING_REPO_PATH `
+$script:SdeckScopedPath = Join-Path $env:BRO_NLLS_REPO_PATH `
   "config\scoped_generated.streamdeck.json"
 
 $script:SdeckMappingsPath = Join-Path $PSScriptRoot "streamdeck-vcs-mappings.bro.json5"

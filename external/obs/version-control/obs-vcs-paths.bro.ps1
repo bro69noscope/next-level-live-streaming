@@ -1,4 +1,4 @@
-. (Join-Path $env:STREAMING_REPO_PATH `
+. (Join-Path $env:BRO_NLLS_REPO_PATH `
     "external\common\streaming-software\version-control\dotsource-common-paths.ps1")
 
 $script:ObsProductionPath = Join-Path $env:APPDATA "obs-studio\"
@@ -9,7 +9,7 @@ $script:ObsVcamPath = Join-Path $env:MYFILES_PATH `
 $script:ObsFtpPath = Join-Path $env:MYFILES_PATH `
   "streaming-programs\obs-studio-portable-ftp\obs-studio\config\obs-studio"
 
-$script:ObsScopedPath = Join-Path $env:STREAMING_REPO_PATH `
+$script:ObsScopedPath = Join-Path $env:BRO_NLLS_REPO_PATH `
   "\config\scoped_generated.obs.json"
 
 $script:ObsMappingsPath = Join-Path $PSScriptRoot "obs-vcs-mappings.bro.json5"

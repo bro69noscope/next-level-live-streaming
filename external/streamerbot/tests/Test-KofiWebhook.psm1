@@ -78,7 +78,7 @@ function Test-KofiWebhook {
     }
   }
 
-  Import-Module "$env:STREAMING_REPO_PATH\src\scripts\CredentialHelpers.psm1" -Force
+  Import-Module "$env:BRO_NLLS_REPO_PATH\src\scripts\CredentialHelpers.psm1" -Force
 
   $UrlTarget = if ($Env -eq "prod") {
     "NoscopeKofiWebhookUrl"

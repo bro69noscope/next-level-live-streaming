@@ -500,6 +500,16 @@ function Get-StreamerbotCsharpRequiredReferences {
     return
   }
 
+  # Streamer.bot compiles an Execute Code sub-action against its "references" list only. Without
+  # mscorlib, nothing resolves (CS0518: Predefined type 'System.Object' is not defined). The
+  # Streamer.bot UI adds it to the sub-actions it creates, a stub written by hand does not have it.
+  if (-not $FrameworkRefDir) {
+    Write-ThrowContext
+    throw (".NET Framework folder not found, or not reachable with a relative path (see the " +
+      "message above), needed for the mandatory mscorlib reference of $SourcePath")
+  }
+  "$FrameworkRefDir\mscorlib.dll".Replace('\', '\\')
+
   $csproj = [xml][System.IO.File]::ReadAllText($csprojPath)
   foreach ($flag in $script:SbotCsharpReferenceByFlag.Keys) {
     $node = $csproj.SelectSingleNode("//$flag")

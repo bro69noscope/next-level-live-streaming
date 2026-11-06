@@ -36,7 +36,10 @@ $mappings = Read-ReplacementMappings `
 # avoid diff noise. The active scene defaults to scene__metascene (fine if a collection has no such
 # scene).
 $script:templateNormalizers = @(
-  New-VcsNormalizer -Pattern '("scaling_level"\s*:\s*)-?\d+' -Replacement '${1}0'
+  New-VcsNormalizer `
+    -Name 'pin-scaling-level' `
+    -Pattern '("scaling_level"\s*:\s*)-?\d+' `
+    -Replacement '${1}0'
 )
 $script:ObsPinnedScenes = [ordered]@{
   ""                         = "scene__metascene"
@@ -46,6 +49,7 @@ $script:ObsPinnedScenes = [ordered]@{
 foreach ($pinnedScene in $script:ObsPinnedScenes.GetEnumerator()) {
   foreach ($sceneKey in @("current_scene", "current_program_scene")) {
     $script:templateNormalizers += New-VcsNormalizer `
+      -Name "pin-$sceneKey" `
       -Pattern "(`"$sceneKey`"\s*:\s*)`"[^`"]*`"" `
       -Replacement "`${1}`"$($pinnedScene.Value)`"" `
       -PathPattern $pinnedScene.Key

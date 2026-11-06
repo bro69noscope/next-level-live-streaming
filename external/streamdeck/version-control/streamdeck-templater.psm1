@@ -33,15 +33,20 @@ $mappings = Read-ReplacementMappings `
 # Pinned in templates to avoid diff noise and false vcs-flag changes.
 # NOTE: we are not 100% sure this wont ever break something.
 $script:templateNormalizers = @(
-  (New-VcsNormalizer -Pattern '("State"\s*:\s*)\d+' -Replacement '${1}1'),
+  (New-VcsNormalizer `
+    -Name 'pin-state' `
+    -Pattern '("State"\s*:\s*)\d+' `
+    -Replacement '${1}1'),
 
   (New-VcsNormalizer `
+    -Name 'pin-uuid' `
     -Pattern '("_uuid"\s*:\s*)"[^"]*"' `
     -Replacement '${1}"00000000-0000-0000-0000-000000000000"'),
 
   # Spotify plugin (BarRaider) caches the currently available playback devices (machine/session
   # specific). This is for the more personal streamdeck usage.
   (New-VcsNormalizer `
+    -Name 'spotify-devices' `
     -Pattern '("devices"\s*:\s*)\[[^\]]*\]' `
     -Replacement '${1}[]' `
     -Verify {

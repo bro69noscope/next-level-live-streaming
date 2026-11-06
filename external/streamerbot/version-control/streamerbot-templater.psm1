@@ -61,6 +61,7 @@ $mappings = Read-ReplacementMappings `
 # Volatile values that Streamer.bot rewrites on every save. Pinned in templates to avoid diff noise.
 $script:templateNormalizers = @(
   New-VcsNormalizer `
+    -Name 'pin-timestamp' `
     -Pattern '("t"\s*:\s*)"\d{4}-\d{2}-\d{2}T[^"]*"' `
     -Replacement '${1}"1970-01-01T00:00:00.0000000+00:00"'
 )

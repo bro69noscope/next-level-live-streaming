@@ -542,6 +542,7 @@ function Get-JsonChangedNodes {
 
 function New-VcsNormalizer {
   param(
+    [Parameter(Mandatory=$true)] [string]$Name,
     [Parameter(Mandatory=$true)] [string]$Pattern,
     [Parameter(Mandatory=$true)] [string]$Replacement,
     [Parameter(Mandatory=$false)] [string]$PathPattern,
@@ -549,6 +550,7 @@ function New-VcsNormalizer {
   )
 
   return [PSCustomObject]@{
+    Name        = $Name
     Pattern     = $Pattern
     Replacement = $Replacement
     PathPattern = $PathPattern
@@ -633,7 +635,7 @@ function ConvertTo-VcsTemplateFile {
           -After ($normalized | ConvertFrom-Json -AsHashtable))
       if (-not (& $normalizer.Verify $changes)) {
         Write-VcsMessage -Message ("Normalizer skipped (JSON verification failed): " +
-          "$($normalizer.Pattern) in $inputFileName") -Color Yellow -Bold
+          "'$($normalizer.Name)' in $inputFileName") -Color Yellow -Bold
         continue
       }
     }

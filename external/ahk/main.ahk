@@ -9,6 +9,9 @@ DirExist("logs") || DirCreate("logs")
 #Include libs\websocket.ahk
 #Include logger.ahk
 #Include window-helpers.ahk
+#Include keybinds.ahk
 #Include stream-apps.ahk
 #Include ws-client.ahk
 #Include scripts\capture-window-obs\main.ahk
+
+Hotkey(Keybinds["NllsActivateMainServer"], (*) => ActivateNllsMainServer())

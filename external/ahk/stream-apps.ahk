@@ -112,6 +112,20 @@ ActivateStreamFeedAppDebug() {
   }
 }
 
+ActivateNllsMainServer() {
+  hwnd := WinExist(StreamingRepoServerName)
+  if hwnd {
+    WinActivate(hwnd)
+    return
+  }
+
+  repo := RTrim(StreamingRepoPath, "\")
+  psCmd := Format("& '{}\start_server_script.ps1'", repo)
+  cmd := Format('pwsh -NoExit -Command "{}"', psCmd)
+  Run(cmd, repo)
+  ; This window is handled by repo window manager on launch
+}
+
 ActivateObsProduction(moveChat := false, activate := true) {
   hwnd := 0
   FindObsWindow() {

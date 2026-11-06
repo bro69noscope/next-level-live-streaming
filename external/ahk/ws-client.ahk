@@ -19,6 +19,7 @@ wsCommands := Map(
   "ActivateStreamFeedApp", () => ActivateStreamFeedApp(),
   "ActivateObsProduction", () => ActivateObsProduction(true),
   "ActivateObsPortableFtp", () => ActivateObsPortable("ftp", true)
+  "ActivateNllsMainServer", () => ActivateNllsMainServer()
 )
 
 NoticeError(msg) {

@@ -19,4 +19,4 @@ ObsProductionRemoteDebugArgs :=
 ObsFtpRemoteDebugArgs :=
   " --remote-debugging-port=9223 --remote-allow-origins=http://localhost:9223"
 
-StreamingRepoServerName := "MY SERVER"
+StreamingRepoServerName := "BRO_NLLS_MAIN_SERVER"

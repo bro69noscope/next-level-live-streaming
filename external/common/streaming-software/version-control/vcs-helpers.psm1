@@ -519,12 +519,7 @@ function ConvertTo-VcsTemplateFile {
     [AllowEmptyCollection()]
     [System.Collections.Generic.List[string]]$FormatQueue,
     [Parameter(Mandatory=$true)] [ref]$ReplacedCount,
-
-    # Optional list of @{ Pattern = <regex>; Replacement = <string>; PathPattern = <regex> } applied
-    # to the content after the mapping rules. Used to pin volatile values (e.g. toggle state, random
-    # ids) so they do not create diff noise or change the template hash. PathPattern is optional: if
-    # given, the normalizer only applies to input files whose full path matches it.
-    [Parameter(Mandatory=$false)] [array]$Normalizers = @()
+    [Parameter(Mandatory=$false)] [PSCustomObject[]]$Normalizers = @()
   )
 
   $inputFileName  = Split-Path $InputFilePath -Leaf
@@ -584,7 +579,8 @@ function ConvertTo-VcsTemplateFile {
     if ($normalizer.PathPattern -and $InputFilePath -notmatch $normalizer.PathPattern) {
       continue
     }
-    $content = [regex]::Replace($content, $normalizer.Pattern, $normalizer.Replacement)
+    $normalized = [regex]::Replace($content, $normalizer.Pattern, $normalizer.Replacement)
+    $content = $normalized
   }
 
   $needsWrite = $true
@@ -702,6 +698,7 @@ $FunctionsToExport = @(
   "ConvertTo-VcsTemplateFile"
   "Format-JsonWithPrettier"
   "Get-VcsRelativePath"
+  "New-VcsNormalizer"
   "Get-VcsMarkerFile"
   "Read-ReplacementMappings"
   "Remove-EmptyVcsDirectories"

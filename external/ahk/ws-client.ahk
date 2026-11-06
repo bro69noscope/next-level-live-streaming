@@ -18,7 +18,7 @@ wsCommands := Map(
   "MoveObsFtpCenter", () => MoveObsFtp("center", true),
   "ActivateStreamFeedApp", () => ActivateStreamFeedApp(),
   "ActivateObsProduction", () => ActivateObsProduction(true),
-  "ActivateObsPortableFtp", () => ActivateObsPortable("ftp", true)
+  "ActivateObsPortableFtp", () => ActivateObsPortable("ftp", true),
   "ActivateNllsMainServer", () => ActivateNllsMainServer()
 )
 

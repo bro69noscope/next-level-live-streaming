@@ -37,7 +37,11 @@ $script:templateNormalizers = @(
 
   @{ Pattern = '("_uuid"\s*:\s*)"[^"]*"';
     Replacement = '${1}"00000000-0000-0000-0000-000000000000"'
-  }
+  },
+
+  # Spotify plugin (BarRaider) caches the currently available playback devices (machine/session
+  # specific). This is for the more personal streamdeck usage.
+  @{ Pattern = '("devices"\s*:\s*)\[[^\]]*\]'; Replacement = '${1}[]' }
 )
 
 $Script:manifestStr = "manifest.json"

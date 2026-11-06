@@ -510,6 +510,52 @@ function Invoke-ScopedRestore {
   return [PSCustomObject]@{ Content = $Content; Count = $count }
 }
 
+function Get-JsonChangedNodes {
+  param($Before, $After, [object[]]$Ancestors = @(), $Key = $null)
+
+  $isDict = { param($x) $x -is [System.Collections.IDictionary] }
+  $isList = { param($x) $x -is [System.Collections.IList] }
+
+  if ((& $isDict $Before) -and (& $isDict $After) -and
+    (@($Before.Keys) -join "`0") -eq (@($After.Keys) -join "`0")) {
+    foreach ($k in $Before.Keys) {
+      Get-JsonChangedNodes -Before $Before[$k] -After $After[$k] `
+        -Ancestors (@($Ancestors) + , $After) -Key $k
+    }
+    return
+  }
+
+  if ((& $isList $Before) -and (& $isList $After) -and $Before.Count -eq $After.Count) {
+    for ($i = 0; $i -lt $Before.Count; $i++) {
+      Get-JsonChangedNodes -Before $Before[$i] -After $After[$i] `
+        -Ancestors (@($Ancestors) + , $After) -Key $i
+    }
+    return
+  }
+
+  $b = $Before | ConvertTo-Json -Compress -Depth 100
+  $a = $After | ConvertTo-Json -Compress -Depth 100
+  if ($a -ne $b) {
+    [PSCustomObject]@{ Key = $Key; Ancestors = $Ancestors }
+  }
+}
+
+function New-VcsNormalizer {
+  param(
+    [Parameter(Mandatory=$true)] [string]$Pattern,
+    [Parameter(Mandatory=$true)] [string]$Replacement,
+    [Parameter(Mandatory=$false)] [string]$PathPattern,
+    [Parameter(Mandatory=$false)] [scriptblock]$Verify
+  )
+
+  return [PSCustomObject]@{
+    Pattern     = $Pattern
+    Replacement = $Replacement
+    PathPattern = $PathPattern
+    Verify      = $Verify
+  }
+}
+
 function ConvertTo-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
@@ -580,6 +626,18 @@ function ConvertTo-VcsTemplateFile {
       continue
     }
     $normalized = [regex]::Replace($content, $normalizer.Pattern, $normalizer.Replacement)
+
+    if ($normalizer.Verify -and $normalized -ne $content) {
+      $changes = @(Get-JsonChangedNodes `
+          -Before ($content | ConvertFrom-Json -AsHashtable) `
+          -After ($normalized | ConvertFrom-Json -AsHashtable))
+      if (-not (& $normalizer.Verify $changes)) {
+        Write-VcsMessage -Message ("Normalizer skipped (JSON verification failed): " +
+          "$($normalizer.Pattern) in $inputFileName") -Color Yellow -Bold
+        continue
+      }
+    }
+
     $content = $normalized
   }
 

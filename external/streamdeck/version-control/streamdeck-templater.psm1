@@ -41,7 +41,31 @@ $script:templateNormalizers = @(
 
   # Spotify plugin (BarRaider) caches the currently available playback devices (machine/session
   # specific). This is for the more personal streamdeck usage.
-  @{ Pattern = '("devices"\s*:\s*)\[[^\]]*\]'; Replacement = '${1}[]' }
+  (New-VcsNormalizer `
+    -Pattern '("devices"\s*:\s*)\[[^\]]*\]' `
+    -Replacement '${1}[]' `
+    -Verify {
+    param($changes)
+    foreach ($change in $changes) {
+      $owner = $change.Ancestors[-1]
+      $action = if ($change.Ancestors.Count -ge 2) {
+        $change.Ancestors[-2]
+      } else {
+        $null
+      }
+      $isSpotify = $change.Key -eq 'devices' `
+        -and $change.Ancestors.Count -ge 2 `
+        -and $action -is [System.Collections.IDictionary] `
+        -and $action['Settings'] -is [System.Collections.IDictionary] `
+        -and [object]::ReferenceEquals($action['Settings'], $owner) `
+        -and $action['Plugin'] -is [System.Collections.IDictionary] `
+        -and $action['Plugin']['UUID'] -eq 'com.barraider.spotify'
+      if (-not $isSpotify) {
+        return $false
+      }
+    }
+    return $true
+  })
 )
 
 $Script:manifestStr = "manifest.json"

@@ -513,10 +513,8 @@ function Invoke-ScopedRestore {
 function Get-JsonChangedNodes {
   param($Before, $After, [object[]]$Ancestors = @(), $Key = $null)
 
-  $isDict = { param($x) $x -is [System.Collections.IDictionary] }
-  $isList = { param($x) $x -is [System.Collections.IList] }
-
-  if ((& $isDict $Before) -and (& $isDict $After) -and
+  if ($Before -is [System.Collections.IDictionary] -and
+    $After -is [System.Collections.IDictionary] -and
     (@($Before.Keys) -join "`0") -eq (@($After.Keys) -join "`0")) {
     foreach ($k in $Before.Keys) {
       Get-JsonChangedNodes -Before $Before[$k] -After $After[$k] `
@@ -525,7 +523,8 @@ function Get-JsonChangedNodes {
     return
   }
 
-  if ((& $isList $Before) -and (& $isList $After) -and $Before.Count -eq $After.Count) {
+  if ($Before -is [System.Collections.IList] -and $After -is [System.Collections.IList] -and
+    $Before.Count -eq $After.Count) {
     for ($i = 0; $i -lt $Before.Count; $i++) {
       Get-JsonChangedNodes -Before $Before[$i] -After $After[$i] `
         -Ancestors (@($Ancestors) + , $After) -Key $i
@@ -533,11 +532,22 @@ function Get-JsonChangedNodes {
     return
   }
 
-  $b = $Before | ConvertTo-Json -Compress -Depth 100
-  $a = $After | ConvertTo-Json -Compress -Depth 100
-  if ($a -ne $b) {
-    [PSCustomObject]@{ Key = $Key; Ancestors = $Ancestors }
+  # Scalar leaves. A string is IEnumerable in .NET, so it is listed explicitly.
+  $beforeIsScalar = $Before -isnot [System.Collections.IEnumerable] -or $Before -is [string]
+  $afterIsScalar = $After -isnot [System.Collections.IEnumerable] -or $After -is [string]
+  if ($beforeIsScalar -and $afterIsScalar) {
+    $changed = if ($null -eq $Before -or $null -eq $After) {
+      $null -ne $Before -or $null -ne $After
+    } else {
+      $Before -cne $After -or $Before.GetType() -ne $After.GetType()
+    }
+    if ($changed) {
+      [PSCustomObject]@{ Key = $Key; Ancestors = $Ancestors }
+    }
+    return
   }
+
+  [PSCustomObject]@{ Key = $Key; Ancestors = $Ancestors }
 }
 
 function New-VcsNormalizer {

@@ -14,4 +14,4 @@ DirExist("logs") || DirCreate("logs")
 #Include ws-client.ahk
 #Include scripts\capture-window-obs\main.ahk
 
-Hotkey(HK["hk_nlls_activate_main_server"], (*) => ActivateNllsMainServer())
+Hotkey(HK["nlls_hk__activate_main_server"], (*) => ActivateNllsMainServer())

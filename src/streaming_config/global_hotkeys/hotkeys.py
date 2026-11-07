@@ -25,7 +25,7 @@ _MODIFIERS = "#^!+"  # canonical order: Super, Ctrl, Alt, Shift
 _IGNORED_PREFIXES = "~$*"
 _ID_RE = re.compile(r"[a-z][a-z0-9_]*")
 _VALID_OWNERS = frozenset(get_args(HotkeyOwner))
-_AHK_OWNERS = frozenset({"ahk", "bro_dotfiles"})  # owners whose binds AHK registers
+_AHK_OWNERS = frozenset({"ahk", "bro_dotfiles"})
 
 
 def _normalize(hotkey: str) -> str:

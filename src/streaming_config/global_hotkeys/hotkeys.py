@@ -7,11 +7,6 @@ from typing import cast, get_args
 import json5
 from src.config.settings import PROJECT_ROOT_PATH
 from src.streaming_config.types import HotkeyMapping, HotkeyOwner
-from src.utils.helpers import construct_script_name
-from src.utils.logging_utils import setup_logger
-
-SCRIPT_NAME = construct_script_name(__file__)
-logger = setup_logger(SCRIPT_NAME)
 
 HOTKEYS_DIR = PROJECT_ROOT_PATH / "external" / "common" / "system_hotkeys"
 HOTKEYS_MANUAL_SOURCE = HOTKEYS_DIR / "hotkeys.manual.json5"
@@ -28,6 +23,10 @@ _VALID_OWNERS = frozenset(get_args(HotkeyOwner))
 _AHK_OWNERS = frozenset({"ahk", "bro_dotfiles"})
 
 
+class HotkeyConfigError(Exception):
+    """Hotkey source files are missing, unparseable, or invalid."""
+
+
 def _normalize(hotkey: str) -> str:
     chars = [c for c in hotkey if c not in _IGNORED_PREFIXES]
     mods = {c for c in chars if c in _MODIFIERS}
@@ -36,23 +35,28 @@ def _normalize(hotkey: str) -> str:
 
 
 def load_hotkeys(sources: tuple[Path, ...] = HOTKEYS_SOURCES) -> list[HotkeyMapping]:
-    """Merge the mappings of every existing source file, in order."""
+    """Merge the mappings of every source file, in order.
+
+    Raises HotkeyConfigError if a source file is missing or fails to parse.
+    """
     merged: list[HotkeyMapping] = []
     for source in sources:
         if not source.exists():
-            logger.error("Hotkeys source file not found: %s", source)
-            continue
+            raise HotkeyConfigError(f"Hotkeys source file not found: {source}")
         with source.open("r", encoding="utf-8") as f:
-            data = cast(
-                "dict[str, list[HotkeyMapping]]",
-                json5.load(f),  # pyright: ignore[reportUnknownMemberType]
-            )
+            try:
+                data = cast(
+                    "dict[str, list[HotkeyMapping]]",
+                    json5.load(f),  # pyright: ignore[reportUnknownMemberType]
+                )
+            except ValueError as e:
+                raise HotkeyConfigError(f"{source}: {e}") from e
         merged.extend(data["mappings"])
     return merged
 
 
 def validate_hotkeys(mappings: list[HotkeyMapping]) -> None:
-    """Raise ValueError listing every id, owner, or hotkey problem found."""
+    """Raise HotkeyConfigError listing every id, owner, or hotkey problem found."""
     errors: list[str] = []
     seen_ids: set[str] = set()
     seen_combos: dict[str, str] = {}
@@ -82,14 +86,17 @@ def validate_hotkeys(mappings: list[HotkeyMapping]) -> None:
         seen_combos[combo] = mid
 
     if errors:
-        raise ValueError("\n".join(errors))
+        raise HotkeyConfigError("\n".join(errors))
 
 
 def write_ahk_hotkeys(
     mappings: list[HotkeyMapping],
     out_path: Path = HOTKEYS_AHK_OUTPUT,
 ) -> tuple[Path, int]:
-    """Write the AHK `HK` id->hotkey map (owners ahk and bro_dotfiles). Returns (path, entry_count)."""
+    """Write the AHK `HK` id->hotkey map (owners ahk and bro_dotfiles).
+
+    Returns (path, entry_count).
+    """
     ahk = [m for m in mappings if m["owner"] in _AHK_OWNERS]
     rows = ",\n".join(f'  "{m["id"]}", "{m["hotkey"]}"' for m in ahk)
     out_path.parent.mkdir(parents=True, exist_ok=True)

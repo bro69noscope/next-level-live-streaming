@@ -7,6 +7,11 @@ from typing import cast, get_args
 import json5
 from src.config.settings import PROJECT_ROOT_PATH
 from src.streaming_config.types import HotkeyMapping, HotkeyOwner
+from src.utils.helpers import construct_script_name
+from src.utils.logging_utils import setup_logger
+
+SCRIPT_NAME = construct_script_name(__file__)
+logger = setup_logger(SCRIPT_NAME)
 
 HOTKEYS_DIR = PROJECT_ROOT_PATH / "external" / "common" / "system_hotkeys"
 HOTKEYS_MANUAL_SOURCE = HOTKEYS_DIR / "hotkeys.manual.json5"
@@ -35,6 +40,7 @@ def load_hotkeys(sources: tuple[Path, ...] = HOTKEYS_SOURCES) -> list[HotkeyMapp
     merged: list[HotkeyMapping] = []
     for source in sources:
         if not source.exists():
+            logger.error("Hotkeys source file not found: %s", source)
             continue
         with source.open("r", encoding="utf-8") as f:
             data = cast(
@@ -89,7 +95,8 @@ def write_ahk_hotkeys(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8", newline="\n") as f:
         f.write(
-            "; GENERATED from hotkeys.manual.json5 + hotkeys.generated.json5 - do not edit\n"
+            "; GENERATED from hotkeys.manual.json5 + hotkeys.generated.json5 - "
+            "do not edit\n"
             f"HK := Map(\n{rows}\n)\n"
         )
     return out_path, len(ahk)

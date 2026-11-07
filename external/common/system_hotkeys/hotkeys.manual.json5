@@ -1,0 +1,100 @@
+{
+  mappings: [
+    {
+      owner: "ahk",
+      id: "hk_capture_win_by_title",
+      hotkey: "^!+t",
+      action: "retarget capture__window__dynamic_hwnd to active window (use title)",
+    },
+    {
+      owner: "ahk",
+      id: "hk_capture_win_by_exe",
+      hotkey: "^!+x",
+      action: "retarget capture__window__dynamic_hwnd to active window (use exe)",
+    },
+
+    // Right now these obs hotkey need to be synced manually with the state of the streamdeck
+    // profile that sends them. We'll do it programmatically later
+    {
+      owner: "obs",
+      id: "hk_enable_source_record",
+      hotkey: "!^+e",
+      action: "enable source_record_filter",
+    },
+    {
+      owner: "obs",
+      id: "hk_disable_source_record",
+      hotkey: "!^+d",
+      action: "disable source_record_filter",
+    },
+
+    // owner "ahk" = registered in external/ahk/main.ahk (this repo)
+    // owner "bro_dotfiles" = registered in bro's bro_dotfiles. Here to avoid conflicts
+    {
+      owner: "ahk",
+      id: "hk_nlls_activate_main_server",
+      hotkey: "^!+F24",
+      action: "activate the nlls main server",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_toggle_mouse_pos_overlay",
+      hotkey: "^!+Home",
+      action: "toggle mouse position overlay",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_clip_and_open_nvim_scratch",
+      hotkey: "^\\",
+      action: "clip selection and open nvim scratch",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_launch_deadlock_movement_script",
+      hotkey: "^!+F12",
+      action: "launch deadlock movement script",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_move_active_window_right",
+      hotkey: "^!+Right",
+      action: "move active window right",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_move_active_window_left",
+      hotkey: "^!+Left",
+      action: "move active window left",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_small_page_scroll_up",
+      hotkey: "!PgUp",
+      action: "small page scroll up",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_small_page_scroll_down",
+      hotkey: "!PgDn",
+      action: "small page scroll down",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_page_scroll_up",
+      hotkey: "^PgUp",
+      action: "page scroll up",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_page_scroll_down",
+      hotkey: "^PgDn",
+      action: "page scroll down",
+    },
+    {
+      owner: "bro_dotfiles",
+      id: "hk_activate_leader_key",
+      hotkey: "$^Space",
+      action: "activate leader key",
+    },
+  ],
+}

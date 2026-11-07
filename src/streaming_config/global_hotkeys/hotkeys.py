@@ -8,13 +8,10 @@ import json5
 from src.config.settings import PROJECT_ROOT_PATH
 from src.streaming_config.types import HotkeyMapping, HotkeyOwner
 
-HOTKEYS_SOURCE = (
-    PROJECT_ROOT_PATH
-    / "external"
-    / "common"
-    / "system_hotheys"
-    / "streaming_hotkeys.json5"
-)
+HOTKEYS_DIR = PROJECT_ROOT_PATH / "external" / "common" / "system_hotkeys"
+HOTKEYS_MANUAL_SOURCE = HOTKEYS_DIR / "hotkeys.manual.json5"
+HOTKEYS_GENERATED_SOURCE = HOTKEYS_DIR / "hotkeys.generated.json5"
+HOTKEYS_SOURCES = (HOTKEYS_MANUAL_SOURCE, HOTKEYS_GENERATED_SOURCE)
 HOTKEYS_AHK_OUTPUT = (
     PROJECT_ROOT_PATH / "external" / "ahk" / "config" / "hotkeys_map.ahk"
 )
@@ -23,6 +20,7 @@ _MODIFIERS = "#^!+"  # canonical order: Super, Ctrl, Alt, Shift
 _IGNORED_PREFIXES = "~$*"
 _ID_RE = re.compile(r"[a-z][a-z0-9_]*")
 _VALID_OWNERS = frozenset(get_args(HotkeyOwner))
+_AHK_OWNERS = frozenset({"ahk", "bro_dotfiles"})  # owners whose binds AHK registers
 
 
 def _normalize(hotkey: str) -> str:
@@ -32,13 +30,19 @@ def _normalize(hotkey: str) -> str:
     return "".join(m for m in _MODIFIERS if m in mods) + key
 
 
-def load_hotkeys(source: Path = HOTKEYS_SOURCE) -> list[HotkeyMapping]:
-    with source.open("r", encoding="utf-8") as f:
-        data = cast(
-            "dict[str, list[HotkeyMapping]]",
-            json5.load(f),  # pyright: ignore[reportUnknownMemberType]
-        )
-    return data["mappings"]
+def load_hotkeys(sources: tuple[Path, ...] = HOTKEYS_SOURCES) -> list[HotkeyMapping]:
+    """Merge the mappings of every existing source file, in order."""
+    merged: list[HotkeyMapping] = []
+    for source in sources:
+        if not source.exists():
+            continue
+        with source.open("r", encoding="utf-8") as f:
+            data = cast(
+                "dict[str, list[HotkeyMapping]]",
+                json5.load(f),  # pyright: ignore[reportUnknownMemberType]
+            )
+        merged.extend(data["mappings"])
+    return merged
 
 
 def validate_hotkeys(mappings: list[HotkeyMapping]) -> None:
@@ -79,13 +83,13 @@ def write_ahk_hotkeys(
     mappings: list[HotkeyMapping],
     out_path: Path = HOTKEYS_AHK_OUTPUT,
 ) -> tuple[Path, int]:
-    """Write the AHK `HK` id->hotkey map. Returns (path, entry_count)."""
-    ahk = [m for m in mappings if m["owner"] == "ahk"]
+    """Write the AHK `HK` id->hotkey map (owners ahk and bro_dotfiles). Returns (path, entry_count)."""
+    ahk = [m for m in mappings if m["owner"] in _AHK_OWNERS]
     rows = ",\n".join(f'  "{m["id"]}", "{m["hotkey"]}"' for m in ahk)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(
-        "; GENERATED from streaming_hotkeys.json5 - do not edit\n"
-        f"HK := Map(\n{rows}\n)\n",
-        encoding="utf-8",
-    )
+    with out_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(
+            "; GENERATED from hotkeys.manual.json5 + hotkeys.generated.json5 - do not edit\n"
+            f"HK := Map(\n{rows}\n)\n"
+        )
     return out_path, len(ahk)

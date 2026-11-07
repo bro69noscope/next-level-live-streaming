@@ -7,7 +7,7 @@ Usage:
 import sys
 
 from src.streaming_config.global_hotkeys.hotkeys import (
-    HOTKEYS_SOURCE,
+    HOTKEYS_MANUAL_SOURCE,
     load_hotkeys,
     validate_hotkeys,
     write_ahk_hotkeys,
@@ -15,9 +15,9 @@ from src.streaming_config.global_hotkeys.hotkeys import (
 
 
 def main() -> None:
-    """Validate streaming_hotkeys.json5, then write the AHK include."""
-    if not HOTKEYS_SOURCE.exists():
-        print(f"Source file not found: {HOTKEYS_SOURCE}", file=sys.stderr)
+    """Validate the merged hotkey registry, then write the AHK include."""
+    if not HOTKEYS_MANUAL_SOURCE.exists():
+        print(f"Source file not found: {HOTKEYS_MANUAL_SOURCE}", file=sys.stderr)
         sys.exit(1)
 
     mappings = load_hotkeys()

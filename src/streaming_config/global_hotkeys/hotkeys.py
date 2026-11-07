@@ -23,6 +23,11 @@ _VALID_OWNERS = frozenset(get_args(HotkeyOwner))
 _AHK_OWNERS = frozenset({"ahk", "bro_dotfiles"})
 
 
+def _id_prefix(owner: str) -> str:
+    """Required id prefix: `bro_hk_ahk__` for bro_dotfiles, else `nlls_hk_<owner>__`."""
+    return "bro_hk_ahk__" if owner == "bro_dotfiles" else f"nlls_hk_{owner}__"
+
+
 class HotkeyConfigError(Exception):
     """Hotkey source files are missing, unparseable, or invalid."""
 
@@ -70,10 +75,16 @@ def validate_hotkeys(mappings: list[HotkeyMapping]) -> None:
             errors.append(f"duplicate id '{mid}'")
         seen_ids.add(mid)
 
-        if m.get("owner") not in _VALID_OWNERS:
+        owner = m.get("owner")
+        if owner not in _VALID_OWNERS:
             errors.append(
-                f"'{mid}' has invalid owner {m.get('owner')!r}; "
+                f"'{mid}' has invalid owner {owner!r}; "
                 f"expected one of {sorted(_VALID_OWNERS)}"
+            )
+        elif not mid.startswith(_id_prefix(owner)):
+            errors.append(
+                f"'{mid}' has owner '{owner}' so its id must start with "
+                f"'{_id_prefix(owner)}'"
             )
 
         hotkey = m.get("hotkey", "")

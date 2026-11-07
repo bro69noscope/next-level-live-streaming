@@ -30,12 +30,16 @@
 
     // owner "ahk" = registered in external/ahk/main.ahk (this repo)
     // owner "bro_dotfiles" = registered in bro's bro_dotfiles. Here to avoid conflicts
+    //
+    // nlls hotkeys:
     {
       owner: "ahk",
       id: "nlls_hk_ahk__activate_main_server",
       hotkey: "^!+F24",
       action: "activate the nlls main server",
     },
+
+    // dotfiles hotkeys:
     {
       owner: "bro_dotfiles",
       id: "bro_hk_ahk__toggle_mouse_pos_overlay",

@@ -8,11 +8,11 @@ type JsonTree = dict[str, JsonValue]
 
 Consumer = Literal["obs", "streamdeck", "streamerbot"]
 ScopeKeys = dict[Consumer | Literal["default"], str]
-HotkeyOwner = Literal["ahk", "streamdeck"]
+HotkeyOwner = Literal["ahk", "bro_dotfiles", "obs", "streamdeck"]
 
 
 class HotkeyMapping(TypedDict):
-    """One entry of streaming_hotkeys.json5."""
+    """One entry of hotkeys.manual.json5 or hotkeys.generated.json5."""
 
     id: str
     hotkey: str

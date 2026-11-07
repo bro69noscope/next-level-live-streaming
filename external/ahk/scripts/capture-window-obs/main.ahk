@@ -14,8 +14,8 @@ catch as e {
 
 SB_ACTION_NAME := "sbact__SetRelevantWindowCapture"
 
-Hotkey(HK["hk_capture_win_by_title"], (*) => CaptureWindow(WinExist("A"), 0))
-Hotkey(HK["hk_capture_win_by_exe"], (*) => CaptureWindow(WinExist("A"), 2))
+Hotkey(HK["nlls_hk_ahk__capture_win_by_title"], (*) => CaptureWindow(WinExist("A"), 0))
+Hotkey(HK["nlls_hk_ahk__capture_win_by_exe"], (*) => CaptureWindow(WinExist("A"), 2))
 
 CaptureWindow(hwnd, prio) {
   if !hwnd {

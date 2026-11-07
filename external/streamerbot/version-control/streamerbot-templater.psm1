@@ -63,7 +63,8 @@ $script:templateNormalizers = @(
   New-VcsNormalizer `
     -Name 'pin-timestamp' `
     -Pattern '("t"\s*:\s*)"\d{4}-\d{2}-\d{2}T[^"]*"' `
-    -Replacement '${1}"1970-01-01T00:00:00.0000000+00:00"'
+    -Replacement '${1}"1970-01-01T00:00:00.0000000+00:00"' `
+    -Verify (New-VcsRootKeyVerifier -Key 't')
 )
 
 $script:SbotMarkers = @("data")

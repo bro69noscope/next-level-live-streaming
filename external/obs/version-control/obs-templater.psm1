@@ -39,20 +39,24 @@ $script:templateNormalizers = @(
   New-VcsNormalizer `
     -Name 'pin-scaling-level' `
     -Pattern '("scaling_level"\s*:\s*)-?\d+' `
-    -Replacement '${1}0'
+    -Replacement '${1}0' `
+    -Verify (New-VcsRootKeyVerifier -Key 'scaling_level')
 )
+
 $script:ObsPinnedScenes = [ordered]@{
   ""                         = "scene__metascene"
   'ftp_collection__main\.json$'  = "scene__center_monitor"
   'vcam_collection__main\.json$' = "scene__vcam_facecam"
 }
+
 foreach ($pinnedScene in $script:ObsPinnedScenes.GetEnumerator()) {
   foreach ($sceneKey in @("current_scene", "current_program_scene")) {
     $script:templateNormalizers += New-VcsNormalizer `
       -Name "pin-$sceneKey" `
       -Pattern "(`"$sceneKey`"\s*:\s*)`"[^`"]*`"" `
       -Replacement "`${1}`"$($pinnedScene.Value)`"" `
-      -PathPattern $pinnedScene.Key
+      -PathPattern $pinnedScene.Key `
+      -Verify (New-VcsRootKeyVerifier -Key $sceneKey)
   }
 }
 

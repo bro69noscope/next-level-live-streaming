@@ -36,12 +36,49 @@ $script:templateNormalizers = @(
   (New-VcsNormalizer `
     -Name 'pin-state' `
     -Pattern '("State"\s*:\s*)\d+' `
-    -Replacement '${1}1'),
+    -Replacement '${1}1' `
+    -Verify {
+    param($changes)
+    foreach ($change in $changes) {
+      $owner = $change.Ancestors[-1]
+      $isAction = $change.Key -ceq 'State' `
+        -and $owner -is [System.Collections.IDictionary] `
+        -and $owner.ContainsKey('ActionID') `
+        -and $owner.ContainsKey('Settings') `
+        -and $owner.ContainsKey('States') `
+        -and $owner.ContainsKey('UUID')
+      if (-not $isAction) {
+        return $false
+      }
+    }
+    return $true
+  }),
 
   (New-VcsNormalizer `
-    -Name 'pin-uuid' `
+    -Name 'pin-_uuid' `
     -Pattern '("_uuid"\s*:\s*)"[^"]*"' `
-    -Replacement '${1}"00000000-0000-0000-0000-000000000000"'),
+    -Replacement '${1}"00000000-0000-0000-0000-000000000000"' `
+    -Verify {
+    param($changes)
+    foreach ($change in $changes) {
+      $owner = $change.Ancestors[-1]
+      $action = if ($change.Ancestors.Count -ge 2) {
+        $change.Ancestors[-2]
+      } else {
+        $null
+      }
+      $isActionUuid = $change.Key -ceq '_uuid' `
+        -and $action -is [System.Collections.IDictionary] `
+        -and $action.ContainsKey('ActionID') `
+        -and $action.ContainsKey('States') `
+        -and $action['Settings'] -is [System.Collections.IDictionary] `
+        -and [object]::ReferenceEquals($action['Settings'], $owner)
+      if (-not $isActionUuid) {
+        return $false
+      }
+    }
+    return $true
+  }),
 
   # Spotify plugin (BarRaider) caches the currently available playback devices (machine/session
   # specific). This is for the more personal streamdeck usage.

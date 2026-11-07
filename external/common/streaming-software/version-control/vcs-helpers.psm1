@@ -558,6 +558,20 @@ function New-VcsNormalizer {
   }
 }
 
+function New-VcsRootKeyVerifier {
+  param([Parameter(Mandatory=$true)] [string]$Key)
+
+  return {
+    param($changes)
+    foreach ($change in $changes) {
+      if (-not ($change.Key -ceq $Key -and $change.Ancestors.Count -eq 1)) {
+        return $false
+      }
+    }
+    return $true
+  }.GetNewClosure()
+}
+
 function ConvertTo-VcsTemplateFile {
   param(
     [Parameter(Mandatory=$true)] [string]$InputFilePath,
@@ -634,8 +648,8 @@ function ConvertTo-VcsTemplateFile {
           -Before ($content | ConvertFrom-Json -AsHashtable) `
           -After ($normalized | ConvertFrom-Json -AsHashtable))
       if (-not (& $normalizer.Verify $changes)) {
-        Write-VcsMessage -Message ("Normalizer skipped (JSON verification failed): " +
-          "'$($normalizer.Name)' in $inputFileName") -Color Yellow -Bold
+        Write-VcsMessage -AsVerbose -Message ("Normalizer skipped (JSON verification failed): " +
+          "'$($normalizer.Name)' in $inputFileName") -Color Yellow
         continue
       }
     }
@@ -759,6 +773,7 @@ $FunctionsToExport = @(
   "Format-JsonWithPrettier"
   "Get-VcsRelativePath"
   "New-VcsNormalizer"
+  "New-VcsRootKeyVerifier"
   "Get-VcsMarkerFile"
   "Read-ReplacementMappings"
   "Remove-EmptyVcsDirectories"

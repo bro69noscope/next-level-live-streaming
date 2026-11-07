@@ -98,7 +98,7 @@ function Set-VcsLogFilePath {
     throw "logDirPath cannot be null or empty."
   }
   try {
-    [System.IO.Path]::GetFullPath($LogDirPath)
+    [void][System.IO.Path]::GetFullPath($LogDirPath)
   } catch {
     throw "LogDirPath is not a valid path: '$LogDirPath'"
   }

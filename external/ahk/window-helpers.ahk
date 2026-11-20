@@ -73,20 +73,27 @@ CenterIfWindowed(hwnd) {
   WinMove(l + (r - l - w) // 2, t + (b - t - h) // 2, , , hwnd)
 }
 
-ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false,
-  activate := true, mousePercent := DefaultMousePercent) {
-  end := A_TickCount + timeout
+ActivateWhenReady(checkFn, opts := {}) {
+  o := WithDefaults(opts, {
+    timeout: 3000,
+    onFound: "",
+    isLaunch: false,
+    activate: true,
+    mousePercent: DefaultMousePercent
+  })
+
+  end := A_TickCount + o.timeout
   while (A_TickCount < end) {
     if (hwnd := checkFn()) {
-      if activate
+      if o.activate
         WinActivate(hwnd)
-      if isLaunch
+      if o.isLaunch
         try ; silent failing usually means an attempt to transform an elevated window failed
           CenterIfWindowed(hwnd)
-      if onFound
-        onFound(hwnd)
-      if activate
-        MoveMouseToWindowBottom(hwnd, mousePercent)
+      if o.onFound
+        o.onFound.Call(hwnd)
+      if o.activate
+        MoveMouseToWindowBottom(hwnd, o.mousePercent)
       return true
     }
     Sleep 50
@@ -122,6 +129,6 @@ ActivateOrRun(idMethod, runCommand, opts := {}) {
     return true
   }
   Run(runCommand)
-  return ActivateWhenReady(idMethod, o.timeout, o.onFound, isLaunch := true, o.activate,
-    o.mousePercent)
+  o.isLaunch := true
+  return ActivateWhenReady(idMethod, o)
 }

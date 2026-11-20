@@ -92,7 +92,8 @@ ActivateStreamFeedApp(launchPosition := "left", activate := true) {
   }
   else {
     Run("dotnet run", StreamingRepoPath "external\StreamFeedApp", "Min")
-    ActivateWhenReady(idMethod, 8000, Reposition, , activate)
+    opts := { timeout: 8000, onFound: Reposition, activate: activate }
+    ActivateWhenReady(idMethod, opts)
   }
 }
 
@@ -107,7 +108,7 @@ ActivateStreamFeedAppDebug() {
     if hwnd2 {
       WinActivate
       Send "{F12}"
-      ActivateWhenReady(idMethod, 3000)
+      ActivateWhenReady(idMethod)
     }
   }
 }
@@ -167,7 +168,8 @@ ActivateObsProduction(moveChat := false, activate := true) {
     dir := "C:\Program Files\obs-studio\bin\64bit"
     exe := dir . "\obs64.exe"
     Run('"' exe '"' ObsProductionRemoteDebugArgs, dir)
-    ActivateWhenReady(idMethod, 7000, MinMaxOnCreation, , activate)
+    opts := { timeout: 7000, onFound: MinMaxOnCreation, activate: activate }
+    ActivateWhenReady(idMethod, opts)
   }
 }
 
@@ -195,7 +197,7 @@ ActivateObsPortable(profile, moveChat := false, activate := true) {
     exe := dir . "\obs64.exe"
 
     Run('"' exe '" ' ObsFtpRemoteDebugArgs, dir)
-    ActivateWhenReady(idMethod, 3000, , , activate)
+    ActivateWhenReady(idMethod, { activate: activate })
   }
   else if profile == "vcam" {
     dir := StreamingProgramsPath "obs-studio-portable-vcam\obs-studio\bin\64bit"
@@ -203,7 +205,7 @@ ActivateObsPortable(profile, moveChat := false, activate := true) {
     exe := dir . "\obs64.exe"
 
     Run('"' exe '"', dir)
-    ActivateWhenReady(idMethod, 3000, , , activate)
+    ActivateWhenReady(idMethod, { activate: activate })
   }
   else
     MsgBox "No Obs portable profile specified and no matching window found."

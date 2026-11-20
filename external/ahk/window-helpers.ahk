@@ -94,19 +94,34 @@ ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false,
   return false
 }
 
-ActivateOrRun(idMethod, runCommand, timeout := 3000, onFound := "", activate := true,
-  mousePercent := DefaultMousePercent) {
+WithDefaults(opts, defaults) {
+  for name, value in opts.OwnProps() {
+    if !defaults.HasOwnProp(name)
+      throw ValueError("Unknown option: " name)
+    defaults.%name% := value
+  }
+  return defaults
+}
+
+ActivateOrRun(idMethod, runCommand, opts := {}) {
+  o := WithDefaults(opts, {
+    timeout: 3000,
+    onFound: "",
+    activate: true,
+    mousePercent: DefaultMousePercent
+  })
+
   hwnd := idMethod()
   if hwnd {
-    if activate
+    if o.activate
       WinActivate(hwnd)
-    if onFound
-      onFound(hwnd)
-    if activate
-      MoveMouseToWindowBottom(hwnd, mousePercent)
+    if o.onFound
+      o.onFound.Call(hwnd)
+    if o.activate
+      MoveMouseToWindowBottom(hwnd, o.mousePercent)
     return true
   }
   Run(runCommand)
-  return ActivateWhenReady(idMethod, timeout, onFound, isLaunch := true, activate,
-    mousePercent)
+  return ActivateWhenReady(idMethod, o.timeout, o.onFound, isLaunch := true, o.activate,
+    o.mousePercent)
 }

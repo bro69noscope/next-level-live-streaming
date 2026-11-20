@@ -4,6 +4,10 @@ SplitPath(A_LineFile, , &_ahkConfigDir)
 _ahkConfigDir := RealPath(_ahkConfigDir)
 StreamingRepoPath := NormalizePath(_ahkConfigDir "\..\..\..") "\"
 
+; at what percent of the window bottom height do we place the mouse cursor on window
+; activation. (100 tends to be too low to be able to scroll most ui with mouse events.)
+DefaultMousePercent := 99.7
+
 ObsExe := "obs64.exe"
 StreamerbotExe := "Streamer.bot.exe"
 

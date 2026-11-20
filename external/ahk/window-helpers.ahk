@@ -1,6 +1,29 @@
+#Include config\general_config.ahk
+
 EnsureFullscreen(hwnd) {
   if WinGetMinMax(hwnd) != 1
     WinMaximize(hwnd)
+}
+
+MoveMouseToWindowBottom(hwnd, heightPercent) {
+  ; per-monitor-v2: physical pixels on every monitor, also with mixed DPI
+  DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+
+  ; visible frame, without the invisible resize borders that WinGetPos includes
+  DWMWA_EXTENDED_FRAME_BOUNDS := 9
+  rect := Buffer(16)
+  DllCall("dwmapi\DwmGetWindowAttribute", "ptr", hwnd, "uint",
+    DWMWA_EXTENDED_FRAME_BOUNDS,
+    "ptr", rect, "uint", 16)
+  left := NumGet(rect, 0, "int"), top := NumGet(rect, 4, "int")
+  right := NumGet(rect, 8, "int"), bottom := NumGet(rect, 12, "int") ; right, bottom: exclusive
+
+  x := (left + right) // 2
+  ; heightPercent can be a float, e.g. 99.5
+  y := Min(top + Round((bottom - top) * heightPercent / 100), bottom - 1)
+
+  ; SetCursorPos takes physical screen coordinates, MouseMove clamps on other monitors
+  DllCall("SetCursorPos", "int", x, "int", y)
 }
 
 GetMonitorAt(x, y) {
@@ -50,7 +73,8 @@ CenterIfWindowed(hwnd) {
   WinMove(l + (r - l - w) // 2, t + (b - t - h) // 2, , , hwnd)
 }
 
-ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false, activate := true) {
+ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false,
+  activate := true, mousePercent := DefaultMousePercent) {
   end := A_TickCount + timeout
   while (A_TickCount < end) {
     if (hwnd := checkFn()) {
@@ -61,6 +85,8 @@ ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false, ac
           CenterIfWindowed(hwnd)
       if onFound
         onFound(hwnd)
+      if activate
+        MoveMouseToWindowBottom(hwnd, mousePercent)
       return true
     }
     Sleep 50
@@ -68,15 +94,19 @@ ActivateWhenReady(checkFn, timeout := 2000, onFound := "", isLaunch := false, ac
   return false
 }
 
-ActivateOrRun(idMethod, runCommand, timeout := 3000, onFound := "", activate := true) {
+ActivateOrRun(idMethod, runCommand, timeout := 3000, onFound := "", activate := true,
+  mousePercent := DefaultMousePercent) {
   hwnd := idMethod()
   if hwnd {
     if activate
       WinActivate(hwnd)
     if onFound
       onFound(hwnd)
+    if activate
+      MoveMouseToWindowBottom(hwnd, mousePercent)
     return true
   }
   Run(runCommand)
-  return ActivateWhenReady(idMethod, timeout, onFound, isLaunch := true, activate)
+  return ActivateWhenReady(idMethod, timeout, onFound, isLaunch := true, activate,
+    mousePercent)
 }

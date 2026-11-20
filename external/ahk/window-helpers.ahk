@@ -73,6 +73,11 @@ CenterIfWindowed(hwnd) {
   WinMove(l + (r - l - w) // 2, t + (b - t - h) // 2, , , hwnd)
 }
 
+FocusWindow(hwnd, mousePercent := DefaultMousePercent) {
+  WinActivate(hwnd)
+  MoveMouseToWindowBottom(hwnd, mousePercent)
+}
+
 ActivateWhenReady(checkFn, opts := {}) {
   o := WithDefaults(opts, {
     timeout: 3000,

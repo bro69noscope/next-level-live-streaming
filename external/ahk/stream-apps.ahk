@@ -39,7 +39,7 @@ MoveObsProduction(direction, activate) {
   EnsureFullscreen(hwnd)
 
   if activate
-    WinActivate(hwnd)
+    FocusWindow(hwnd)
 }
 
 MoveObsFtp(direction, activate) {
@@ -63,7 +63,7 @@ MoveObsFtp(direction, activate) {
   EnsureFullscreen(hwnd)
 
   if activate
-    WinActivate(hwnd)
+    FocusWindow(hwnd)
 }
 
 
@@ -88,7 +88,7 @@ ActivateStreamFeedApp(launchPosition := "left", activate := true) {
 
   if hwnd {
     if activate
-      WinActivate(hwnd)
+      FocusWindow(hwnd)
   }
   else {
     Run("dotnet run", StreamingRepoPath "external\StreamFeedApp", "Min")
@@ -102,11 +102,11 @@ ActivateStreamFeedAppDebug() {
     "DevTools - appassets.local/stream-feed.html ahk_exe msedgewebview2.exe")
   hwnd := idMethod()
   if hwnd
-    WinActivate(hwnd)
+    FocusWindow(hwnd)
   else {
     hwnd2 := WinExist("Activity Feed ahk_exe StreamFeedApp.exe")
     if hwnd2 {
-      WinActivate
+      WinActivate(hwnd2)
       Send "{F12}"
       ActivateWhenReady(idMethod)
     }
@@ -116,7 +116,7 @@ ActivateStreamFeedAppDebug() {
 ActivateNllsMainServer() {
   hwnd := WinExist(StreamingRepoServerName)
   if hwnd {
-    WinActivate(hwnd)
+    FocusWindow(hwnd)
     return
   }
 
@@ -153,7 +153,7 @@ ActivateObsProduction(moveChat := false, activate := true) {
   hwnd := idMethod()
   if hwnd {
     if activate
-      WinActivate(hwnd)
+      FocusWindow(hwnd)
 
     if not moveChat
       return
@@ -161,8 +161,8 @@ ActivateObsProduction(moveChat := false, activate := true) {
     if WinExist("Chat ahk_exe Streamer.bot.exe") {
       WinGetPos(&x, &y, &w, &h, hwnd)
       chat := WinExist("Chat ahk_exe Streamer.bot.exe")
-      WinActivate(chat)
       WinMove(x + 20, y + 110, 800, 1230, chat)
+      WinActivate(chat)
     }
   } else {
     dir := "C:\Program Files\obs-studio\bin\64bit"
@@ -179,7 +179,7 @@ ActivateObsPortable(profile, moveChat := false, activate := true) {
   hwnd := idMethod()
   if hwnd {
     if activate
-      WinActivate(hwnd)
+      FocusWindow(hwnd)
 
     if not moveChat
       return
@@ -187,8 +187,8 @@ ActivateObsPortable(profile, moveChat := false, activate := true) {
     if WinExist("Chat ahk_exe Streamer.bot.exe") {
       WinGetPos(&x, &y, &w, &h, hwnd)
       chat := WinExist("Chat ahk_exe Streamer.bot.exe")
-      WinActivate(chat)
       WinMove(x + 20, y + 110, 800, 1230, chat)
+      WinActivate(chat)
     }
   }
   else if profile == "ftp" {

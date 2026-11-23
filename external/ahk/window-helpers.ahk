@@ -1,4 +1,7 @@
 #Include config\general_config.ahk
+#Include logger.ahk
+
+WindowHelpersLogFile := "logs\window-helpers.log"
 
 EnsureFullscreen(hwnd) {
   if WinGetMinMax(hwnd) != 1
@@ -92,9 +95,16 @@ ActivateWhenReady(checkFn, opts := {}) {
     if (hwnd := checkFn()) {
       if o.activate
         WinActivate(hwnd)
-      if o.isLaunch
-        try ; silent failing usually means an attempt to transform an elevated window failed
+      if o.isLaunch {
+        try ; failing usually means an attempt to transform an elevated window failed
           CenterIfWindowed(hwnd)
+        catch as e {
+          exe := "?"
+          try exe := WinGetProcessName(hwnd)
+          LogWarn("CenterIfWindowed failed on " exe ": " e.Message,
+            WindowHelpersLogFile)
+        }
+      }
       if o.onFound
         o.onFound.Call(hwnd)
       if o.activate
